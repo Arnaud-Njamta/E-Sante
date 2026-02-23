@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const observanceService = require('../services/observance.service');
+const statistiqueController = require('../controllers/statistique.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 
 /**
@@ -53,15 +53,7 @@ const authMiddleware = require('../middlewares/auth.middleware');
  *                     periode_jours:
  *                       type: integer
  */
-router.get('/observance', authMiddleware, async (req, res, next) => {
-  try {
-    const { jours } = req.query;
-    const score = await observanceService.getScoreObservance(req.patient.id, { jours: parseInt(jours) || 30 });
-    res.json({ success: true, data: score });
-  } catch (error) {
-    next(error);
-  }
-});
+router.get('/observance', authMiddleware, statistiqueController.getScoreObservance);
 
 /**
  * @swagger
@@ -102,14 +94,7 @@ router.get('/observance', authMiddleware, async (req, res, next) => {
  *                     mensuelle:
  *                       type: array
  */
-router.get('/tendances', authMiddleware, async (req, res, next) => {
-  try {
-    const tendances = await observanceService.getTendances(req.patient.id);
-    res.json({ success: true, data: tendances });
-  } catch (error) {
-    next(error);
-  }
-});
+router.get('/tendances', authMiddleware, statistiqueController.getTendances);
 
 /**
  * @swagger
@@ -147,13 +132,6 @@ router.get('/tendances', authMiddleware, async (req, res, next) => {
  *                     patterns_oubli:
  *                       type: object
  */
-router.get('/risque', authMiddleware, async (req, res, next) => {
-  try {
-    const risque = await observanceService.getNiveauRisque(req.patient.id);
-    res.json({ success: true, data: risque });
-  } catch (error) {
-    next(error);
-  }
-});
+router.get('/risque', authMiddleware, statistiqueController.getNiveauRisque);
 
 module.exports = router;

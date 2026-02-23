@@ -48,6 +48,14 @@ e-sante-backend/
 │   ├── HistoriquePrise.js            # Modèle historique des prises
 │   └── Ordonnance.js                 # Modèle ordonnances scannées
 │
+├── controllers/
+│   ├── auth.controller.js            # Contrôleur authentification
+│   ├── patient.controller.js         # Contrôleur profil patient
+│   ├── traitement.controller.js      # Contrôleur traitements (CRUD)
+│   ├── prise.controller.js           # Contrôleur prises médicamenteuses
+│   ├── ordonnance.controller.js      # Contrôleur ordonnances
+│   └── statistique.controller.js     # Contrôleur statistiques et observance
+│
 ├── routes/
 │   ├── index.js                      # Agrégateur de toutes les routes
 │   ├── auth.routes.js                # Routes authentification (register, login, refresh)

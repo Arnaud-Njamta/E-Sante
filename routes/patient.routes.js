@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const patientService = require('../services/patient.service');
+const patientController = require('../controllers/patient.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const { validate, updateProfileSchema, parametresVieSchema } = require('../middlewares/validation.middleware');
 
@@ -25,14 +25,7 @@ const { validate, updateProfileSchema, parametresVieSchema } = require('../middl
  *       401:
  *         description: Non authentifié
  */
-router.get('/profile', authMiddleware, async (req, res, next) => {
-  try {
-    const patient = await patientService.getProfile(req.patient.id);
-    res.json({ success: true, data: patient });
-  } catch (error) {
-    next(error);
-  }
-});
+router.get('/profile', authMiddleware, patientController.getProfile);
 
 /**
  * @swagger
@@ -74,14 +67,7 @@ router.get('/profile', authMiddleware, async (req, res, next) => {
  *       200:
  *         description: Profil mis à jour
  */
-router.put('/profile', authMiddleware, validate(updateProfileSchema), async (req, res, next) => {
-  try {
-    const patient = await patientService.updateProfile(req.patient.id, req.body);
-    res.json({ success: true, data: patient });
-  } catch (error) {
-    next(error);
-  }
-});
+router.put('/profile', authMiddleware, validate(updateProfileSchema), patientController.updateProfile);
 
 /**
  * @swagger
@@ -120,13 +106,6 @@ router.put('/profile', authMiddleware, validate(updateProfileSchema), async (req
  *       200:
  *         description: Paramètres mis à jour
  */
-router.put('/parametres-vie', authMiddleware, validate(parametresVieSchema), async (req, res, next) => {
-  try {
-    const patient = await patientService.updateParametresVie(req.patient.id, req.body);
-    res.json({ success: true, data: patient });
-  } catch (error) {
-    next(error);
-  }
-});
+router.put('/parametres-vie', authMiddleware, validate(parametresVieSchema), patientController.updateParametresVie);
 
 module.exports = router;

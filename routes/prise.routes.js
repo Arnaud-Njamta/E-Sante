@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const priseService = require('../services/prise.service');
+const priseController = require('../controllers/prise.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const { validate, confirmerPriseSchema } = require('../middlewares/validation.middleware');
 
@@ -46,14 +46,7 @@ const { validate, confirmerPriseSchema } = require('../middlewares/validation.mi
  *                         type: string
  *                         enum: [en_attente, pris, oublie, retard, reporte]
  */
-router.get('/aujourd-hui', authMiddleware, async (req, res, next) => {
-  try {
-    const prises = await priseService.getPrisesAujourdhui(req.patient.id);
-    res.json({ success: true, data: prises });
-  } catch (error) {
-    next(error);
-  }
-});
+router.get('/aujourd-hui', authMiddleware, priseController.getPrisesAujourdhui);
 
 /**
  * @swagger
@@ -94,14 +87,7 @@ router.get('/aujourd-hui', authMiddleware, async (req, res, next) => {
  *       404:
  *         description: Prise programmée non trouvée
  */
-router.post('/:id/confirmer', authMiddleware, validate(confirmerPriseSchema), async (req, res, next) => {
-  try {
-    const historique = await priseService.confirmerPrise(req.params.id, req.patient.id, req.body);
-    res.json({ success: true, data: historique });
-  } catch (error) {
-    next(error);
-  }
-});
+router.post('/:id/confirmer', authMiddleware, validate(confirmerPriseSchema), priseController.confirmerPrise);
 
 /**
  * @swagger
@@ -144,13 +130,6 @@ router.post('/:id/confirmer', authMiddleware, validate(confirmerPriseSchema), as
  *       200:
  *         description: Historique paginé des prises
  */
-router.get('/historique', authMiddleware, async (req, res, next) => {
-  try {
-    const historique = await priseService.getHistorique(req.patient.id, req.query);
-    res.json({ success: true, data: historique });
-  } catch (error) {
-    next(error);
-  }
-});
+router.get('/historique', authMiddleware, priseController.getHistorique);
 
 module.exports = router;

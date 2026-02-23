@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const traitementService = require('../services/traitement.service');
+const traitementController = require('../controllers/traitement.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const { validate, traitementSchema } = require('../middlewares/validation.middleware');
 
@@ -59,14 +59,7 @@ const { validate, traitementSchema } = require('../middlewares/validation.middle
  *       201:
  *         description: Traitement créé avec prises programmées
  */
-router.post('/', authMiddleware, validate(traitementSchema), async (req, res, next) => {
-  try {
-    const traitement = await traitementService.create(req.patient.id, req.body, req.patient);
-    res.status(201).json({ success: true, data: traitement });
-  } catch (error) {
-    next(error);
-  }
-});
+router.post('/', authMiddleware, validate(traitementSchema), traitementController.create);
 
 /**
  * @swagger
@@ -80,14 +73,7 @@ router.post('/', authMiddleware, validate(traitementSchema), async (req, res, ne
  *       200:
  *         description: Liste des traitements avec prises programmées
  */
-router.get('/', authMiddleware, async (req, res, next) => {
-  try {
-    const traitements = await traitementService.getAll(req.patient.id);
-    res.json({ success: true, data: traitements });
-  } catch (error) {
-    next(error);
-  }
-});
+router.get('/', authMiddleware, traitementController.getAll);
 
 /**
  * @swagger
@@ -110,14 +96,7 @@ router.get('/', authMiddleware, async (req, res, next) => {
  *       404:
  *         description: Traitement non trouvé
  */
-router.get('/:id', authMiddleware, async (req, res, next) => {
-  try {
-    const traitement = await traitementService.getById(req.params.id, req.patient.id);
-    res.json({ success: true, data: traitement });
-  } catch (error) {
-    next(error);
-  }
-});
+router.get('/:id', authMiddleware, traitementController.getById);
 
 /**
  * @swagger
@@ -155,14 +134,7 @@ router.get('/:id', authMiddleware, async (req, res, next) => {
  *       200:
  *         description: Traitement mis à jour
  */
-router.put('/:id', authMiddleware, async (req, res, next) => {
-  try {
-    const traitement = await traitementService.update(req.params.id, req.patient.id, req.body);
-    res.json({ success: true, data: traitement });
-  } catch (error) {
-    next(error);
-  }
-});
+router.put('/:id', authMiddleware, traitementController.update);
 
 /**
  * @swagger
@@ -195,14 +167,7 @@ router.put('/:id', authMiddleware, async (req, res, next) => {
  *       200:
  *         description: Statut mis à jour
  */
-router.patch('/:id/statut', authMiddleware, async (req, res, next) => {
-  try {
-    const traitement = await traitementService.updateStatut(req.params.id, req.patient.id, req.body.statut);
-    res.json({ success: true, data: traitement });
-  } catch (error) {
-    next(error);
-  }
-});
+router.patch('/:id/statut', authMiddleware, traitementController.updateStatut);
 
 /**
  * @swagger
@@ -223,13 +188,6 @@ router.patch('/:id/statut', authMiddleware, async (req, res, next) => {
  *       200:
  *         description: Traitement supprimé
  */
-router.delete('/:id', authMiddleware, async (req, res, next) => {
-  try {
-    const result = await traitementService.remove(req.params.id, req.patient.id);
-    res.json({ success: true, data: result });
-  } catch (error) {
-    next(error);
-  }
-});
+router.delete('/:id', authMiddleware, traitementController.remove);
 
 module.exports = router;

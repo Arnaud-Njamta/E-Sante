@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const authService = require('../services/auth.service');
+const authController = require('../controllers/auth.controller');
 const { validate, registerSchema, loginSchema } = require('../middlewares/validation.middleware');
 
 /**
@@ -55,14 +55,7 @@ const { validate, registerSchema, loginSchema } = require('../middlewares/valida
  *       409:
  *         description: Email déjà utilisé
  */
-router.post('/register', validate(registerSchema), async (req, res, next) => {
-  try {
-    const result = await authService.register(req.body);
-    res.status(201).json({ success: true, data: result });
-  } catch (error) {
-    next(error);
-  }
-});
+router.post('/register', validate(registerSchema), authController.register);
 
 /**
  * @swagger
@@ -93,14 +86,7 @@ router.post('/register', validate(registerSchema), async (req, res, next) => {
  *       401:
  *         description: Email ou mot de passe incorrect
  */
-router.post('/login', validate(loginSchema), async (req, res, next) => {
-  try {
-    const result = await authService.login(req.body);
-    res.json({ success: true, data: result });
-  } catch (error) {
-    next(error);
-  }
-});
+router.post('/login', validate(loginSchema), authController.login);
 
 /**
  * @swagger
@@ -125,14 +111,6 @@ router.post('/login', validate(loginSchema), async (req, res, next) => {
  *       401:
  *         description: Token invalide
  */
-router.post('/refresh', async (req, res, next) => {
-  try {
-    const { refreshToken } = req.body;
-    const result = await authService.refreshToken(refreshToken);
-    res.json({ success: true, data: result });
-  } catch (error) {
-    next(error);
-  }
-});
+router.post('/refresh', authController.refresh);
 
 module.exports = router;

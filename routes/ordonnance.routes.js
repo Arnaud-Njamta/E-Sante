@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const ordonnanceService = require('../services/ordonnance.service');
+const ordonnanceController = require('../controllers/ordonnance.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 
 // Configuration Multer pour upload des ordonnances
@@ -63,14 +63,7 @@ const upload = multer({
  *       400:
  *         description: Aucun fichier fourni
  */
-router.post('/scan', authMiddleware, upload.single('image'), async (req, res, next) => {
-  try {
-    const ordonnance = await ordonnanceService.scanOrdonnance(req.patient.id, req.file);
-    res.status(201).json({ success: true, data: ordonnance });
-  } catch (error) {
-    next(error);
-  }
-});
+router.post('/scan', authMiddleware, upload.single('image'), ordonnanceController.scanOrdonnance);
 
 /**
  * @swagger
@@ -114,19 +107,7 @@ router.post('/scan', authMiddleware, upload.single('image'), async (req, res, ne
  *       404:
  *         description: Ordonnance non trouvée
  */
-router.post('/:id/valider', authMiddleware, async (req, res, next) => {
-  try {
-    const result = await ordonnanceService.validerOrdonnance(
-      req.params.id,
-      req.patient.id,
-      req.patient,
-      req.body
-    );
-    res.json({ success: true, data: result });
-  } catch (error) {
-    next(error);
-  }
-});
+router.post('/:id/valider', authMiddleware, ordonnanceController.validerOrdonnance);
 
 /**
  * @swagger
@@ -140,13 +121,6 @@ router.post('/:id/valider', authMiddleware, async (req, res, next) => {
  *       200:
  *         description: Liste des ordonnances
  */
-router.get('/', authMiddleware, async (req, res, next) => {
-  try {
-    const ordonnances = await ordonnanceService.getAll(req.patient.id);
-    res.json({ success: true, data: ordonnances });
-  } catch (error) {
-    next(error);
-  }
-});
+router.get('/', authMiddleware, ordonnanceController.getAll);
 
 module.exports = router;

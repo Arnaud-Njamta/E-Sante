@@ -96,6 +96,23 @@ const confirmerPriseSchema = Joi.object({
   date_heure_reelle: Joi.date().iso().optional(),
 });
 
+const forgotPasswordSchema = Joi.object({
+  email: Joi.string().email().required().messages({
+    'string.email': 'Email invalide',
+    'any.required': "L'email est requis",
+  }),
+});
+
+const resetPasswordSchema = Joi.object({
+  token: Joi.string().required().messages({
+    'any.required': 'Le token est requis',
+  }),
+  password: Joi.string().min(8).required().messages({
+    'string.min': 'Le mot de passe doit contenir au moins 8 caractères',
+    'any.required': 'Le mot de passe est requis',
+  }),
+});
+
 module.exports = {
   validate,
   registerSchema,
@@ -104,4 +121,6 @@ module.exports = {
   parametresVieSchema,
   traitementSchema,
   confirmerPriseSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
 };

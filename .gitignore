@@ -1,3 +1,7 @@
 node_modules/
 uploads/
 *.log
+dist/
+.env
+Front/node_modules/
+Front/dist/

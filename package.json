@@ -35,5 +35,14 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kanounou/E-Sante.git"
+  },
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Kanounou/E-Sante/issues"
+  },
+  "homepage": "https://github.com/Kanounou/E-Sante#readme"
 }

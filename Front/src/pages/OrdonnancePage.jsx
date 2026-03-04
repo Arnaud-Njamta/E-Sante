@@ -1,0 +1,278 @@
+import React, { useRef, useState } from 'react';
+import styled from 'styled-components';
+import Card from '../components/ui/Card';
+import Button from '../components/ui/Button';
+import Badge from '../components/ui/Badge';
+import EmptyState from '../components/ui/EmptyState';
+import Spinner from '../components/ui/Spinner';
+import ErrorState from '../components/ui/ErrorState';
+import { useOrdonnances, useScanOrdonnance, useValiderOrdonnance } from '../hooks/useOrdonnances';
+import toast from 'react-hot-toast';
+import {
+  UploadCloud, Image, FileText, Trash2, Eye, ScanLine,
+  FolderOpen, Pill, CalendarDays, CheckCircle,
+} from 'lucide-react';
+
+/* ─── Styles ─── */
+const PageHeader = styled.div`
+  margin-bottom: ${({ theme }) => theme.spacing[6]};
+  animation: fadeIn 0.4s ease both;
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing[3]};
+`;
+
+const TitleIcon = styled.span`
+  width: 40px;
+  height: 40px;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+  svg { width: 20px; height: 20px; }
+`;
+
+const TitleText = styled.div`
+  h1 { font-size: ${({ theme }) => theme.typography.sizes['2xl']}; font-weight: ${({ theme }) => theme.typography.weights.bold}; color: ${({ theme }) => theme.colors.text}; margin: 0 0 2px; }
+  p { font-size: ${({ theme }) => theme.typography.sizes.sm}; color: ${({ theme }) => theme.colors.textSecondary}; margin: 0; }
+`;
+
+const UploadZone = styled.div`
+  border: 2px dashed ${({ theme, $dragging }) => $dragging ? theme.colors.primary[400] : theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.xl};
+  padding: ${({ theme }) => theme.spacing[10]};
+  text-align: center;
+  background: ${({ theme, $dragging }) => $dragging ? theme.colors.primary[50] : theme.colors.neutral[50]};
+  cursor: pointer;
+  transition: all ${({ theme }) => theme.transitions.fast};
+  margin-bottom: ${({ theme }) => theme.spacing[6]};
+  animation: fadeInUp 0.4s ease both;
+  animation-delay: 0.1s;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.primary[400]};
+    background: ${({ theme }) => theme.colors.primary[50]};
+  }
+`;
+
+const UploadIconCircle = styled.div`
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.primary[100]}, ${({ theme }) => theme.colors.primary[200]});
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto ${({ theme }) => theme.spacing[4]};
+  color: ${({ theme }) => theme.colors.primary[500]};
+  svg { width: 28px; height: 28px; }
+`;
+
+const UploadTitle = styled.h3`
+  font-size: ${({ theme }) => theme.typography.sizes.md};
+  font-weight: ${({ theme }) => theme.typography.weights.semibold};
+  color: ${({ theme }) => theme.colors.text};
+  margin-bottom: ${({ theme }) => theme.spacing[1]};
+`;
+
+const UploadDesc = styled.p`
+  font-size: ${({ theme }) => theme.typography.sizes.sm};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  margin-bottom: ${({ theme }) => theme.spacing[3]};
+`;
+
+const Formats = styled.span`
+  font-size: ${({ theme }) => theme.typography.sizes.xs};
+  color: ${({ theme }) => theme.colors.textMuted};
+`;
+
+const SectionTitle = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing[2]};
+  margin-bottom: ${({ theme }) => theme.spacing[4]};
+  h3 { font-size: ${({ theme }) => theme.typography.sizes.md}; font-weight: ${({ theme }) => theme.typography.weights.semibold}; color: ${({ theme }) => theme.colors.text}; margin: 0; }
+  svg { width: 20px; height: 20px; color: ${({ theme }) => theme.colors.primary[500]}; }
+`;
+
+const OrdoList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing[3]};
+`;
+
+const OrdoCard = styled(Card)`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing[4]};
+  animation-delay: ${({ $delay }) => $delay};
+`;
+
+const OrdoIcon = styled.div`
+  width: 48px;
+  height: 48px;
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ theme }) => theme.colors.warning[50]};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${({ theme }) => theme.colors.warning[600]};
+  flex-shrink: 0;
+  svg { width: 22px; height: 22px; }
+`;
+
+const OrdoInfo = styled.div`
+  flex: 1;
+  min-width: 0;
+  h4 { font-size: ${({ theme }) => theme.typography.sizes.sm}; font-weight: ${({ theme }) => theme.typography.weights.semibold}; color: ${({ theme }) => theme.colors.text}; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  p { font-size: ${({ theme }) => theme.typography.sizes.xs}; color: ${({ theme }) => theme.colors.textMuted}; margin: 2px 0 0; display: flex; align-items: center; gap: 4px; }
+  p svg { width: 12px; height: 12px; }
+`;
+
+const MedsList = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: ${({ theme }) => theme.spacing[1]};
+`;
+
+const OrdoActions = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing[2]};
+  flex-shrink: 0;
+`;
+
+/* ─── Helpers ─── */
+function getStatutInfo(statut) {
+  switch (statut) {
+    case 'validee': case 'traitee': return { label: 'Traitée', color: 'success' };
+    case 'en_attente': return { label: 'En attente', color: 'warning' };
+    case 'rejetee': return { label: 'Rejetée', color: 'danger' };
+    default: return { label: statut || 'En attente', color: 'warning' };
+  }
+}
+
+/* ─── Component ─── */
+export default function OrdonnancePage() {
+  const fileInputRef = useRef(null);
+  const [dragging, setDragging] = useState(false);
+
+  const { data: ordonnances, isLoading, error } = useOrdonnances();
+  const scanMutation = useScanOrdonnance();
+  const validerMutation = useValiderOrdonnance();
+
+  const handleValider = (ordoId) => {
+    validerMutation.mutate({ id: ordoId, corrections: [] }, {
+      onSuccess: () => toast.success('Ordonnance validée — traitements créés !'),
+      onError: (err) => toast.error(err.response?.data?.message || 'Erreur lors de la validation'),
+    });
+  };
+
+  const allOrdonnances = Array.isArray(ordonnances) ? ordonnances : [];
+
+  const handleUpload = (files) => {
+    if (files && files.length > 0) {
+      scanMutation.mutate(files[0], {
+        onSuccess: (data) => {
+          toast.success(`Ordonnance "${files[0].name}" scannée avec succès`);
+        },
+        onError: (err) => {
+          toast.error(err.response?.data?.message || 'Erreur lors du scan de l\'ordonnance');
+        },
+      });
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragging(false);
+    handleUpload(e.dataTransfer.files);
+  };
+
+  if (isLoading) return <Spinner text="Chargement des ordonnances…" />;
+  if (error) return <ErrorState title="Erreur" message="Impossible de charger les ordonnances." onRetry={() => window.location.reload()} />;
+
+  return (
+    <>
+      <PageHeader>
+        <TitleIcon><ScanLine /></TitleIcon>
+        <TitleText>
+          <h1>Ordonnances</h1>
+          <p>Scannez et gérez vos ordonnances médicales</p>
+        </TitleText>
+      </PageHeader>
+
+      <UploadZone
+        $dragging={dragging}
+        onClick={() => fileInputRef.current?.click()}
+        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={handleDrop}
+      >
+        <input ref={fileInputRef} type="file" accept="image/*,.pdf" hidden onChange={(e) => handleUpload(e.target.files)} />
+        <UploadIconCircle><UploadCloud /></UploadIconCircle>
+        <UploadTitle>{scanMutation.isPending ? 'Scan en cours…' : 'Glissez votre ordonnance ici'}</UploadTitle>
+        <UploadDesc>ou cliquez pour parcourir vos fichiers</UploadDesc>
+        <Formats>Formats acceptés : JPG, PNG, PDF — Max 10 Mo</Formats>
+      </UploadZone>
+
+      <SectionTitle>
+        <FolderOpen />
+        <h3>Ordonnances récentes</h3>
+      </SectionTitle>
+
+      {allOrdonnances.length === 0 ? (
+        <EmptyState
+          icon={FileText}
+          title="Aucune ordonnance"
+          description="Scannez ou uploadez votre première ordonnance pour commencer."
+        />
+      ) : (
+        <OrdoList>
+          {allOrdonnances.map((ordo, index) => {
+            const statutInfo = getStatutInfo(ordo.statut);
+            return (
+              <OrdoCard key={ordo.id} hoverable delay={`${0.05 * (index + 1)}s`}>
+                <OrdoIcon><Image /></OrdoIcon>
+                <OrdoInfo>
+                  <h4>{ordo.nom_fichier || ordo.filename || `Ordonnance #${ordo.id}`}</h4>
+                  <p>
+                    <CalendarDays />
+                    Importée le {new Date(ordo.created_at || ordo.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </p>
+                  {ordo.medicaments_extraits && ordo.medicaments_extraits.length > 0 && (
+                    <MedsList>
+                      {ordo.medicaments_extraits.map((m, i) => (
+                        <Badge key={i} color="primary" size="sm">{m.nom || m}</Badge>
+                      ))}
+                    </MedsList>
+                  )}
+                </OrdoInfo>
+                <Badge color={statutInfo.color} dot>
+                  {statutInfo.label}
+                </Badge>
+                <OrdoActions>
+                  {(ordo.statut === 'en_attente' || !ordo.statut) && (
+                    <Button
+                      size="sm"
+                      variant="success"
+                      icon={CheckCircle}
+                      onClick={() => handleValider(ordo.id)}
+                      disabled={validerMutation.isPending}
+                    >
+                      Valider
+                    </Button>
+                  )}
+                  <Button variant="ghost" size="sm" icon={Eye} />
+                </OrdoActions>
+              </OrdoCard>
+            );
+          })}
+        </OrdoList>
+      )}
+    </>
+  );
+}

@@ -16,6 +16,10 @@ import PrisesPage from './pages/PrisesPage';
 import OrdonnancePage from './pages/OrdonnancePage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import ProfilePage from './pages/ProfilePage';
+import SantePage from './pages/SantePage';
+import EtablissementDetailPage from './pages/EtablissementDetailPage';
+import MedecinDetailPage from './pages/MedecinDetailPage';
+import PharmacieChatPage from './pages/PharmacieChatPage';
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -51,6 +55,11 @@ export default function App() {
                                 <Route path="/prises" element={<PrisesPage />} />
                                 <Route path="/ordonnances" element={<OrdonnancePage />} />
                                 <Route path="/analytics" element={<AnalyticsPage />} />
+                                <Route path="/sante" element={<SantePage />} />
+                                <Route path="/sante/etablissement/:id" element={<EtablissementDetailPage />} />
+                                <Route path="/sante/medecin/:id" element={<MedecinDetailPage />} />
+                                <Route path="/pharmacie/chat" element={<PharmacieChatPage />} />
+                                <Route path="/pharmacie/chat/:conversationId" element={<PharmacieChatPage />} />
                                 <Route path="/profil" element={<ProfilePage />} />
                             </Route>
 

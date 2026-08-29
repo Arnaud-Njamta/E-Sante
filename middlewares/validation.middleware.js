@@ -113,6 +113,22 @@ const resetPasswordSchema = Joi.object({
   }),
 });
 
+const avisSchema = Joi.object({
+  cible_type: Joi.string().valid('etablissement', 'medecin').required(),
+  cible_id: Joi.string().uuid().required(),
+  note: Joi.number().integer().min(1).max(5).required(),
+  commentaire: Joi.string().max(1000).optional().allow(''),
+});
+
+const messageSchema = Joi.object({
+  contenu: Joi.string().min(1).max(2000).required(),
+});
+
+const conversationSchema = Joi.object({
+  sujet: Joi.string().max(255).optional(),
+  message_initial: Joi.string().max(2000).optional(),
+});
+
 module.exports = {
   validate,
   registerSchema,
@@ -123,4 +139,7 @@ module.exports = {
   confirmerPriseSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  avisSchema,
+  messageSchema,
+  conversationSchema,
 };

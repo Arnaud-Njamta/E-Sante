@@ -13,6 +13,8 @@ import {
   LogOut,
   ChevronLeft,
   Activity,
+  Building2,
+  MessageCircle,
 } from 'lucide-react';
 
 const SidebarContainer = styled.aside`
@@ -228,6 +230,8 @@ const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Tableau de bord', section: 'principal' },
   { to: '/medications', icon: Heart, label: 'Médicaments', section: 'principal' },
   { to: '/prises', icon: Clock, label: 'Prises du jour', section: 'principal' },
+  { to: '/sante', icon: Building2, label: 'Annuaire Santé', section: 'sante' },
+  { to: '/pharmacie/chat', icon: MessageCircle, label: 'Pharmacie en ligne', section: 'sante' },
   { to: '/ordonnances', icon: FileText, label: 'Ordonnances', section: 'outils' },
   { to: '/analytics', icon: BarChart3, label: 'Statistiques', section: 'outils' },
   { to: '/profil', icon: User, label: 'Mon profil', section: 'compte' },
@@ -238,6 +242,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
 
   const sections = {
     principal: 'Principal',
+    sante: 'Santé & Pharmacies',
     outils: 'Outils',
     compte: 'Compte',
   };

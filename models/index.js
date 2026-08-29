@@ -4,6 +4,12 @@ const Traitement = require('./Traitement');
 const PriseProgrammee = require('./PriseProgrammee');
 const HistoriquePrise = require('./HistoriquePrise');
 const Ordonnance = require('./Ordonnance');
+const Etablissement = require('./Etablissement');
+const ServiceEtablissement = require('./ServiceEtablissement');
+const Medecin = require('./Medecin');
+const Avis = require('./Avis');
+const Conversation = require('./Conversation');
+const Message = require('./Message');
 
 // ==================== ASSOCIATIONS ====================
 
@@ -27,6 +33,30 @@ HistoriquePrise.belongsTo(Patient, { foreignKey: 'patient_id', as: 'patient' });
 Patient.hasMany(Ordonnance, { foreignKey: 'patient_id', as: 'ordonnances' });
 Ordonnance.belongsTo(Patient, { foreignKey: 'patient_id', as: 'patient' });
 
+// Etablissement -> Services (1:N)
+Etablissement.hasMany(ServiceEtablissement, { foreignKey: 'etablissement_id', as: 'services' });
+ServiceEtablissement.belongsTo(Etablissement, { foreignKey: 'etablissement_id', as: 'etablissement' });
+
+// Etablissement -> Medecins (1:N)
+Etablissement.hasMany(Medecin, { foreignKey: 'etablissement_id', as: 'medecins' });
+Medecin.belongsTo(Etablissement, { foreignKey: 'etablissement_id', as: 'etablissement' });
+
+// Patient -> Avis (1:N)
+Patient.hasMany(Avis, { foreignKey: 'patient_id', as: 'avis' });
+Avis.belongsTo(Patient, { foreignKey: 'patient_id', as: 'patient' });
+
+// Patient -> Conversations (1:N)
+Patient.hasMany(Conversation, { foreignKey: 'patient_id', as: 'conversations' });
+Conversation.belongsTo(Patient, { foreignKey: 'patient_id', as: 'patient' });
+
+// Pharmacie -> Conversations (1:N)
+Etablissement.hasMany(Conversation, { foreignKey: 'pharmacie_id', as: 'conversations' });
+Conversation.belongsTo(Etablissement, { foreignKey: 'pharmacie_id', as: 'pharmacie' });
+
+// Conversation -> Messages (1:N)
+Conversation.hasMany(Message, { foreignKey: 'conversation_id', as: 'messages' });
+Message.belongsTo(Conversation, { foreignKey: 'conversation_id', as: 'conversation' });
+
 module.exports = {
   sequelize,
   Patient,
@@ -34,4 +64,10 @@ module.exports = {
   PriseProgrammee,
   HistoriquePrise,
   Ordonnance,
+  Etablissement,
+  ServiceEtablissement,
+  Medecin,
+  Avis,
+  Conversation,
+  Message,
 };

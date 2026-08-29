@@ -41,6 +41,28 @@ const JOURS_SEMAINE = [
   'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche',
 ];
 
+// Types d'établissements de santé
+const TYPE_ETABLISSEMENT = {
+  PHARMACIE: 'pharmacie',
+  HOPITAL: 'hopital',
+  CLINIQUE: 'clinique',
+};
+
+// Note par défaut (5 étoiles) avant les premiers avis
+const NOTE_DEFAUT = 5.0;
+
+// Types de cibles pour les avis
+const TYPE_CIBLE_AVIS = {
+  ETABLISSEMENT: 'etablissement',
+  MEDECIN: 'medecin',
+};
+
+// Statuts de conversation pharmacie
+const STATUT_CONVERSATION = {
+  OUVERTE: 'ouverte',
+  FERMEE: 'fermee',
+};
+
 module.exports = {
   STATUT_TRAITEMENT,
   STATUT_PRISE,
@@ -49,4 +71,8 @@ module.exports = {
   SEUIL_RETARD_MINUTES,
   FORMES_MEDICAMENT,
   JOURS_SEMAINE,
+  TYPE_ETABLISSEMENT,
+  NOTE_DEFAUT,
+  TYPE_CIBLE_AVIS,
+  STATUT_CONVERSATION,
 };

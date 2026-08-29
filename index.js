@@ -10,6 +10,7 @@ const swaggerSpec = require('./config/swagger');
 const { sequelize } = require('./models');
 const routes = require('./routes');
 const errorMiddleware = require('./middlewares/error.middleware');
+const { seedDemoData } = require('./services/seed.service');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -84,6 +85,8 @@ const start = async () => {
     // Synchronisation des modèles (créer les tables si elles n'existent pas)
     await sequelize.sync({ alter: process.env.NODE_ENV === 'development' });
     console.log('Tables synchronisées.');
+
+    await seedDemoData();
 
     // Démarrage du serveur
     app.listen(PORT, () => {

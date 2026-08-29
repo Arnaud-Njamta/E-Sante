@@ -31,6 +31,25 @@ const ENDPOINTS = {
         tendances: '/statistiques/tendances',
         risque: '/statistiques/risque',
     },
+    etablissements: {
+        base: '/etablissements',
+        byId: (id) => `/etablissements/${id}`,
+        horaires: (id) => `/etablissements/${id}/horaires`,
+    },
+    medecins: {
+        base: '/medecins',
+        byId: (id) => `/medecins/${id}`,
+    },
+    avis: {
+        base: '/avis',
+    },
+    messagerie: {
+        pharmacies: '/messagerie/pharmacies',
+        conversations: '/messagerie/conversations',
+        demarrer: (pharmacieId) => `/messagerie/pharmacies/${pharmacieId}/conversations`,
+        conversation: (id) => `/messagerie/conversations/${id}`,
+        message: (id) => `/messagerie/conversations/${id}/messages`,
+    },
 };
 
 export default ENDPOINTS;

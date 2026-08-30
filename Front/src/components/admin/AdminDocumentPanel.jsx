@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { ExternalLink, FileText } from 'lucide-react';
-import { authenticatedFileUrl } from '../utils/fileUrl';
+import { authenticatedFileUrl } from '../../utils/fileUrl';
 
 const DOC_LABELS = {
   diplome: 'Diplôme',

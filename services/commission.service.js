@@ -137,18 +137,20 @@ const resumeAdmin = async () => {
 
 const listerTransactionsAdmin = async ({ page = 1, limit = 30, statut_paiement, statut_reversement } = {}) => {
   const { Op } = require('sequelize');
+  const safePage = Math.max(1, parseInt(page, 10) || 1);
+  const safeLimit = Math.min(100, Math.max(1, parseInt(limit, 10) || 30));
   const where = { statut_paiement: { [Op.ne]: 'annule' } };
   if (statut_paiement) where.statut_paiement = statut_paiement;
   if (statut_reversement) where.statut_reversement = statut_reversement;
 
-  const offset = (page - 1) * limit;
+  const offset = (safePage - 1) * safeLimit;
   const { rows, count } = await Transaction.findAndCountAll({
     where,
     include: [
       { model: Patient, as: 'patient', attributes: ['id', 'nom', 'prenom', 'email'] },
     ],
     order: [['createdAt', 'DESC']],
-    limit,
+    limit: safeLimit,
     offset,
   });
 
@@ -165,7 +167,7 @@ const listerTransactionsAdmin = async ({ page = 1, limit = 30, statut_paiement, 
     };
   }));
 
-  return { transactions, pagination: { total: count, page, limit } };
+  return { transactions, pagination: { total: count, page: safePage, limit: safeLimit } };
 };
 
 module.exports = {

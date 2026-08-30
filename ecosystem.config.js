@@ -3,6 +3,7 @@ module.exports = {
     name: 'djamsante-api',
     script: 'index.js',
     node_args: '--use-system-ca',
+    exec_mode: 'fork',
     instances: 1,
     autorestart: true,
     watch: false,

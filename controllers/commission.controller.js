@@ -45,7 +45,15 @@ const resumeAdmin = async (req, res, next) => {
 
 const listerTransactionsAdmin = async (req, res, next) => {
   try {
-    const data = await commissionService.listerTransactionsAdmin(req.query);
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 30));
+    const { statut_paiement, statut_reversement } = req.query;
+    const data = await commissionService.listerTransactionsAdmin({
+      page,
+      limit,
+      statut_paiement,
+      statut_reversement,
+    });
     res.json({ success: true, data });
   } catch (error) {
     next(error);

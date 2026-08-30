@@ -7,6 +7,21 @@ const AuthContext = createContext(null);
 
 const ROLE_KEY = 'esante_user_role';
 
+const readRoleFromToken = (token) => {
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+        return payload.role || null;
+    } catch {
+        return null;
+    }
+};
+
+const clearStoredAuth = () => {
+    localStorage.removeItem('esante_access_token');
+    localStorage.removeItem('esante_refresh_token');
+    localStorage.removeItem(ROLE_KEY);
+};
+
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [role, setRole] = useState(ROLES.PATIENT);
@@ -14,26 +29,28 @@ export function AuthProvider({ children }) {
 
     useEffect(() => {
         const token = localStorage.getItem('esante_access_token');
-        const savedRole = localStorage.getItem(ROLE_KEY);
-        if (savedRole) setRole(savedRole);
         if (token) {
+            const tokenRole = readRoleFromToken(token);
+            if (tokenRole) setRole(tokenRole);
             fetchProfile();
         } else {
+            clearStoredAuth();
             setLoading(false);
         }
     }, []);
 
     const fetchProfile = async () => {
         try {
+            const token = localStorage.getItem('esante_access_token');
+            const tokenRole = token ? readRoleFromToken(token) : null;
             const { data } = await client.get(ENDPOINTS.auth.me);
             const result = data.data || data;
+            const resolvedRole = result.role || tokenRole || ROLES.PATIENT;
             setUser(result.user);
-            setRole(result.role || ROLES.PATIENT);
-            localStorage.setItem(ROLE_KEY, result.role || ROLES.PATIENT);
+            setRole(resolvedRole);
+            localStorage.setItem(ROLE_KEY, resolvedRole);
         } catch {
-            localStorage.removeItem('esante_access_token');
-            localStorage.removeItem('esante_refresh_token');
-            localStorage.removeItem(ROLE_KEY);
+            clearStoredAuth();
             setUser(null);
             setRole(ROLES.PATIENT);
         } finally {
@@ -55,6 +72,9 @@ export function AuthProvider({ children }) {
     }, []);
 
     const login = useCallback(async (email, password) => {
+        clearStoredAuth();
+        setUser(null);
+        setRole(ROLES.PATIENT);
         const { data } = await client.post(ENDPOINTS.auth.login, { email, password });
         const result = data.data || data;
         return applyAuthResult(result);
@@ -67,9 +87,7 @@ export function AuthProvider({ children }) {
     }, [applyAuthResult]);
 
     const logout = useCallback(() => {
-        localStorage.removeItem('esante_access_token');
-        localStorage.removeItem('esante_refresh_token');
-        localStorage.removeItem(ROLE_KEY);
+        clearStoredAuth();
         setUser(null);
         setRole(ROLES.PATIENT);
     }, []);

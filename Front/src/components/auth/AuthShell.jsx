@@ -76,26 +76,23 @@ const VisualBody = styled.div`
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 28px 44px 24px 28px;
+  justify-content: flex-end;
+  padding: 28px 44px 32px 28px;
 
   @media (max-width: 960px) {
-    padding: 24px 24px 20px 20px;
+    padding: 24px 24px 28px 20px;
   }
 `;
 
-const TitleArea = styled.div`
-  flex: 1;
-  display: flex;
-  align-items: flex-start;
-  max-width: min(440px, 52%);
-  padding-top: clamp(72px, 16vh, 128px);
-  margin-left: -4px;
+const BottomBlock = styled.div`
+  width: 100%;
+  max-width: min(460px, 58%);
 `;
 
 const HeroTitle = styled.h1`
-  margin: 0;
+  margin: 0 0 18px;
   font-family: ${SERIF};
-  font-size: clamp(2rem, 3.8vw, 3.15rem);
+  font-size: clamp(1.85rem, 3.2vw, 2.85rem);
   font-weight: 400;
   line-height: 1.12;
   letter-spacing: -0.01em;
@@ -103,14 +100,10 @@ const HeroTitle = styled.h1`
   text-shadow: 0 2px 24px rgba(0, 0, 0, 0.35);
 `;
 
-const BottomBlock = styled.div`
-  width: 100%;
-  padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.22);
-`;
-
 const HeroSub = styled.p`
   margin: 0 0 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
   font-size: 0.92rem;
   font-weight: 400;
   line-height: 1.55;
@@ -414,11 +407,8 @@ export default function AuthShell({ children, wide = false }) {
         <FlagBar />
         <VisualShade />
         <VisualBody>
-          <TitleArea>
-            <HeroTitle>{FEMINICIDE_BANNER.title}</HeroTitle>
-          </TitleArea>
-
           <BottomBlock>
+            <HeroTitle>{FEMINICIDE_BANNER.title}</HeroTitle>
             <HeroSub>
               Vous n&apos;êtes pas seule. Une aide est disponible à tout moment.
             </HeroSub>

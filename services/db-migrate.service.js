@@ -121,6 +121,14 @@ const runPendingMigrations = async () => {
   const [auditTables] = await sequelize.query(
     "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'admin_audit_logs'",
   );
+  if (auditTables.length > 0) {
+    if (await columnExists('admin_audit_logs', 'createdAt') && !(await columnExists('admin_audit_logs', 'created_at'))) {
+      await sequelize.query(
+        'ALTER TABLE `admin_audit_logs` CHANGE COLUMN `createdAt` `created_at` DATETIME NOT NULL',
+      );
+      console.log('Migration: admin_audit_logs.createdAt renommé en created_at.');
+    }
+  }
   if (auditTables.length === 0) {
     await sequelize.query(`
       CREATE TABLE \`admin_audit_logs\` (
@@ -133,12 +141,12 @@ const runPendingMigrations = async () => {
         \`cible_id\` CHAR(36) NULL,
         \`details\` JSON NULL,
         \`ip\` VARCHAR(45) NULL,
-        \`createdAt\` DATETIME NOT NULL,
+        \`created_at\` DATETIME NOT NULL,
         PRIMARY KEY (\`id\`),
         INDEX \`admin_audit_logs_categorie\` (\`categorie\`),
         INDEX \`admin_audit_logs_action\` (\`action\`),
         INDEX \`admin_audit_logs_cible\` (\`cible_type\`, \`cible_id\`),
-        INDEX \`admin_audit_logs_created\` (\`createdAt\`)
+        INDEX \`admin_audit_logs_created\` (\`created_at\`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
     console.log('Migration: table admin_audit_logs créée.');

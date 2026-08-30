@@ -42,12 +42,6 @@ const AdminAuditLog = sequelize.define('AdminAuditLog', {
 }, {
   tableName: 'admin_audit_logs',
   updatedAt: false,
-  indexes: [
-    { fields: ['categorie'] },
-    { fields: ['action'] },
-    { fields: ['cible_type', 'cible_id'] },
-    { fields: ['createdAt'] },
-  ],
 });
 
 module.exports = AdminAuditLog;

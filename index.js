@@ -204,15 +204,13 @@ const start = async () => {
 
     const syncOptions = process.env.DB_SYNC_ALTER === 'true' ? { alter: true } : {};
 
-    await sequelize.sync(syncOptions);
-
-    console.log('Tables synchronisées.');
-
-
-
     const { runPendingMigrations } = require('./services/db-migrate.service');
 
     await runPendingMigrations();
+
+    await sequelize.sync(syncOptions);
+
+    console.log('Tables synchronisées.');
 
 
 

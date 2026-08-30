@@ -223,9 +223,28 @@ export const FieldInput = styled.input`
   ${({ $error }) => $error && `border-bottom-color: ${CAMEROON_COLORS.red};`}
 `;
 
+export const SelectWrap = styled.div`
+  position: relative;
+  width: 100%;
+
+  &::after {
+    content: '';
+    position: absolute;
+    right: 2px;
+    bottom: 18px;
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid ${INK};
+    border-bottom: 2px solid ${INK};
+    transform: rotate(45deg);
+    pointer-events: none;
+    opacity: 0.7;
+  }
+`;
+
 export const FieldSelect = styled.select`
   width: 100%;
-  padding: 14px 0 12px;
+  padding: 14px 28px 12px 0;
   font-family: ${SANS};
   font-size: 1rem;
   font-weight: 500;
@@ -235,8 +254,65 @@ export const FieldSelect = styled.select`
   border-bottom: 1.5px solid ${LINE};
   border-radius: 0;
   cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
 
   &:focus { outline: none; border-bottom-color: ${DEEP}; }
+`;
+
+export const OperateurGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const OperateurOption = styled.button`
+  padding: 14px 12px;
+  text-align: center;
+  cursor: pointer;
+  font-family: ${SANS};
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.35;
+  background: ${({ $active }) => ($active ? INK : 'transparent')};
+  color: ${({ $active }) => ($active ? '#fff' : INK)};
+  border: 1.5px solid ${({ $active }) => ($active ? INK : LINE)};
+  border-radius: 2px;
+  transition: all 0.15s ease;
+
+  &:hover {
+    border-color: ${INK};
+  }
+`;
+
+export const AuthSecondary = styled.button`
+  padding: 12px 16px;
+  font-family: ${SANS};
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: ${INK};
+  background: transparent;
+  border: 1.5px solid ${LINE};
+  border-radius: 2px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) { border-color: ${INK}; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+`;
+
+export const VerifiedBadge = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: ${DEEP};
 `;
 
 export const FieldError = styled.span`

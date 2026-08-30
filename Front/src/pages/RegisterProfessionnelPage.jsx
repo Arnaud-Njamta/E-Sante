@@ -7,8 +7,8 @@ import { getBranding } from '../config/branding';
 import toast from 'react-hot-toast';
 import AuthShell, {
   Wordmark, SectionTitle, SectionHint, AuthForm, Field, FieldLabel,
-  FieldInput, FieldSelect, AuthSubmit, Footnotes, Notice, SubSection,
-  TypeGrid, TypeCard, FormGrid, DocZone,
+  FieldInput, FieldSelect, SelectWrap, AuthSubmit, Footnotes, Notice, SubSection,
+  TypeGrid, TypeCard, FormGrid, DocZone, OperateurGrid, OperateurOption,
 } from '../components/auth/AuthShell';
 
 const SuccessWrap = styled.div`
@@ -206,9 +206,11 @@ export default function RegisterProfessionnelPage() {
           </Field>
           <Field>
             <FieldLabel>Région</FieldLabel>
-            <FieldSelect value={form.region} onChange={set('region')}>
-              {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
-            </FieldSelect>
+            <SelectWrap>
+              <FieldSelect value={form.region} onChange={set('region')}>
+                {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
+              </FieldSelect>
+            </SelectWrap>
           </Field>
         </FormGrid>
 
@@ -217,11 +219,20 @@ export default function RegisterProfessionnelPage() {
           {docsRequis.note_paiement || 'Obligatoire pour recevoir les paiements patients sur DjamSanté.'}
         </Notice>
         <FormGrid>
-          <Field>
-            <FieldLabel>Opérateur</FieldLabel>
-            <FieldSelect value={form.operateur_mobile} onChange={set('operateur_mobile')} required>
-              {operateurs.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
-            </FieldSelect>
+          <Field className="full">
+            <FieldLabel>Opérateur Mobile Money</FieldLabel>
+            <OperateurGrid>
+              {operateurs.map((o) => (
+                <OperateurOption
+                  key={o.id}
+                  type="button"
+                  $active={form.operateur_mobile === o.id}
+                  onClick={() => setForm({ ...form, operateur_mobile: o.id })}
+                >
+                  {o.label}
+                </OperateurOption>
+              ))}
+            </OperateurGrid>
           </Field>
           <Field>
             <FieldLabel>Numéro Mobile Money</FieldLabel>

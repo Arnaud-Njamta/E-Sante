@@ -1,10 +1,18 @@
 import React from 'react';
 import styled from 'styled-components';
-import { Phone } from 'lucide-react';
-import { CAMEROON_COLORS } from '../../config/cameroonHealth';
+import { Phone, Shield, Heart, Calendar, Newspaper, ScanLine } from 'lucide-react';
+import { CAMEROON_COLORS, FEMINICIDE_BANNER } from '../../config/cameroonHealth';
+import { getBranding } from '../../config/branding';
 import {
   SANS, SERIF, HERO_IMAGE, INK, PAPER, MUTED, LINE, DEEP,
 } from './authTheme';
+
+const FEATURES = [
+  { icon: Heart, text: 'Suivi de vos médicaments' },
+  { icon: Calendar, text: 'Prendre rendez-vous en ligne' },
+  { icon: Newspaper, text: 'Fil actualités santé' },
+  { icon: ScanLine, text: 'Scanner vos ordonnances' },
+];
 
 export {
   SANS, SERIF, INK, PAPER, MUTED, LINE, DEEP,
@@ -50,10 +58,10 @@ const VisualShade = styled.div`
   position: absolute;
   inset: 0;
   background: linear-gradient(
-    180deg,
-    rgba(0, 0, 0, 0.05) 0%,
-    rgba(0, 0, 0, 0.15) 55%,
-    rgba(0, 0, 0, 0.72) 100%
+    165deg,
+    rgba(0, 0, 0, 0.35) 0%,
+    rgba(0, 0, 0, 0.5) 45%,
+    rgba(11, 61, 48, 0.92) 100%
   );
 `;
 
@@ -75,44 +83,119 @@ const VisualBody = styled.div`
   min-height: inherit;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  padding: 48px 56px 52px;
-  gap: 20px;
+  justify-content: center;
+  padding: 48px 52px 44px;
+  gap: 36px;
 
   @media (max-width: 960px) {
     padding: 28px 24px 32px;
+    gap: 20px;
   }
 `;
 
-const VisualLead = styled.p`
-  margin: 0;
-  max-width: 38ch;
-  font-size: 0.95rem;
-  line-height: 1.6;
-  color: rgba(255, 255, 255, 0.9);
-  font-weight: 500;
+const AwarenessBlock = styled.div`
+  background: rgba(120, 10, 24, 0.82);
+  backdrop-filter: blur(16px);
+  border-radius: 16px;
+  padding: 28px 30px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 `;
 
-const EmergencyStrip = styled.div`
+const JournalKicker = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: ${CAMEROON_COLORS.yellow};
+  margin-bottom: 12px;
+`;
+
+const JournalHeadline = styled.h2`
+  margin: 0 0 10px;
+  font-family: ${SERIF};
+  font-size: clamp(1.75rem, 3vw, 2.6rem);
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: #fff;
+`;
+
+const JournalSubhead = styled.p`
+  margin: 0 0 18px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.88);
+  line-height: 1.5;
+`;
+
+const HelplineRow = styled.div`
   display: flex;
   flex-wrap: wrap;
+  gap: 8px;
+`;
+
+const HelplinePill = styled.span`
+  display: inline-flex;
   align-items: center;
-  gap: 10px 18px;
-  padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  gap: 6px;
+  padding: 7px 13px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 100px;
   font-size: 0.82rem;
-  color: rgba(255, 255, 255, 0.92);
+  font-weight: 700;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+`;
 
-  strong {
-    font-weight: 700;
-    color: ${CAMEROON_COLORS.yellow};
-  }
+const BrandBlock = styled.div`
+  padding-top: 4px;
+`;
 
-  span {
-    display: inline-flex;
+const BrandTitle = styled.h1`
+  margin: 0 0 6px;
+  font-family: ${SERIF};
+  font-size: 2rem;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  color: #fff;
+`;
+
+const BrandDesc = styled.p`
+  margin: 0 0 22px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  opacity: 0.88;
+  line-height: 1.6;
+  max-width: 400px;
+  color: rgba(255, 255, 255, 0.9);
+`;
+
+const FeatureList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+const FeatureItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.95);
+
+  span.icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.14);
+    display: flex;
     align-items: center;
-    gap: 6px;
-    font-weight: 600;
+    justify-content: center;
+    flex-shrink: 0;
   }
 `;
 
@@ -387,32 +470,53 @@ const MobileAlert = styled.div`
   }
 `;
 
-export default function AuthShell({
-  children,
-  wide = false,
-  visualLead = 'Vous n\u2019êtes pas seule. Une aide est disponible à tout moment.',
-  mobileAlertTitle = 'NON au féminicide',
-}) {
+export default function AuthShell({ children, wide = false }) {
+  const branding = getBranding('patient');
+
   return (
     <Shell>
       <Visual>
         <FlagBar />
         <VisualShade />
         <VisualBody>
-          <VisualLead>{visualLead}</VisualLead>
-          <EmergencyStrip>
-            <span><Phone size={14} /> Urgence <strong>117</strong></span>
-            <span><Phone size={14} /> <strong>112</strong></span>
-            <span><Phone size={14} /> <strong>1515</strong></span>
-          </EmergencyStrip>
+          <AwarenessBlock>
+            <JournalKicker>
+              <Shield size={13} />
+              Cameroun — {FEMINICIDE_BANNER.subtitle}
+            </JournalKicker>
+            <JournalHeadline>{FEMINICIDE_BANNER.title}</JournalHeadline>
+            <JournalSubhead>
+              Vous n&apos;êtes pas seule — de l&apos;aide est disponible, 24h/24.
+            </JournalSubhead>
+            <HelplineRow>
+              <HelplinePill><Phone size={13} /> 117</HelplinePill>
+              <HelplinePill><Phone size={13} /> 112</HelplinePill>
+              <HelplinePill><Phone size={13} /> 1515</HelplinePill>
+            </HelplineRow>
+          </AwarenessBlock>
+
+          <BrandBlock>
+            <BrandTitle>{branding.appName}</BrandTitle>
+            <BrandDesc>
+              Plateforme santé numérique camerounaise — patients, médecins, pharmacies, hôpitaux et cliniques.
+            </BrandDesc>
+            <FeatureList>
+              {FEATURES.map((f) => (
+                <FeatureItem key={f.text}>
+                  <span className="icon"><f.icon size={16} /></span>
+                  {f.text}
+                </FeatureItem>
+              ))}
+            </FeatureList>
+          </BrandBlock>
         </VisualBody>
       </Visual>
 
       <Auth>
         <AuthInner $wide={wide}>
           <MobileAlert>
-            <strong>{mobileAlertTitle}</strong>
-            Urgence : 117 · 112 · 1515
+            <strong>{FEMINICIDE_BANNER.title}</strong>
+            En danger : <strong>117</strong> · <strong>112</strong> · <strong>1515</strong>
           </MobileAlert>
           {children}
         </AuthInner>

@@ -98,10 +98,7 @@ export default function RegisterProfessionnelPage() {
 
   if (success) {
     return (
-      <AuthShell
-        wide
-        visualLead="Votre demande a été transmise à l'équipe de validation MINSANTE."
-      >
+      <AuthShell wide>
         <SuccessWrap>
           <CheckCircle size={48} color="#0B3D30" strokeWidth={1.5} />
           <h2>Demande enregistrée</h2>
@@ -131,10 +128,7 @@ export default function RegisterProfessionnelPage() {
   ];
 
   return (
-    <AuthShell
-      wide
-      visualLead="Rejoignez le réseau santé numérique camerounais — validation MINSANTE sous 72 h."
-    >
+    <AuthShell wide>
       <Wordmark>
         <h2>{branding.appName}</h2>
         <p>Inscription professionnelle</p>

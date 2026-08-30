@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useObservanceStats, useRisques, useTendances } from '../hooks/useStats';
 import { usePrisesToday, useConfirmerPrise, useSkipPrise } from '../hooks/usePrises';
+import { formatHeurePrise, isPrisePending, isPriseDone } from '../utils/priseHelpers';
 import toast from 'react-hot-toast';
 import {
   TrendingUp, Heart, Clock, AlertTriangle, ArrowRight,
@@ -319,7 +320,7 @@ export default function DashboardPage() {
   const handleConfirm = (priseId) => {
     confirmerMutation.mutate({ id: priseId, statut: 'pris' }, {
       onSuccess: () => toast.success('Prise confirmée avec succès'),
-      onError: () => toast.error('Erreur lors de la confirmation'),
+      onError: (err) => toast.error(err.response?.data?.message || 'Erreur lors de la confirmation'),
     });
   };
 
@@ -413,10 +414,12 @@ export default function DashboardPage() {
           ) : (
             prisesToday.map((prise) => {
               const MomentIcon = getMomentIcon(prise.heure_prevue);
+              const done = isPriseDone(prise.statut);
+              const pending = isPrisePending(prise.statut);
               return (
                 <MedItem key={prise.prise_programmee_id}>
                   <MedStatusDot $status={prise.statut}>
-                    {prise.statut === 'pris' || prise.statut === 'retard' ? <CheckCircle /> : prise.statut === 'en_attente' ? <Clock /> : <Moon />}
+                    {done ? <CheckCircle /> : pending ? <Clock /> : <Moon />}
                   </MedStatusDot>
                   <MedInfo>
                     <h4>{prise.nom_medicament} {prise.dosage}</h4>
@@ -425,16 +428,16 @@ export default function DashboardPage() {
                       {prise.statut === 'pris' && prise.date_heure_reelle && ` · Prise à ${new Date(prise.date_heure_reelle).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}
                       {prise.statut === 'en_attente' && ' · Prochaine dose'}
                       {prise.statut === 'oublie' && ' · Oubliée'}
-                      {prise.statut === 'reporte' && ' · Reportée'}
+                      {prise.statut === 'reporte' && ' · Reportée — à confirmer'}
                     </p>
-                    {prise.statut === 'en_attente' && (
+                    {pending && (
                       <MedActionRow>
                         <Button size="sm" variant="success" icon={CheckCircle} onClick={() => handleConfirm(prise.prise_programmee_id)} disabled={confirmerMutation.isPending}>Confirmer</Button>
                         <Button size="sm" variant="outline" onClick={() => handleSkip(prise.prise_programmee_id)} disabled={skipMutation.isPending}>Reporter</Button>
                       </MedActionRow>
                     )}
                   </MedInfo>
-                  <MedTime>{prise.heure_prevue ? prise.heure_prevue.replace(':', 'h') : ''}</MedTime>
+                  <MedTime>{formatHeurePrise(prise.heure_prevue)}</MedTime>
                 </MedItem>
               );
             })

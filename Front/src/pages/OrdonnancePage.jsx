@@ -148,10 +148,10 @@ const OrdoActions = styled.div`
 /* ─── Helpers ─── */
 function getStatutInfo(statut) {
   switch (statut) {
-    case 'validee': case 'traitee': return { label: 'Traitée', color: 'success' };
-    case 'en_attente': return { label: 'En attente', color: 'warning' };
+    case 'validee': case 'traitee': return { label: 'Validée', color: 'success' };
+    case 'en_cours': case 'en_attente': return { label: 'À valider', color: 'warning' };
     case 'rejetee': return { label: 'Rejetée', color: 'danger' };
-    default: return { label: statut || 'En attente', color: 'warning' };
+    default: return { label: statut || 'À valider', color: 'warning' };
   }
 }
 
@@ -177,10 +177,12 @@ export default function OrdonnancePage() {
     if (files && files.length > 0) {
       scanMutation.mutate(files[0], {
         onSuccess: (data) => {
-          toast.success(`Ordonnance "${files[0].name}" scannée avec succès`);
+          toast.success('Ordonnance scannée — vérifiez les médicaments puis validez');
+          if (fileInputRef.current) fileInputRef.current.value = '';
         },
         onError: (err) => {
           toast.error(err.response?.data?.message || 'Erreur lors du scan de l\'ordonnance');
+          if (fileInputRef.current) fileInputRef.current.value = '';
         },
       });
     }
@@ -255,7 +257,7 @@ export default function OrdonnancePage() {
                   {statutInfo.label}
                 </Badge>
                 <OrdoActions>
-                  {(ordo.statut === 'en_attente' || !ordo.statut) && (
+                  {(ordo.statut === 'en_cours' || ordo.statut === 'en_attente' || !ordo.statut) && (
                     <Button
                       size="sm"
                       variant="success"

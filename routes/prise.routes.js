@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const priseController = require('../controllers/prise.controller');
-const authMiddleware = require('../middlewares/auth.middleware');
+const { patientAuth } = require('../middlewares/auth.middleware');
 const { validate, confirmerPriseSchema } = require('../middlewares/validation.middleware');
 
 /**
@@ -46,7 +46,7 @@ const { validate, confirmerPriseSchema } = require('../middlewares/validation.mi
  *                         type: string
  *                         enum: [en_attente, pris, oublie, retard, reporte]
  */
-router.get('/aujourd-hui', authMiddleware, priseController.getPrisesAujourdhui);
+router.get('/aujourd-hui', patientAuth, priseController.getPrisesAujourdhui);
 
 /**
  * @swagger
@@ -87,7 +87,7 @@ router.get('/aujourd-hui', authMiddleware, priseController.getPrisesAujourdhui);
  *       404:
  *         description: Prise programmée non trouvée
  */
-router.post('/:id/confirmer', authMiddleware, validate(confirmerPriseSchema), priseController.confirmerPrise);
+router.post('/:id/confirmer', patientAuth, validate(confirmerPriseSchema), priseController.confirmerPrise);
 
 /**
  * @swagger
@@ -130,6 +130,6 @@ router.post('/:id/confirmer', authMiddleware, validate(confirmerPriseSchema), pr
  *       200:
  *         description: Historique paginé des prises
  */
-router.get('/historique', authMiddleware, priseController.getHistorique);
+router.get('/historique', patientAuth, priseController.getHistorique);
 
 module.exports = router;

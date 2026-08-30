@@ -48,6 +48,33 @@ const endOfDay = (date = new Date()) => {
   return d;
 };
 
+/**
+ * Normalise un champ JSON MySQL/Sequelize (parfois renvoyé en string)
+ */
+const parseJsonField = (value, fallback = null) => {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value === 'object') return value;
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return fallback;
+    }
+  }
+  return fallback;
+};
+
+/**
+ * Date locale YYYY-MM-DD (évite le décalage UTC de toISOString)
+ */
+const localDateString = (date = new Date()) => {
+  const d = new Date(date);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
 module.exports = {
   parseTime,
   timeToMinutes,
@@ -55,4 +82,6 @@ module.exports = {
   diffMinutes,
   startOfDay,
   endOfDay,
+  parseJsonField,
+  localDateString,
 };

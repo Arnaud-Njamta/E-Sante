@@ -33,3 +33,14 @@ export function useEtablissementHoraires(id) {
         enabled: !!id,
     });
 }
+
+export function useEtablissementPublications(id) {
+    return useQuery({
+        queryKey: ['etablissements', id, 'publications'],
+        queryFn: async () => {
+            const { data } = await client.get(ENDPOINTS.etablissements.publications(id));
+            return data.data;
+        },
+        enabled: !!id,
+    });
+}

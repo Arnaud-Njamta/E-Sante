@@ -56,11 +56,47 @@ const Medecin = sequelize.define('Medecin', {
   email: {
     type: DataTypes.STRING(255),
     allowNull: true,
+    unique: true,
+  },
+  password_hash: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
   },
   horaires_consultation: {
     type: DataTypes.JSON,
     allowNull: true,
-    defaultValue: {},
+    defaultValue: {
+      lundi: { actif: true, creneaux: [{ debut: '08:00', fin: '12:00' }, { debut: '14:00', fin: '18:00' }] },
+      mardi: { actif: true, creneaux: [{ debut: '08:00', fin: '12:00' }, { debut: '14:00', fin: '18:00' }] },
+      mercredi: { actif: true, creneaux: [{ debut: '08:00', fin: '12:00' }, { debut: '14:00', fin: '18:00' }] },
+      jeudi: { actif: true, creneaux: [{ debut: '08:00', fin: '12:00' }, { debut: '14:00', fin: '18:00' }] },
+      vendredi: { actif: true, creneaux: [{ debut: '08:00', fin: '12:00' }, { debut: '14:00', fin: '18:00' }] },
+      samedi: { actif: false, creneaux: [] },
+      dimanche: { actif: false, creneaux: [] },
+      duree_creneau_minutes: 30,
+    },
+  },
+  fichier_photo_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+  },
+  fichier_cachet_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+  },
+  accepte_teleconsultation: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  },
+  tarif_consultation_fcfa: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+  },
+  statut_validation: {
+    type: DataTypes.ENUM('en_attente', 'valide', 'rejete', 'suspendu'),
+    allowNull: false,
+    defaultValue: 'valide',
   },
   note_moyenne: {
     type: DataTypes.DECIMAL(3, 2),
@@ -76,6 +112,11 @@ const Medecin = sequelize.define('Medecin', {
     type: DataTypes.BOOLEAN,
     allowNull: false,
     defaultValue: true,
+  },
+  coordonnees_paiement: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: null,
   },
 }, {
   tableName: 'medecins',

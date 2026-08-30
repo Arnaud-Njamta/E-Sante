@@ -33,6 +33,11 @@ const Patient = sequelize.define('Patient', {
     type: DataTypes.STRING(20),
     allowNull: true,
   },
+  telephone_verifie: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  },
   contact_urgence: {
     type: DataTypes.STRING(255),
     allowNull: true,
@@ -85,6 +90,19 @@ const Patient = sequelize.define('Patient', {
   },
   reset_password_expires: {
     type: DataTypes.DATE,
+    allowNull: true,
+  },
+  consentement_recherche: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  },
+  date_consentement: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+  politique_version: {
+    type: DataTypes.STRING(20),
     allowNull: true,
   },
 }, {

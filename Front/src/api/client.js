@@ -10,12 +10,15 @@ const client = axios.create({
     },
 });
 
-// Request interceptor — attach JWT
+// Request interceptor — attach JWT (+ laisser FormData gérer son Content-Type)
 client.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('esante_access_token');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
+        }
+        if (config.data instanceof FormData) {
+            delete config.headers['Content-Type'];
         }
         return config;
     },
@@ -41,12 +44,14 @@ client.interceptors.response.use(
                     refreshToken,
                 });
 
-                localStorage.setItem('esante_access_token', data.accessToken);
-                if (data.refreshToken) {
-                    localStorage.setItem('esante_refresh_token', data.refreshToken);
+                const result = data.data || data;
+                const token = result.token || result.accessToken;
+                localStorage.setItem('esante_access_token', token);
+                if (result.refreshToken) {
+                    localStorage.setItem('esante_refresh_token', result.refreshToken);
                 }
 
-                originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+                originalRequest.headers.Authorization = `Bearer ${token}`;
                 return client(originalRequest);
             } catch (refreshError) {
                 localStorage.removeItem('esante_access_token');

@@ -5,3 +5,5 @@ dist/
 .env
 Front/node_modules/
 Front/dist/
+Front/.env.production
+deploy/deploy.config

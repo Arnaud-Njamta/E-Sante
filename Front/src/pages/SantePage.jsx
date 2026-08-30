@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { Building2, Hospital, Pill, Stethoscope, Search, MapPin } from 'lucide-react';
@@ -8,6 +9,10 @@ import Spinner from '../components/ui/Spinner';
 import ErrorState from '../components/ui/ErrorState';
 import { useEtablissements } from '../hooks/useEtablissements';
 import { useMedecins } from '../hooks/useMedecins';
+import { useRechercheProduits } from '../hooks/useProduits';
+import { parseJsonArray } from '../utils/helpers';
+
+const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000';
 
 const PageHeader = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing[6]};
@@ -149,9 +154,29 @@ const TYPE_ICONS = {
 
 export default function SantePage() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState('etablissements');
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab');
+  const initialQ = searchParams.get('q') || '';
+  const [tab, setTab] = useState(() => {
+    if (initialTab === 'medecins') return 'medecins';
+    if (initialTab === 'medicaments') return 'medicaments';
+    return 'etablissements';
+  });
+
+  useEffect(() => {
+    const t = searchParams.get('tab');
+    if (t === 'medecins' || t === 'medicaments') setTab(t);
+    else if (!t) setTab('etablissements');
+  }, [searchParams]);
+
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (q) setSearch(q);
+  }, [searchParams]);
   const [typeFilter, setTypeFilter] = useState('');
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(initialQ);
+  const [villeMed, setVilleMed] = useState('');
+  const [typeMed, setTypeMed] = useState('');
 
   const { data: etabData, isLoading: etabLoading, error: etabError, refetch: refetchEtab } = useEtablissements({
     type: typeFilter || undefined,
@@ -162,6 +187,15 @@ export default function SantePage() {
     recherche: search || undefined,
   });
 
+  const { data: produitsData, isLoading: prodLoading, error: prodError, refetch: refetchProd } = useRechercheProduits(
+    {
+      recherche: tab === 'medicaments' ? search.trim() : '',
+      ville: villeMed || undefined,
+      type_etablissement: typeMed || undefined,
+    },
+    { enabled: tab === 'medicaments' },
+  );
+
   const etablissements = etabData?.etablissements || [];
   const medecins = medData?.medecins || [];
 
@@ -169,7 +203,7 @@ export default function SantePage() {
     <div>
       <PageHeader>
         <h1>Annuaire Santé</h1>
-        <p>Pharmacies, hôpitaux, cliniques et médecins — notés par la communauté</p>
+        <p>Pharmacies, hôpitaux, cliniques, médecins et médicaments — Cameroun</p>
       </PageHeader>
 
       <Tabs>
@@ -179,7 +213,19 @@ export default function SantePage() {
         <Tab $active={tab === 'medecins'} onClick={() => setTab('medecins')}>
           <Stethoscope size={16} /> Médecins
         </Tab>
+        <Tab $active={tab === 'medicaments'} onClick={() => setTab('medicaments')}>
+          <Pill size={16} /> Médicaments
+        </Tab>
       </Tabs>
+
+      {tab === 'medicaments' && (
+        <Tabs>
+          <Tab $active={!typeMed} onClick={() => setTypeMed('')}>Tous</Tab>
+          <Tab $active={typeMed === 'pharmacie'} onClick={() => setTypeMed('pharmacie')}>Pharmacies</Tab>
+          <Tab $active={typeMed === 'clinique'} onClick={() => setTypeMed('clinique')}>Cliniques</Tab>
+          <Tab $active={typeMed === 'hopital'} onClick={() => setTypeMed('hopital')}>Hôpitaux</Tab>
+        </Tabs>
+      )}
 
       {tab === 'etablissements' && (
         <Tabs>
@@ -194,11 +240,23 @@ export default function SantePage() {
         <SearchWrap>
           <Search />
           <input
-            placeholder={tab === 'etablissements' ? 'Rechercher un établissement...' : 'Rechercher un médecin...'}
+            placeholder={
+              tab === 'medicaments' ? 'Rechercher un médicament (ex. Paracetamol, Amoxicilline)...'
+                : tab === 'etablissements' ? 'Rechercher un établissement...'
+                  : 'Rechercher un médecin...'
+            }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </SearchWrap>
+        {tab === 'medicaments' && (
+          <input
+            placeholder="Ville (ex. Douala)"
+            value={villeMed}
+            onChange={(e) => setVilleMed(e.target.value)}
+            style={{ width: 160, padding: '10px 14px', border: '1px solid #E2E8F0', borderRadius: 8 }}
+          />
+        )}
       </SearchBar>
 
       {tab === 'etablissements' && (
@@ -225,11 +283,57 @@ export default function SantePage() {
         </Grid>
       )}
 
+      {tab === 'medicaments' && (
+        prodLoading ? <Spinner /> :
+        prodError ? <ErrorState message="Impossible de charger les médicaments" onRetry={refetchProd} /> :
+        (
+          <>
+            {!search.trim() && (
+              <p style={{ color: '#64748B', fontSize: '0.9rem', marginBottom: 16 }}>
+                Médicaments disponibles dans les pharmacies et dispensaires — utilisez la recherche pour affiner.
+              </p>
+            )}
+            <Grid>
+              {(produitsData || []).map((p) => {
+                const etab = p.etablissement || p.pharmacie;
+                const Icon = TYPE_ICONS[etab?.type] || Pill;
+                return (
+                  <ItemCard key={p.id} onClick={() => etab && navigate(`/sante/etablissement/${etab.id}`)}>
+                    {p.image_url && (
+                      <img src={`${API_BASE}${p.image_url}`} alt={p.nom} style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 8, marginBottom: 8 }} />
+                    )}
+                    <CardTitle>{p.nom}</CardTitle>
+                    {etab && (
+                      <TypeBadge $type={etab.type}><Icon size={12} /> {TYPE_LABELS[etab.type]} — {etab.nom}</TypeBadge>
+                    )}
+                    <Location><MapPin /> {etab?.ville}{etab?.adresse ? ` — ${etab.adresse}` : ''}</Location>
+                    <strong style={{ color: '#059669', fontSize: '1rem' }}>{Number(p.prix_fcfa || 0).toLocaleString()} FCFA</strong>
+                    <ServiceCount style={{ display: 'block', marginTop: 6 }}>
+                      En stock : {p.stock_disponible}
+                      {p.necessite_ordonnance && ' · Ordonnance requise'}
+                    </ServiceCount>
+                  </ItemCard>
+                );
+              })}
+            </Grid>
+            {(produitsData || []).length === 0 && (
+              <Card style={{ padding: 32, marginTop: 16, textAlign: 'center', color: '#94A3B8' }}>
+                {search.trim()
+                  ? <>Aucun médicament trouvé pour « {search} »{villeMed ? ` à ${villeMed}` : ''}.</>
+                  : <>Aucun médicament en stock pour le moment. Les établissements peuvent alimenter leur dispensaire depuis leur espace pro.</>}
+              </Card>
+            )}
+          </>
+        )
+      )}
+
       {tab === 'medecins' && (
         medLoading ? <Spinner /> :
         medError ? <ErrorState message="Impossible de charger les médecins" onRetry={refetchMed} /> :
         <Grid>
-          {medecins.map((m) => (
+          {medecins.map((m) => {
+            const competences = parseJsonArray(m.competences);
+            return (
             <ItemCard key={m.id} onClick={() => navigate(`/sante/medecin/${m.id}`)}>
               <TypeBadge $type="clinique"><Stethoscope size={12} /> {m.specialite}</TypeBadge>
               <CardTitle>Dr. {m.prenom} {m.nom}</CardTitle>
@@ -238,15 +342,16 @@ export default function SantePage() {
               )}
               <CardDesc>{m.bio}</CardDesc>
               <StarRating rating={m.note_moyenne} count={m.nombre_avis} />
-              {m.competences?.length > 0 && (
+              {competences.length > 0 && (
                 <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                  {m.competences.slice(0, 3).map((c) => (
+                  {competences.slice(0, 3).map((c) => (
                     <span key={c} style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: 12, background: '#F1F5F9' }}>{c}</span>
                   ))}
                 </div>
               )}
             </ItemCard>
-          ))}
+          );
+          })}
         </Grid>
       )}
     </div>

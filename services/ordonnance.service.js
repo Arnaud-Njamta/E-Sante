@@ -1,6 +1,27 @@
 const path = require('path');
+const fs = require('fs');
 const { Ordonnance } = require('../models');
+const { parseJsonField } = require('../utils/helpers');
 const traitementService = require('./traitement.service');
+
+const formatOrdonnance = (ordonnance) => {
+  const data = ordonnance.toJSON ? ordonnance.toJSON() : { ...ordonnance };
+  const donnees = parseJsonField(data.donnees_parsees, {});
+  return {
+    ...data,
+    donnees_parsees: donnees,
+    medicaments_extraits: donnees.medicaments || [],
+    nom_fichier: data.image_url ? path.basename(data.image_url) : null,
+  };
+};
+
+const resolveMedicaments = (corrections, donneesParsees) => {
+  const parsed = parseJsonField(donneesParsees, {});
+  const base = Array.isArray(parsed.medicaments) ? parsed.medicaments : [];
+  if (Array.isArray(corrections) && corrections.length > 0) return corrections;
+  if (corrections?.medicaments?.length) return corrections.medicaments;
+  return base;
+};
 
 /**
  * Scanner une ordonnance (upload image + extraction OCR simulée)
@@ -62,7 +83,11 @@ const scanOrdonnance = async (patientId, file) => {
     donnees_parsees: donneesParsees,
   });
 
-  return ordonnance;
+  return {
+    ...formatOrdonnance(ordonnance),
+    ocr_disclaimer: 'Extraction automatique simulée. Vérifiez et corrigez chaque médicament avant validation. En production, un service OCR certifié sera utilisé.',
+    extraction_simulee: true,
+  };
 };
 
 /**
@@ -85,12 +110,16 @@ const validerOrdonnance = async (ordonnanceId, patientId, patient, corrections) 
     throw error;
   }
 
-  // Utiliser les corrections du patient si fournies, sinon les données parsées
-  const medicaments = corrections || ordonnance.donnees_parsees.medicaments;
+  const medicaments = resolveMedicaments(corrections, ordonnance.donnees_parsees);
+  if (!medicaments.length) {
+    const error = new Error('Aucun médicament détecté sur cette ordonnance. Re-scannez l\'image ou contactez votre médecin.');
+    error.statusCode = 400;
+    throw error;
+  }
 
-  // Créer les traitements pour chaque médicament
   const traitementsCrees = [];
   for (const med of medicaments) {
+    if (!med.nom?.trim()) continue;
     const traitement = await traitementService.create(patientId, {
       nom_medicament: med.nom,
       dosage: med.dosage,
@@ -104,14 +133,20 @@ const validerOrdonnance = async (ordonnanceId, patientId, patient, corrections) 
     traitementsCrees.push(traitement);
   }
 
-  // Mettre à jour le statut de l'ordonnance
+  if (!traitementsCrees.length) {
+    const error = new Error('Impossible de créer les traitements — vérifiez les noms de médicaments.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const donneesExistantes = parseJsonField(ordonnance.donnees_parsees, {});
   await ordonnance.update({
     statut: 'validee',
-    donnees_parsees: { ...ordonnance.donnees_parsees, medicaments },
+    donnees_parsees: { ...donneesExistantes, medicaments },
   });
 
   return {
-    ordonnance,
+    ordonnance: formatOrdonnance(ordonnance),
     traitements: traitementsCrees,
   };
 };
@@ -120,10 +155,11 @@ const validerOrdonnance = async (ordonnanceId, patientId, patient, corrections) 
  * Récupérer les ordonnances d'un patient
  */
 const getAll = async (patientId) => {
-  return Ordonnance.findAll({
+  const rows = await Ordonnance.findAll({
     where: { patient_id: patientId },
     order: [['date_scan', 'DESC']],
   });
+  return rows.map(formatOrdonnance);
 };
 
 // ==================== HELPERS ====================

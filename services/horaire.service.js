@@ -1,22 +1,19 @@
-const { timeToMinutes, minutesToTime } = require('../utils/helpers');
+const { timeToMinutes, minutesToTime, parseJsonField } = require('../utils/helpers');
 
-/**
- * Génère des horaires de prise optimaux en fonction du profil patient
- * et des instructions du médicament.
- *
- * @param {Object} patient - Profil patient (heure_reveil, heure_coucher, horaires_repas)
- * @param {string} frequence - Ex: "1", "2", "3" (fois par jour)
- * @param {string} instructions - Ex: "avec repas", "à jeun", "au coucher"
- * @returns {string[]} - Tableau d'horaires ["08:00", "13:00", "20:00"]
- */
-const genererHoraires = (patient, frequence, instructions = '') => {
-  const reveil = patient.heure_reveil || '07:00';
-  const coucher = patient.heure_coucher || '23:00';
-  const repas = patient.horaires_repas || {
+const normalizeRepas = (patient) => {
+  const defaults = {
     petit_dejeuner: '08:00',
     dejeuner: '12:30',
     diner: '19:30',
   };
+  const repas = parseJsonField(patient?.horaires_repas, defaults);
+  return typeof repas === 'object' && repas !== null ? { ...defaults, ...repas } : defaults;
+};
+
+const genererHoraires = (patient, frequence, instructions = '') => {
+  const reveil = patient?.heure_reveil || '07:00';
+  const coucher = patient?.heure_coucher || '23:00';
+  const repas = normalizeRepas(patient);
 
   const nbPrises = parseInt(frequence) || 1;
   const instructionsLower = (instructions || '').toLowerCase();

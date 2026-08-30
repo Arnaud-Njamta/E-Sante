@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const traitementController = require('../controllers/traitement.controller');
-const authMiddleware = require('../middlewares/auth.middleware');
+const { patientAuth } = require('../middlewares/auth.middleware');
 const { validate, traitementSchema } = require('../middlewares/validation.middleware');
 
 /**
@@ -59,7 +59,7 @@ const { validate, traitementSchema } = require('../middlewares/validation.middle
  *       201:
  *         description: Traitement créé avec prises programmées
  */
-router.post('/', authMiddleware, validate(traitementSchema), traitementController.create);
+router.post('/', patientAuth, validate(traitementSchema), traitementController.create);
 
 /**
  * @swagger
@@ -73,7 +73,7 @@ router.post('/', authMiddleware, validate(traitementSchema), traitementControlle
  *       200:
  *         description: Liste des traitements avec prises programmées
  */
-router.get('/', authMiddleware, traitementController.getAll);
+router.get('/', patientAuth, traitementController.getAll);
 
 /**
  * @swagger
@@ -96,7 +96,7 @@ router.get('/', authMiddleware, traitementController.getAll);
  *       404:
  *         description: Traitement non trouvé
  */
-router.get('/:id', authMiddleware, traitementController.getById);
+router.get('/:id', patientAuth, traitementController.getById);
 
 /**
  * @swagger
@@ -134,7 +134,7 @@ router.get('/:id', authMiddleware, traitementController.getById);
  *       200:
  *         description: Traitement mis à jour
  */
-router.put('/:id', authMiddleware, traitementController.update);
+router.put('/:id', patientAuth, traitementController.update);
 
 /**
  * @swagger
@@ -167,7 +167,7 @@ router.put('/:id', authMiddleware, traitementController.update);
  *       200:
  *         description: Statut mis à jour
  */
-router.patch('/:id/statut', authMiddleware, traitementController.updateStatut);
+router.patch('/:id/statut', patientAuth, traitementController.updateStatut);
 
 /**
  * @swagger
@@ -188,6 +188,6 @@ router.patch('/:id/statut', authMiddleware, traitementController.updateStatut);
  *       200:
  *         description: Traitement supprimé
  */
-router.delete('/:id', authMiddleware, traitementController.remove);
+router.delete('/:id', patientAuth, traitementController.remove);
 
 module.exports = router;

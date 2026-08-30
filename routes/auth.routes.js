@@ -1,8 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/auth.controller');
-const { validate, registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } = require('../middlewares/validation.middleware');
-
+const authMiddleware = require('../middlewares/auth.middleware');
+const {
+  validate, registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, changePasswordSchema,
+  otpSendSchema, otpVerifySchema, resetPasswordSmsSchema,
+} = require('../middlewares/validation.middleware');
+const {
+  authLoginLimiter, authRegisterLimiter, authOtpLimiter,
+} = require('../config/security');
 /**
  * @swagger
  * tags:
@@ -55,7 +61,11 @@ const { validate, registerSchema, loginSchema, forgotPasswordSchema, resetPasswo
  *       409:
  *         description: Email déjà utilisé
  */
-router.post('/register', validate(registerSchema), authController.register);
+router.post('/register', authRegisterLimiter, validate(registerSchema), authController.register);
+
+router.post('/otp/envoyer', authOtpLimiter, validate(otpSendSchema), authController.sendOtp);
+router.post('/otp/verifier', authOtpLimiter, validate(otpVerifySchema), authController.verifyOtp);
+router.post('/reset-password-sms', authOtpLimiter, validate(resetPasswordSmsSchema), authController.resetPasswordBySms);
 
 /**
  * @swagger
@@ -86,7 +96,7 @@ router.post('/register', validate(registerSchema), authController.register);
  *       401:
  *         description: Email ou mot de passe incorrect
  */
-router.post('/login', validate(loginSchema), authController.login);
+router.post('/login', authLoginLimiter, validate(loginSchema), authController.login);
 
 /**
  * @swagger
@@ -202,5 +212,9 @@ router.post('/forgot-password', validate(forgotPasswordSchema), authController.f
  *         description: Token invalide ou expiré
  */
 router.post('/reset-password', validate(resetPasswordSchema), authController.resetPassword);
+
+router.post('/change-password', authMiddleware, validate(changePasswordSchema), authController.changePassword);
+
+router.get('/me', authMiddleware, authController.me);
 
 module.exports = router;

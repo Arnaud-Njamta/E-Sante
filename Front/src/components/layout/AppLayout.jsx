@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
+import AiAssistantWidget from '../ai/AiAssistantWidget';
 
 const LayoutWrapper = styled.div`
   display: flex;
@@ -67,6 +68,7 @@ export default function AppLayout() {
                     <Outlet />
                 </PageContent>
             </MainArea>
+            <AiAssistantWidget />
         </LayoutWrapper>
     );
 }

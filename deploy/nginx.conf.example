@@ -1,0 +1,41 @@
+# Exemple Nginx — DjamSanté production
+# Placer dans /etc/nginx/sites-available/medisante
+
+upstream medisante_api {
+    server 127.0.0.1:3000;
+    keepalive 32;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name medisante.votre-domaine.cm;
+
+    ssl_certificate     /etc/letsencrypt/live/medisante.votre-domaine.cm/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/medisante.votre-domaine.cm/privkey.pem;
+
+    # Frontend (build Vite)
+    root /var/www/medisante/Front/dist;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /api/ {
+        proxy_pass http://medisante_api/api/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        client_max_body_size 12M;
+    }
+
+    # Ne pas exposer /uploads en production — fichiers via /api/fichiers authentifié
+}
+
+server {
+    listen 80;
+    server_name medisante.votre-domaine.cm;
+    return 301 https://$host$request_uri;
+}

@@ -37,9 +37,10 @@ export function useConversation(id) {
 export function useDemarrerConversation() {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: async ({ pharmacieId, ...payload }) => {
+        mutationFn: async ({ pharmacieId, etablissementId, ...payload }) => {
+            const id = etablissementId || pharmacieId;
             const { data } = await client.post(
-                ENDPOINTS.messagerie.demarrer(pharmacieId),
+                ENDPOINTS.messagerie.demarrerEtab(id),
                 payload,
             );
             return data.data;

@@ -1,6 +1,17 @@
 const errorMiddleware = (err, req, res, next) => {
   console.error('Erreur:', err.message);
 
+  if (err.name === 'MulterError') {
+    const message = err.code === 'LIMIT_FILE_SIZE'
+      ? 'Fichier trop volumineux (max 10 Mo)'
+      : err.message;
+    return res.status(400).json({ success: false, message });
+  }
+
+  if (err.message?.includes('Format de fichier non supporté')) {
+    return res.status(400).json({ success: false, message: err.message });
+  }
+
   if (err.name === 'SequelizeValidationError') {
     const errors = err.errors.map((e) => e.message);
     return res.status(400).json({

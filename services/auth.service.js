@@ -1,20 +1,43 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const { Patient } = require('../models');
+const { Patient, Medecin, Etablissement, Admin } = require('../models');
+const { USER_ROLES, TYPE_ETABLISSEMENT, STATUT_VALIDATION } = require('../utils/constants');
 const emailService = require('./email.service');
+const { smsConfig } = require('../config/sms');
+const otpService = require('./otp.service');
+const { OTP_USAGES } = require('../config/sms');
 
 const SALT_ROUNDS = 12;
 
-/**
- * Inscription d'un nouveau patient
- */
-const register = async ({ email, password, nom, prenom, date_naissance, telephone }) => {
+const register = async ({
+  email, password, nom, prenom, date_naissance, telephone, otp_verification_token,
+}) => {
   const existingPatient = await Patient.findOne({ where: { email } });
   if (existingPatient) {
     const error = new Error('Un compte avec cet email existe déjà');
     error.statusCode = 409;
     throw error;
+  }
+
+  let normalizedPhone = telephone;
+  let phoneVerified = false;
+
+  if (smsConfig.otpRequired) {
+    if (!telephone || !otp_verification_token) {
+      const error = new Error('Vérification du téléphone par SMS requise');
+      error.statusCode = 400;
+      throw error;
+    }
+    const verified = await otpService.consumeVerificationToken({
+      verificationToken: otp_verification_token,
+      telephone,
+      usage: OTP_USAGES.REGISTER,
+    });
+    normalizedPhone = verified.telephone;
+    phoneVerified = true;
+  } else if (telephone) {
+    normalizedPhone = otpService.normalizeTelephone(telephone);
   }
 
   const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
@@ -25,63 +48,122 @@ const register = async ({ email, password, nom, prenom, date_naissance, telephon
     nom,
     prenom,
     date_naissance,
-    telephone,
+    telephone: normalizedPhone || null,
+    telephone_verifie: phoneVerified,
   });
 
-  const token = generateToken(patient.id);
-  const refreshToken = generateRefreshToken(patient.id);
+  const token = generateToken(patient.id, USER_ROLES.PATIENT);
+  const refreshToken = generateRefreshToken(patient.id, USER_ROLES.PATIENT);
 
   return {
-    patient: formatPatient(patient),
+    user: formatProfile(patient, USER_ROLES.PATIENT),
+    role: USER_ROLES.PATIENT,
+    patient: formatProfile(patient, USER_ROLES.PATIENT),
     token,
     refreshToken,
   };
 };
 
-/**
- * Connexion d'un patient
- */
 const login = async ({ email, password }) => {
+  const admin = await Admin.findOne({ where: { email, actif: true } });
+  if (admin) {
+    return loginEntity(admin, password, USER_ROLES.ADMIN);
+  }
+
   const patient = await Patient.findOne({ where: { email } });
-  if (!patient) {
+  if (patient) {
+    return loginEntity(patient, password, USER_ROLES.PATIENT);
+  }
+
+  const medecin = await Medecin.findOne({ where: { email } });
+  if (medecin) {
+    return loginEntity(medecin, password, USER_ROLES.MEDECIN);
+  }
+
+  const pharmacie = await Etablissement.findOne({
+    where: { email, type: TYPE_ETABLISSEMENT.PHARMACIE },
+  });
+  if (pharmacie) {
+    return loginEntity(pharmacie, password, USER_ROLES.PHARMACIE);
+  }
+
+  const hopital = await Etablissement.findOne({
+    where: { email, type: TYPE_ETABLISSEMENT.HOPITAL },
+  });
+  if (hopital) {
+    return loginEntity(hopital, password, USER_ROLES.HOPITAL);
+  }
+
+  const clinique = await Etablissement.findOne({
+    where: { email, type: TYPE_ETABLISSEMENT.CLINIQUE },
+  });
+  if (clinique) {
+    return loginEntity(clinique, password, USER_ROLES.CLINIQUE);
+  }
+
+  const error = new Error('Email ou mot de passe incorrect');
+  error.statusCode = 401;
+  throw error;
+};
+
+const loginEntity = async (entity, password, role) => {
+  if (!entity.password_hash) {
     const error = new Error('Email ou mot de passe incorrect');
     error.statusCode = 401;
     throw error;
   }
 
-  const isPasswordValid = await bcrypt.compare(password, patient.password_hash);
+  const isPasswordValid = await bcrypt.compare(password, entity.password_hash);
   if (!isPasswordValid) {
     const error = new Error('Email ou mot de passe incorrect');
     error.statusCode = 401;
     throw error;
   }
 
-  const token = generateToken(patient.id);
-  const refreshToken = generateRefreshToken(patient.id);
+  if (role === USER_ROLES.MEDECIN && entity.statut_validation && entity.statut_validation !== STATUT_VALIDATION.VALIDE) {
+    const error = new Error('Compte médecin en attente de validation MINSANTE ou suspendu');
+    error.statusCode = 403;
+    throw error;
+  }
+
+  if ([USER_ROLES.PHARMACIE, USER_ROLES.HOPITAL, USER_ROLES.CLINIQUE].includes(role)
+    && entity.statut_validation && entity.statut_validation !== STATUT_VALIDATION.VALIDE) {
+    const error = new Error('Établissement en attente de validation MINSANTE ou suspendu');
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const profile = formatProfile(entity, role);
+  const token = generateToken(entity.id, role);
+  const refreshToken = generateRefreshToken(entity.id, role);
 
   return {
-    patient: formatPatient(patient),
+    user: profile,
+    role,
+    patient: role === USER_ROLES.PATIENT ? profile : undefined,
+    medecin: role === USER_ROLES.MEDECIN ? profile : undefined,
+    pharmacie: role === USER_ROLES.PHARMACIE ? profile : undefined,
+    hopital: role === USER_ROLES.HOPITAL ? profile : undefined,
+    clinique: role === USER_ROLES.CLINIQUE ? profile : undefined,
+    admin: role === USER_ROLES.ADMIN ? profile : undefined,
     token,
     refreshToken,
   };
 };
 
-/**
- * Rafraîchir le token JWT
- */
 const refreshToken = async (token) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const patient = await Patient.findByPk(decoded.id);
+    const profile = await loadProfile(decoded.id, decoded.role);
 
-    if (!patient) {
-      const error = new Error('Patient non trouvé');
+    if (!profile) {
+      const error = new Error('Utilisateur non trouvé');
       error.statusCode = 404;
       throw error;
     }
 
-    const newToken = generateToken(patient.id);
-    const newRefreshToken = generateRefreshToken(patient.id);
+    const newToken = generateToken(decoded.id, decoded.role);
+    const newRefreshToken = generateRefreshToken(decoded.id, decoded.role);
 
     return { token: newToken, refreshToken: newRefreshToken };
   } catch (err) {
@@ -91,66 +173,152 @@ const refreshToken = async (token) => {
   }
 };
 
-/**
- * Mot de passe oublié — Génère un token et envoie un email
- */
 const forgotPassword = async (email) => {
-  const patient = await Patient.findOne({ where: { email } });
+  const account = await findAccountByEmail(email);
 
-  // Pour des raisons de sécurité, on retourne toujours le même message
-  // même si l'email n'existe pas (évite l'énumération des comptes)
-  if (!patient) {
+  if (!account) {
     return {
       message: 'Si un compte existe avec cet email, un lien de réinitialisation a été envoyé.',
     };
   }
 
-  // Générer un token aléatoire
   const resetToken = crypto.randomBytes(32).toString('hex');
-
-  // Stocker le hash du token en base (pour la sécurité)
-  const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-
-  // Sauvegarder le token et l'expiration (1 heure)
-  patient.reset_password_token = hashedToken;
-  patient.reset_password_expires = new Date(Date.now() + 60 * 60 * 1000);
-  await patient.save();
-
-  // Envoyer l'email avec le token non hashé (le patient l'utilisera pour réinitialiser)
-  await emailService.sendResetPasswordEmail(patient.email, resetToken);
+  await setResetToken(account.entity, resetToken);
+  await emailService.sendResetPasswordEmail(account.entity.email, resetToken);
 
   return {
     message: 'Si un compte existe avec cet email, un lien de réinitialisation a été envoyé.',
   };
 };
 
-/**
- * Réinitialisation du mot de passe avec le token
- */
 const resetPassword = async (token, newPassword) => {
-  // Hasher le token reçu pour le comparer avec celui en base
   const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
-  // Chercher le patient avec ce token et vérifier l'expiration
-  const patient = await Patient.findOne({
-    where: {
-      reset_password_token: hashedToken,
-    },
-  });
+  const tables = [
+    { Model: Patient },
+    { Model: Medecin },
+    { Model: Etablissement },
+    { Model: Admin },
+  ];
 
-  if (!patient || !patient.reset_password_expires || patient.reset_password_expires < new Date()) {
+  let entity = null;
+  for (const { Model } of tables) {
+    entity = await Model.findOne({ where: { reset_password_token: hashedToken } });
+    if (entity) break;
+  }
+
+  if (!entity || !entity.reset_password_expires || entity.reset_password_expires < new Date()) {
     const error = new Error('Token invalide ou expiré');
     error.statusCode = 400;
     throw error;
   }
 
-  // Mettre à jour le mot de passe
-  patient.password_hash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+  entity.password_hash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+  entity.reset_password_token = null;
+  entity.reset_password_expires = null;
+  await entity.save();
 
-  // Invalider le token
+  return {
+    message: 'Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous connecter.',
+  };
+};
+
+const loadProfile = async (id, role) => {
+  if (role === USER_ROLES.ADMIN) {
+    const admin = await Admin.findByPk(id, { attributes: { exclude: ['password_hash'] } });
+    return admin ? formatProfile(admin, role) : null;
+  }
+  if (role === USER_ROLES.PATIENT) {
+    const patient = await Patient.findByPk(id, { attributes: { exclude: ['password_hash'] } });
+    return patient ? formatProfile(patient, role) : null;
+  }
+  if (role === USER_ROLES.MEDECIN) {
+    const medecin = await Medecin.findByPk(id, { attributes: { exclude: ['password_hash'] } });
+    return medecin ? formatProfile(medecin, role) : null;
+  }
+  if (role === USER_ROLES.PHARMACIE || role === USER_ROLES.HOPITAL || role === USER_ROLES.CLINIQUE) {
+    const typeMap = {
+      [USER_ROLES.PHARMACIE]: TYPE_ETABLISSEMENT.PHARMACIE,
+      [USER_ROLES.HOPITAL]: TYPE_ETABLISSEMENT.HOPITAL,
+      [USER_ROLES.CLINIQUE]: TYPE_ETABLISSEMENT.CLINIQUE,
+    };
+    const etab = await Etablissement.findOne({
+      where: { id, type: typeMap[role] },
+      attributes: { exclude: ['password_hash'] },
+    });
+    return etab ? formatProfile(etab, role) : null;
+  }
+  return null;
+};
+
+const generateToken = (id, role) => {
+  return jwt.sign({ id, role }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN,
+  });
+};
+
+const generateRefreshToken = (id, role) => {
+  return jwt.sign({ id, role }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_REFRESH_EXPIRES_IN,
+  });
+};
+
+const formatProfile = (entity, role) => {
+  const data = entity.toJSON();
+  delete data.password_hash;
+  delete data.reset_password_token;
+  delete data.reset_password_expires;
+  return { ...data, role };
+};
+
+const findAccountByEmail = async (email) => {
+  const admin = await Admin.findOne({ where: { email, actif: true } });
+  if (admin) return { entity: admin, role: USER_ROLES.ADMIN };
+
+  const patient = await Patient.findOne({ where: { email } });
+  if (patient) return { entity: patient, role: USER_ROLES.PATIENT };
+
+  const medecin = await Medecin.findOne({ where: { email } });
+  if (medecin) return { entity: medecin, role: USER_ROLES.MEDECIN };
+
+  const pharmacie = await Etablissement.findOne({ where: { email, type: TYPE_ETABLISSEMENT.PHARMACIE } });
+  if (pharmacie) return { entity: pharmacie, role: USER_ROLES.PHARMACIE };
+
+  const hopital = await Etablissement.findOne({ where: { email, type: TYPE_ETABLISSEMENT.HOPITAL } });
+  if (hopital) return { entity: hopital, role: USER_ROLES.HOPITAL };
+
+  const clinique = await Etablissement.findOne({ where: { email, type: TYPE_ETABLISSEMENT.CLINIQUE } });
+  if (clinique) return { entity: clinique, role: USER_ROLES.CLINIQUE };
+
+  return null;
+};
+
+const setResetToken = async (entity, resetToken) => {
+  const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+  entity.reset_password_token = hashedToken;
+  entity.reset_password_expires = new Date(Date.now() + 60 * 60 * 1000);
+  await entity.save();
+};
+
+const resetPasswordBySms = async ({ telephone, otp_verification_token, password }) => {
+  await otpService.consumeVerificationToken({
+    verificationToken: otp_verification_token,
+    telephone,
+    usage: OTP_USAGES.RESET_PASSWORD,
+  });
+
+  const normalizedPhone = otpService.normalizeTelephone(telephone);
+  const patient = await Patient.findOne({ where: { telephone: normalizedPhone } });
+
+  if (!patient) {
+    const error = new Error('Compte introuvable pour ce numéro');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  patient.password_hash = await bcrypt.hash(password, SALT_ROUNDS);
   patient.reset_password_token = null;
   patient.reset_password_expires = null;
-
   await patient.save();
 
   return {
@@ -158,23 +326,46 @@ const resetPassword = async (token, newPassword) => {
   };
 };
 
-// ==================== HELPERS INTERNES ====================
+const changePassword = async (userId, role, currentPassword, newPassword) => {
+  const profile = await loadProfile(userId, role);
+  if (!profile) {
+    const error = new Error('Utilisateur non trouvé');
+    error.statusCode = 404;
+    throw error;
+  }
 
-const generateToken = (patientId) => {
-  return jwt.sign({ id: patientId }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN,
-  });
-};
+  let entity;
+  if (role === USER_ROLES.PATIENT) entity = await Patient.findByPk(userId);
+  else if (role === USER_ROLES.MEDECIN) entity = await Medecin.findByPk(userId);
+  else if (role === USER_ROLES.ADMIN) entity = await Admin.findByPk(userId);
+  else if ([USER_ROLES.PHARMACIE, USER_ROLES.HOPITAL, USER_ROLES.CLINIQUE].includes(role)) {
+    const typeMap = {
+      [USER_ROLES.PHARMACIE]: TYPE_ETABLISSEMENT.PHARMACIE,
+      [USER_ROLES.HOPITAL]: TYPE_ETABLISSEMENT.HOPITAL,
+      [USER_ROLES.CLINIQUE]: TYPE_ETABLISSEMENT.CLINIQUE,
+    };
+    entity = await Etablissement.findOne({ where: { id: userId, type: typeMap[role] } });
+  }
 
-const generateRefreshToken = (patientId) => {
-  return jwt.sign({ id: patientId }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_REFRESH_EXPIRES_IN,
-  });
-};
+  if (!entity?.password_hash) {
+    const error = new Error('Compte introuvable');
+    error.statusCode = 404;
+    throw error;
+  }
 
-const formatPatient = (patient) => {
-  const { password_hash, reset_password_token, reset_password_expires, ...patientData } = patient.toJSON();
-  return patientData;
+  const valid = await bcrypt.compare(currentPassword, entity.password_hash);
+  if (!valid) {
+    const error = new Error('Mot de passe actuel incorrect');
+    error.statusCode = 401;
+    throw error;
+  }
+
+  entity.password_hash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+  entity.reset_password_token = null;
+  entity.reset_password_expires = null;
+  await entity.save();
+
+  return { message: 'Mot de passe modifié avec succès.' };
 };
 
 module.exports = {
@@ -183,4 +374,8 @@ module.exports = {
   refreshToken,
   forgotPassword,
   resetPassword,
+  resetPasswordBySms,
+  changePassword,
+  loadProfile,
+  findAccountByEmail,
 };

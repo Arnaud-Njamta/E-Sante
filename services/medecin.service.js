@@ -1,8 +1,29 @@
 const { Op } = require('sequelize');
-const { Medecin, Etablissement } = require('../models');
+const { Medecin, Etablissement, Avis } = require('../models');
+const { TYPE_CIBLE_AVIS, STATUT_VALIDATION } = require('../utils/constants');
+const { parseJsonField } = require('../utils/helpers');
+
+const formatMedecin = (medecin) => {
+  const data = medecin.toJSON ? medecin.toJSON() : { ...medecin };
+  delete data.password_hash;
+
+  const competences = parseJsonField(data.competences, []);
+  const langues = parseJsonField(data.langues, ['Français']);
+  const horaires_consultation = parseJsonField(data.horaires_consultation, {});
+
+  return {
+    ...data,
+    competences: Array.isArray(competences) ? competences : [],
+    langues: Array.isArray(langues) ? langues : ['Français'],
+    horaires_consultation: typeof horaires_consultation === 'object' ? horaires_consultation : {},
+    note_moyenne: Number(data.note_moyenne) || 5,
+    photo_url: data.fichier_photo_id ? `/api/fichiers/${data.fichier_photo_id}` : data.photo_url,
+    cachet_url: data.fichier_cachet_id ? `/api/fichiers/${data.fichier_cachet_id}` : null,
+  };
+};
 
 const lister = async ({ specialite, recherche, etablissement_id, page = 1, limit = 20 }) => {
-  const where = { actif: true };
+  const where = { actif: true, statut_validation: STATUT_VALIDATION.VALIDE };
 
   if (specialite) where.specialite = { [Op.like]: `%${specialite}%` };
   if (etablissement_id) where.etablissement_id = etablissement_id;
@@ -18,6 +39,7 @@ const lister = async ({ specialite, recherche, etablissement_id, page = 1, limit
 
   const { rows, count } = await Medecin.findAndCountAll({
     where,
+    attributes: { exclude: ['password_hash'] },
     include: [
       {
         model: Etablissement,
@@ -32,7 +54,7 @@ const lister = async ({ specialite, recherche, etablissement_id, page = 1, limit
   });
 
   return {
-    medecins: rows,
+    medecins: rows.map(formatMedecin),
     pagination: { total: count, page, limit, pages: Math.ceil(count / limit) },
   };
 };
@@ -40,6 +62,7 @@ const lister = async ({ specialite, recherche, etablissement_id, page = 1, limit
 const getById = async (id) => {
   const medecin = await Medecin.findOne({
     where: { id, actif: true },
+    attributes: { exclude: ['password_hash'] },
     include: [
       {
         model: Etablissement,
@@ -55,7 +78,83 @@ const getById = async (id) => {
     throw error;
   }
 
-  return medecin;
+  return formatMedecin(medecin);
 };
 
-module.exports = { lister, getById };
+const getProfile = async (medecinId) => getById(medecinId);
+
+const getDashboard = async (medecinId) => {
+  const medecin = await getById(medecinId);
+
+  const avisRecents = await Avis.findAll({
+    where: { cible_type: TYPE_CIBLE_AVIS.MEDECIN, cible_id: medecinId },
+    order: [['createdAt', 'DESC']],
+    limit: 5,
+  });
+
+  const repartitionNotes = await Avis.findAll({
+    where: { cible_type: TYPE_CIBLE_AVIS.MEDECIN, cible_id: medecinId },
+    attributes: ['note'],
+  });
+
+  const notes = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  repartitionNotes.forEach((a) => { notes[a.note] = (notes[a.note] || 0) + 1; });
+
+  return {
+    profil: medecin,
+    stats: {
+      note_moyenne: medecin.note_moyenne,
+      nombre_avis: medecin.nombre_avis,
+      competences_count: medecin.competences.length,
+      annees_experience: medecin.annees_experience || 0,
+      rdv_en_attente: 0,
+    },
+    avis_recents: avisRecents,
+    repartition_notes: notes,
+  };
+};
+
+const updateProfil = async (medecinId, data) => {
+  const medecin = await Medecin.findByPk(medecinId);
+  if (!medecin) {
+    const error = new Error('Médecin non trouvé');
+    error.statusCode = 404;
+    throw error;
+  }
+  const allowed = ['bio', 'competences', 'langues', 'telephone', 'specialite',
+    'accepte_teleconsultation', 'tarif_consultation_fcfa', 'annees_experience'];
+  allowed.forEach((k) => { if (data[k] !== undefined) medecin[k] = data[k]; });
+  await medecin.save();
+  return formatMedecin(medecin);
+};
+
+const updateHoraires = async (medecinId, horaires) => {
+  const medecin = await Medecin.findByPk(medecinId);
+  if (!medecin) {
+    const error = new Error('Médecin non trouvé');
+    error.statusCode = 404;
+    throw error;
+  }
+  medecin.horaires_consultation = horaires;
+  await medecin.save();
+  return formatMedecin(medecin);
+};
+
+const uploadPhoto = async (medecinId, fichierMeta) => {
+  const medecin = await Medecin.findByPk(medecinId);
+  medecin.fichier_photo_id = fichierMeta.id;
+  medecin.photo_url = fichierMeta.url;
+  await medecin.save();
+  return formatMedecin(medecin);
+};
+
+const uploadCachet = async (medecinId, fichierMeta) => {
+  const medecin = await Medecin.findByPk(medecinId);
+  medecin.fichier_cachet_id = fichierMeta.id;
+  await medecin.save();
+  return formatMedecin(medecin);
+};
+
+module.exports = {
+  lister, getById, getProfile, getDashboard, updateProfil, updateHoraires, uploadPhoto, uploadCachet, formatMedecin,
+};

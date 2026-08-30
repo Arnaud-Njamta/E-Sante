@@ -7,6 +7,7 @@ import Spinner from '../components/ui/Spinner';
 import ErrorState from '../components/ui/ErrorState';
 import EmptyState from '../components/ui/EmptyState';
 import { usePrisesToday, useConfirmerPrise, useSkipPrise } from '../hooks/usePrises';
+import { formatHeurePrise, isPrisePending, isPriseDone } from '../utils/priseHelpers';
 import toast from 'react-hot-toast';
 import {
   Check, SkipForward, Sunrise, Sun, Sunset, Moon,
@@ -175,13 +176,13 @@ export default function PrisesPage() {
   const groups = groupPrisesByMoment(allPrises);
 
   const totalPrises = allPrises.length;
-  const takenPrises = allPrises.filter((p) => p.statut === 'pris' || p.statut === 'retard').length;
+  const takenPrises = allPrises.filter((p) => isPriseDone(p.statut)).length;
   const percent = totalPrises > 0 ? Math.round((takenPrises / totalPrises) * 100) : 0;
 
   const handleConfirm = (id) => {
     confirmerMutation.mutate({ id, statut: 'pris' }, {
       onSuccess: () => toast.success('Prise confirmée avec succès'),
-      onError: () => toast.error('Erreur lors de la confirmation'),
+      onError: (err) => toast.error(err.response?.data?.message || 'Erreur lors de la confirmation'),
     });
   };
 
@@ -232,7 +233,7 @@ export default function PrisesPage() {
       </ProgressBarContainer>
 
       {groups.map((group, index) => {
-        const allDone = group.prises.every((p) => p.statut === 'pris' || p.statut === 'retard');
+        const allDone = group.prises.every((p) => isPriseDone(p.statut));
         const GroupIcon = group.Icon;
 
         return (
@@ -243,19 +244,23 @@ export default function PrisesPage() {
               </TimelineDot>
               <GroupTitle>
                 <h3>{group.moment}</h3>
-                <span>{group.heure ? group.heure.replace(':', 'h') : ''}</span>
+                <span>{formatHeurePrise(group.heure)}</span>
               </GroupTitle>
               {allDone && <Badge color="success" dot>Complété</Badge>}
             </GroupHeader>
 
             <PriseCards>
               {group.prises.map((prise) => {
-                const isDone = prise.statut === 'pris' || prise.statut === 'retard';
+                const isDone = isPriseDone(prise.statut);
+                const isPending = isPrisePending(prise.statut);
                 return (
                   <PriseCard key={prise.prise_programmee_id} $done={isDone}>
                     <PriseMedName>
                       <Pill />
                       {prise.nom_medicament} {prise.dosage}
+                      <span style={{ color: '#94A3B8', fontWeight: 400, marginLeft: 6 }}>
+                        {formatHeurePrise(prise.heure_prevue)}
+                      </span>
                     </PriseMedName>
                     <PriseActions>
                       {isDone ? (
@@ -263,17 +268,22 @@ export default function PrisesPage() {
                       ) : prise.statut === 'oublie' ? (
                         <Badge color="danger" dot>Oubliée</Badge>
                       ) : prise.statut === 'reporte' ? (
-                        <Badge color="warning" dot>Reportée</Badge>
-                      ) : (
+                        <>
+                          <Badge color="warning" dot>Reportée</Badge>
+                          <Button size="sm" variant="success" icon={Check} onClick={() => handleConfirm(prise.prise_programmee_id)} disabled={confirmerMutation.isPending}>
+                            Confirmer
+                          </Button>
+                        </>
+                      ) : isPending ? (
                         <>
                           <Button size="sm" variant="success" icon={Check} onClick={() => handleConfirm(prise.prise_programmee_id)} disabled={confirmerMutation.isPending}>
                             Confirmer
                           </Button>
                           <Button size="sm" variant="ghost" icon={SkipForward} onClick={() => handleSkip(prise.prise_programmee_id)} disabled={skipMutation.isPending}>
-                            Sauter
+                            Reporter
                           </Button>
                         </>
-                      )}
+                      ) : null}
                     </PriseActions>
                   </PriseCard>
                 );

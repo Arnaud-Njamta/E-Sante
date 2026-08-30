@@ -1,0 +1,32 @@
+{
+  "entries": [
+    {
+      "id": 1788043689290,
+      "content": "En zone rurale camerounaise, privilegier orientation centre de sante de district si transport limite",
+      "medecinName": "Test",
+      "specialite": "MG",
+      "createdAt": "2026-08-29T22:48:09.290Z"
+    },
+    {
+      "id": 1,
+      "content": "Au Cameroun, toute fièvre > 38°C persistante plus de 24h chez l'adulte doit faire suspecter un paludisme jusqu'à preuve du contraire (TDR ou goutte épaisse). Orienter vers centre de santé ou médecin généraliste rapidement, surtout enfant, femme enceinte et personne âgée.",
+      "medecinName": "Système DjamSanté",
+      "specialite": "Médecine générale",
+      "createdAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "content": "Face à une victime d'accident de la route : ne pas retirer le casque, ne pas déplacer sauf danger vital (feu, chute dans précipice). Sécuriser la zone, appeler 112/1515, vérifier conscience et respiration, PLS si inconscient mais respire.",
+      "medecinName": "Système DjamSanté",
+      "specialite": "Urgences",
+      "createdAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": 3,
+      "content": "En cas de violence conjugale ou menace : la priorité est la sécurité immédiate (117, 112). Orienter vers gynécologue ou médecin généraliste en toute confidentialité pour suivi et orientation sociale/psychologique.",
+      "medecinName": "Système DjamSanté",
+      "specialite": "Gynécologie",
+      "createdAt": "2026-01-01T00:00:00.000Z"
+    }
+  ]
+}

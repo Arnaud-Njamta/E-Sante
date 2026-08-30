@@ -1,20 +1,12 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { getBranding, getDisplayName } from '../../config/branding';
 import { getInitials } from '../../utils/helpers';
 import {
-  LayoutDashboard,
-  Heart,
-  Clock,
-  FileText,
-  BarChart3,
-  User,
-  LogOut,
-  ChevronLeft,
-  Activity,
-  Building2,
-  MessageCircle,
+  LayoutDashboard, Heart, Clock, FileText, BarChart3, User, LogOut,
+  ChevronLeft, Building2, MessageCircle, Stethoscope, Star, Pill, Newspaper, Camera, Package, Shield, Wallet,
 } from 'lucide-react';
 
 const SidebarContainer = styled.aside`
@@ -57,14 +49,12 @@ const LogoIcon = styled.div`
   justify-content: center;
   color: white;
   flex-shrink: 0;
-
   svg { width: 22px; height: 22px; }
 `;
 
 const LogoText = styled.div`
   overflow: hidden;
   white-space: nowrap;
-
   h1 {
     font-size: ${({ theme }) => theme.typography.sizes.md};
     font-weight: ${({ theme }) => theme.typography.weights.bold};
@@ -110,11 +100,7 @@ const NavItem = styled(NavLink)`
   white-space: nowrap;
   overflow: hidden;
 
-  svg {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-  }
+  svg { width: 20px; height: 20px; flex-shrink: 0; }
 
   &:hover {
     background: ${({ theme }) => theme.colors.primary[50]};
@@ -125,7 +111,6 @@ const NavItem = styled(NavLink)`
     background: ${({ theme }) => theme.colors.primary[50]};
     color: ${({ theme }) => theme.colors.primary[600]};
     font-weight: ${({ theme }) => theme.typography.weights.semibold};
-
     svg { color: ${({ theme }) => theme.colors.primary[500]}; }
   }
 `;
@@ -145,24 +130,13 @@ const CollapseButton = styled.button`
   color: ${({ theme }) => theme.colors.textSecondary};
   cursor: pointer;
   z-index: 10;
-  transition: all ${({ theme }) => theme.transitions.fast};
-
-  &:hover {
-    background: ${({ theme }) => theme.colors.primary[50]};
-    color: ${({ theme }) => theme.colors.primary[500]};
-    border-color: ${({ theme }) => theme.colors.primary[200]};
-  }
-
   svg {
     width: 14px;
     height: 14px;
-    transform: ${({ $collapsed }) => $collapsed ? 'rotate(180deg)' : 'rotate(0)'};
+    transform: ${({ $collapsed }) => ($collapsed ? 'rotate(180deg)' : 'rotate(0)')};
     transition: transform ${({ theme }) => theme.transitions.fast};
   }
-
-  @media (max-width: ${({ theme }) => theme.breakpoints.md}) {
-    display: none;
-  }
+  @media (max-width: ${({ theme }) => theme.breakpoints.md}) { display: none; }
 `;
 
 const ProfileSection = styled.div`
@@ -190,89 +164,138 @@ const Avatar = styled.div`
 const ProfileInfo = styled.div`
   overflow: hidden;
   flex: 1;
-
-  p {
-    margin: 0;
-    font-size: ${({ theme }) => theme.typography.sizes.sm};
-    font-weight: ${({ theme }) => theme.typography.weights.medium};
-    color: ${({ theme }) => theme.colors.text};
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  span {
-    font-size: ${({ theme }) => theme.typography.sizes.xs};
-    color: ${({ theme }) => theme.colors.textMuted};
-  }
+  p { margin: 0; font-size: ${({ theme }) => theme.typography.sizes.sm}; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  span { font-size: ${({ theme }) => theme.typography.sizes.xs }; color: ${({ theme }) => theme.colors.textMuted}; }
 `;
 
 const LogoutBtn = styled.button`
-  width: 32px;
-  height: 32px;
-  border-radius: ${({ theme }) => theme.radii.md};
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 32px; height: 32px; border-radius: ${({ theme }) => theme.radii.md};
+  display: flex; align-items: center; justify-content: center;
   color: ${({ theme }) => theme.colors.textMuted};
-  transition: all ${({ theme }) => theme.transitions.fast};
-  flex-shrink: 0;
-
-  &:hover {
-    background: ${({ theme }) => theme.colors.danger[50]};
-    color: ${({ theme }) => theme.colors.danger[500]};
-  }
-
+  &:hover { background: ${({ theme }) => theme.colors.danger[50]}; color: ${({ theme }) => theme.colors.danger[500]}; }
   svg { width: 18px; height: 18px; }
 `;
 
-const navItems = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Tableau de bord', section: 'principal' },
-  { to: '/medications', icon: Heart, label: 'Médicaments', section: 'principal' },
-  { to: '/prises', icon: Clock, label: 'Prises du jour', section: 'principal' },
-  { to: '/sante', icon: Building2, label: 'Annuaire Santé', section: 'sante' },
-  { to: '/pharmacie/chat', icon: MessageCircle, label: 'Pharmacie en ligne', section: 'sante' },
-  { to: '/ordonnances', icon: FileText, label: 'Ordonnances', section: 'outils' },
-  { to: '/analytics', icon: BarChart3, label: 'Statistiques', section: 'outils' },
-  { to: '/profil', icon: User, label: 'Mon profil', section: 'compte' },
-];
+const ROLE_NAV = {
+  patient: [
+    { to: '/dashboard', icon: LayoutDashboard, label: 'Tableau de bord', section: 'principal' },
+    { to: '/medications', icon: Heart, label: 'Médicaments', section: 'principal' },
+    { to: '/prises', icon: Clock, label: 'Prises du jour', section: 'principal' },
+    { to: '/sante', icon: Building2, label: 'Annuaire Santé', section: 'sante' },
+    { to: '/sante?tab=medicaments', icon: Pill, label: 'Trouver un médicament', section: 'sante' },
+    { to: '/rendez-vous', icon: Clock, label: 'Mes rendez-vous', section: 'sante' },
+    { to: '/reservations', icon: Package, label: 'Mes réservations', section: 'sante' },
+    { to: '/paiements', icon: Wallet, label: 'Mes paiements', section: 'sante' },
+    { to: '/ordonnances-electroniques', icon: FileText, label: 'Ordonnances élec.', section: 'sante' },
+    { to: '/sante?tab=medecins', icon: Stethoscope, label: 'Trouver un médecin', section: 'sante' },
+    { to: '/actualites', icon: Newspaper, label: 'Actualités', section: 'sante' },
+    { to: '/pharmacie/chat', icon: MessageCircle, label: 'Pharmacie en ligne', section: 'sante' },
+    { to: '/ordonnances', icon: FileText, label: 'Ordonnances', section: 'outils' },
+    { to: '/analytics', icon: BarChart3, label: 'Statistiques', section: 'outils' },
+    { to: '/profil', icon: User, label: 'Mon profil', section: 'compte' },
+  ],
+  medecin: [
+    { to: '/medecin/dashboard', icon: LayoutDashboard, label: 'Tableau de bord', section: 'principal' },
+    { to: '/medecin/rendez-vous', icon: Clock, label: 'Rendez-vous', section: 'principal' },
+    { to: '/medecin/ordonnances', icon: FileText, label: 'Ordonnances élec.', section: 'principal' },
+    { to: '/medecin/actualites', icon: Newspaper, label: 'Actualités', section: 'principal' },
+    { to: '/medecin/profil', icon: User, label: 'Mon profil public', section: 'principal' },
+    { to: '/medecin/parametres', icon: Camera, label: 'Photo & cachet', section: 'compte' },
+    { to: '/medecin/avis', icon: Star, label: 'Mes avis', section: 'compte' },
+  ],
+  pharmacie: [
+    { to: '/pharmacie/dashboard', icon: LayoutDashboard, label: 'Tableau de bord', section: 'principal' },
+    { to: '/pharmacie/messages', icon: MessageCircle, label: 'Messages patients', section: 'principal' },
+    { to: '/pharmacie/produits', icon: Pill, label: 'Catalogue produits', section: 'principal' },
+    { to: '/pharmacie/reservations', icon: Package, label: 'Réservations', section: 'principal' },
+    { to: '/pharmacie/ordonnances', icon: FileText, label: 'Vérifier ordonnance', section: 'principal' },
+    { to: '/pharmacie/actualites', icon: Newspaper, label: 'Actualités', section: 'principal' },
+    { to: '/pharmacie/profil', icon: Camera, label: 'Photo & profil', section: 'compte' },
+    { to: '/pharmacie/horaires', icon: Clock, label: 'Horaires', section: 'principal' },
+    { to: '/pharmacie/localisation', icon: Building2, label: 'Localisation', section: 'compte' },
+  ],
+  hopital: [
+    { to: '/hopital/dashboard', icon: LayoutDashboard, label: 'Tableau de bord', section: 'principal' },
+    { to: '/hopital/medecins', icon: Stethoscope, label: 'Médecins affiliés', section: 'principal' },
+    { to: '/hopital/services', icon: Heart, label: 'Services & tarifs', section: 'principal' },
+    { to: '/hopital/rendez-vous', icon: Clock, label: 'Rendez-vous', section: 'principal' },
+    { to: '/hopital/dispensaire', icon: Pill, label: 'Dispensaire', section: 'principal' },
+    { to: '/hopital/reservations', icon: Package, label: 'Réservations', section: 'principal' },
+    { to: '/hopital/ordonnances', icon: FileText, label: 'Vérifier ordonnance', section: 'principal' },
+    { to: '/hopital/messages', icon: MessageCircle, label: 'Messages patients', section: 'principal' },
+    { to: '/hopital/actualites', icon: Newspaper, label: 'Actualités', section: 'principal' },
+    { to: '/hopital/profil', icon: Camera, label: 'Photo & profil', section: 'principal' },
+    { to: '/hopital/horaires', icon: Clock, label: 'Horaires', section: 'compte' },
+    { to: '/hopital/localisation', icon: Building2, label: 'Localisation', section: 'compte' },
+  ],
+  clinique: [
+    { to: '/clinique/dashboard', icon: LayoutDashboard, label: 'Tableau de bord', section: 'principal' },
+    { to: '/clinique/medecins', icon: Stethoscope, label: 'Médecins affiliés', section: 'principal' },
+    { to: '/clinique/services', icon: Heart, label: 'Services & tarifs', section: 'principal' },
+    { to: '/clinique/rendez-vous', icon: Clock, label: 'Rendez-vous', section: 'principal' },
+    { to: '/clinique/dispensaire', icon: Pill, label: 'Dispensaire', section: 'principal' },
+    { to: '/clinique/reservations', icon: Package, label: 'Réservations', section: 'principal' },
+    { to: '/clinique/ordonnances', icon: FileText, label: 'Vérifier ordonnance', section: 'principal' },
+    { to: '/clinique/messages', icon: MessageCircle, label: 'Messages patients', section: 'principal' },
+    { to: '/clinique/actualites', icon: Newspaper, label: 'Actualités', section: 'principal' },
+    { to: '/clinique/profil', icon: Camera, label: 'Photo & profil', section: 'principal' },
+    { to: '/clinique/horaires', icon: Clock, label: 'Horaires', section: 'compte' },
+    { to: '/clinique/localisation', icon: Building2, label: 'Localisation', section: 'compte' },
+  ],
+  admin: [
+    { to: '/admin/inscriptions', icon: Shield, label: 'Validations MINSANTE', section: 'principal' },
+    { to: '/admin/commissions', icon: BarChart3, label: 'Finances & commissions', section: 'principal' },
+  ],
+};
+
+const SECTION_LABELS = {
+  principal: 'Principal',
+  sante: 'Santé',
+  outils: 'Outils',
+  compte: 'Compte',
+};
+
+const ROLE_ICONS = {
+  patient: Heart,
+  medecin: Stethoscope,
+  pharmacie: Pill,
+  hopital: Building2,
+  clinique: Building2,
+  admin: Shield,
+};
 
 export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
-  const { user, logout } = useAuth();
+  const { user, role, logout } = useAuth();
+  const branding = getBranding(role);
+  const navItems = ROLE_NAV[role] || ROLE_NAV.patient;
+  const RoleIcon = ROLE_ICONS[role] || Heart;
 
-  const sections = {
-    principal: 'Principal',
-    sante: 'Santé & Pharmacies',
-    outils: 'Outils',
-    compte: 'Compte',
-  };
+  const sections = [...new Set(navItems.map((i) => i.section))];
 
-  const grouped = Object.keys(sections).map((key) => ({
-    label: sections[key],
-    items: navItems.filter((i) => i.section === key),
-  }));
+  const displayName = getDisplayName(user, role);
+  const initials = ['pharmacie', 'hopital', 'clinique'].includes(role)
+    ? (user?.nom?.[0] || 'P')
+    : getInitials(user?.nom || user?.prenom || 'U');
 
   return (
     <SidebarContainer $collapsed={collapsed} $mobileOpen={mobileOpen}>
-      <CollapseButton onClick={onToggle} $collapsed={collapsed}>
-        <ChevronLeft />
-      </CollapseButton>
+      <CollapseButton onClick={onToggle} $collapsed={collapsed}><ChevronLeft /></CollapseButton>
 
       <LogoSection>
-        <LogoIcon><Activity /></LogoIcon>
+        <LogoIcon><RoleIcon /></LogoIcon>
         {!collapsed && (
           <LogoText>
-            <h1>E-Santé</h1>
-            <span>Suivi médicamenteux</span>
+            <h1>{branding.appName}</h1>
+            <span>{branding.tagline}</span>
           </LogoText>
         )}
       </LogoSection>
 
       <NavSection>
-        {grouped.map((group) => (
-          <React.Fragment key={group.label}>
-            <SectionLabel $collapsed={collapsed}>{group.label}</SectionLabel>
-            {group.items.map((item) => (
+        {sections.map((sectionKey) => (
+          <React.Fragment key={sectionKey}>
+            <SectionLabel $collapsed={collapsed}>{SECTION_LABELS[sectionKey]}</SectionLabel>
+            {navItems.filter((i) => i.section === sectionKey).map((item) => (
               <NavItem key={item.to} to={item.to} title={collapsed ? item.label : undefined}>
                 <item.icon />
                 {!collapsed && item.label}
@@ -283,16 +306,14 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
       </NavSection>
 
       <ProfileSection>
-        <Avatar>{getInitials(user?.nom || user?.prenom || 'U')}</Avatar>
+        <Avatar>{initials}</Avatar>
         {!collapsed && (
           <>
             <ProfileInfo>
-              <p>{user?.prenom} {user?.nom}</p>
-              <span>{user?.email || 'Patient'}</span>
+              <p>{displayName}</p>
+              <span>{branding.tagline}</span>
             </ProfileInfo>
-            <LogoutBtn onClick={logout} title="Déconnexion" aria-label="Déconnexion">
-              <LogOut />
-            </LogoutBtn>
+            <LogoutBtn onClick={logout} title="Déconnexion"><LogOut /></LogoutBtn>
           </>
         )}
       </ProfileSection>

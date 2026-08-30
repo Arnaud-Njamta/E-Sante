@@ -2,13 +2,19 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const ordonnanceController = require('../controllers/ordonnance.controller');
-const authMiddleware = require('../middlewares/auth.middleware');
+const { patientAuth } = require('../middlewares/auth.middleware');
+
+const uploadDir = process.env.UPLOAD_DIR || './uploads';
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 // Configuration Multer pour upload des ordonnances
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, process.env.UPLOAD_DIR || './uploads');
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -63,7 +69,7 @@ const upload = multer({
  *       400:
  *         description: Aucun fichier fourni
  */
-router.post('/scan', authMiddleware, upload.single('image'), ordonnanceController.scanOrdonnance);
+router.post('/scan', patientAuth, upload.single('image'), ordonnanceController.scanOrdonnance);
 
 /**
  * @swagger
@@ -107,7 +113,7 @@ router.post('/scan', authMiddleware, upload.single('image'), ordonnanceControlle
  *       404:
  *         description: Ordonnance non trouvée
  */
-router.post('/:id/valider', authMiddleware, ordonnanceController.validerOrdonnance);
+router.post('/:id/valider', patientAuth, ordonnanceController.validerOrdonnance);
 
 /**
  * @swagger
@@ -121,6 +127,6 @@ router.post('/:id/valider', authMiddleware, ordonnanceController.validerOrdonnan
  *       200:
  *         description: Liste des ordonnances
  */
-router.get('/', authMiddleware, ordonnanceController.getAll);
+router.get('/', patientAuth, ordonnanceController.getAll);
 
 module.exports = router;

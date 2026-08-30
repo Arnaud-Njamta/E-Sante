@@ -178,8 +178,8 @@ Visualisation détaillée : jauge de risque, graphique de tendance, observations
 ### 1. Cloner le projet
 
 ```bash
-git clone https://github.com/Kanounou/E-Sante.git
-cd E-Sante
+git clone https://github.com/Kanounou/DjamSante.git
+cd DjamSante
 ```
 
 ### 2. Installer les dépendances
@@ -224,7 +224,7 @@ SMTP_HOST=smtp.example.com
 SMTP_PORT=587
 SMTP_USER=user@example.com
 SMTP_PASS=votre_smtp_password
-SMTP_FROM=E-Sante <noreply@e-sante.com>
+SMTP_FROM=DjamSante <noreply@e-sante.com>
 
 # ─── Frontend ───
 FRONTEND_URL=http://localhost:5173
@@ -272,7 +272,7 @@ npm run dev
 ## 📁 Structure du Projet
 
 ```
-E-Sante/
+DjamSante/
 │
 ├── index.js                          # Point d'entrée du serveur Express
 ├── package.json                      # Dépendances backend & scripts
@@ -692,9 +692,9 @@ curl -X POST http://localhost:3000/api/auth/forgot-password \
 
 ## 👨‍💻 Auteur
 
-**Kanounou** — Projet Électif E-Santé / Santé Pharmaceutique
+**Kanounou** — Projet Électif DjamSanté / Santé Pharmaceutique
 
-📦 [GitHub Repository](https://github.com/Kanounou/E-Sante)
+📦 [GitHub Repository](https://github.com/Kanounou/DjamSante)
 
 ---
 

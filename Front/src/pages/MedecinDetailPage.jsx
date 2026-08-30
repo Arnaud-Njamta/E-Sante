@@ -1,14 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, Phone, Award, Languages } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { ArrowLeft, MapPin, Phone, Award, Languages, Video, Shield } from 'lucide-react';
 import Card from '../components/ui/Card';
 import StarRating from '../components/ui/StarRating';
 import Button from '../components/ui/Button';
 import Spinner from '../components/ui/Spinner';
 import ErrorState from '../components/ui/ErrorState';
+import CommissionSummary from '../components/ui/CommissionSummary';
+import client from '../api/client';
+import ENDPOINTS from '../api/endpoints';
 import { useMedecin } from '../hooks/useMedecins';
 import { useAvis, useCreerAvis } from '../hooks/useMessagerie';
+import { useCreneaux, useCreerRdv } from '../hooks/useRendezVous';
+import { parseJsonArray } from '../utils/helpers';
+import { resolveFileUrl } from '../components/ui/PhotoUploadCard';
+import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
 const BackBtn = styled.button`
@@ -35,7 +43,7 @@ const Avatar = styled.div`
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #3B82F6, #1D4ED8);
+  background: ${({ $url }) => ($url ? `url(${$url}) center/cover` : 'linear-gradient(135deg, #3B82F6, #1D4ED8)')};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -68,17 +76,65 @@ const StarSelect = styled.div`
   }
 `;
 
-export default function MedecinDetailPage() {
-  const { id } = useParams();
+const SlotGrid = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+`;
+
+const SlotBtn = styled.button`
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1.5px solid ${({ $active }) => ($active ? '#059669' : '#E2E8F0')};
+  background: ${({ $active }) => ($active ? '#ECFDF5' : '#fff')};
+  color: ${({ $active }) => ($active ? '#047857' : '#334155')};
+  font-size: 0.85rem;
+  cursor: pointer;
+  &:hover { border-color: #059669; }
+`;
+
+export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) {
+  const { id: paramId } = useParams();
+  const id = overrideId || paramId;
   const navigate = useNavigate();
   const { data: medecin, isLoading, error, refetch } = useMedecin(id);
   const { data: avisData } = useAvis('medecin', id);
   const creerAvis = useCreerAvis();
+  const { isPatient, isMedecin, user } = useAuth();
   const [note, setNote] = useState(5);
   const [commentaire, setCommentaire] = useState('');
+  const [dateRdv, setDateRdv] = useState('');
+  const [heureRdv, setHeureRdv] = useState('');
+  const [motif, setMotif] = useState('');
+  const [typeConsultation, setTypeConsultation] = useState('presentiel');
+  const { data: creneauxData, isLoading: creneauxLoading, isError: creneauxError } = useCreneaux(id, dateRdv);
+  const creerRdv = useCreerRdv();
+
+  useEffect(() => {
+    setHeureRdv('');
+  }, [dateRdv]);
+
+  const creneaux = creneauxData?.creneaux || [];
+  const { data: commissionPreview } = useQuery({
+    queryKey: ['commission-preview', id],
+    queryFn: async () => {
+      const { data } = await client.get(ENDPOINTS.commissions.previewConsultation, {
+        params: { medecin_id: id },
+      });
+      return data.data;
+    },
+    enabled: !!id,
+  });
+
+  const isPreview = isOwnProfile || (isMedecin && user?.id === id);
 
   if (isLoading) return <Spinner />;
   if (error) return <ErrorState message="Médecin introuvable" onRetry={refetch} />;
+
+  const competences = parseJsonArray(medecin?.competences);
+  const langues = parseJsonArray(medecin?.langues, ['Français']);
+  const photoUrl = resolveFileUrl(medecin?.photo_url, medecin?.fichier_photo_id);
 
   const handleAvis = async () => {
     try {
@@ -96,16 +152,54 @@ export default function MedecinDetailPage() {
     }
   };
 
+  const handleRdv = async () => {
+    if (!dateRdv || !heureRdv) { toast.error('Choisissez une date et un créneau'); return; }
+    try {
+      await creerRdv.mutateAsync({
+        medecin_id: id,
+        date_rdv: dateRdv,
+        heure_debut: heureRdv,
+        motif,
+        type_consultation: typeConsultation,
+      });
+      toast.success('Demande de rendez-vous envoyée !');
+      navigate('/rendez-vous');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Créneau indisponible');
+    }
+  };
+
   return (
     <div>
-      <BackBtn onClick={() => navigate('/sante')}><ArrowLeft size={18} /> Retour à l'annuaire</BackBtn>
+      {isPreview && (
+        <div style={{
+          marginBottom: 16, padding: '12px 16px', borderRadius: 10,
+          background: '#ECFDF5', border: '1px solid #A7F3D0', color: '#047857', fontSize: '0.9rem',
+        }}>
+          Aperçu patient — voici comment les patients voient votre profil public dans l&apos;annuaire.
+        </div>
+      )}
+
+      {!isPreview && (
+        <BackBtn onClick={() => navigate('/sante')}><ArrowLeft size={18} /> Retour à l&apos;annuaire</BackBtn>
+      )}
+      {isPreview && (
+        <BackBtn onClick={() => navigate('/medecin/dashboard')}><ArrowLeft size={18} /> Retour au tableau de bord</BackBtn>
+      )}
 
       <ProfileHeader>
-        <Avatar>{medecin.prenom?.[0]}{medecin.nom?.[0]}</Avatar>
+        <Avatar $url={photoUrl}>
+          {!photoUrl && <>{medecin.prenom?.[0]}{medecin.nom?.[0]}</>}
+        </Avatar>
         <div>
           <StarRating rating={medecin.note_moyenne} count={medecin.nombre_avis} size={18} />
           <h1 style={{ margin: '8px 0 4px', fontSize: '1.75rem' }}>Dr. {medecin.prenom} {medecin.nom}</h1>
           <p style={{ color: '#3B82F6', fontWeight: 600, margin: '0 0 8px' }}>{medecin.specialite}</p>
+          {medecin.statut_validation === 'valide' && medecin.numero_ordre && (
+            <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', color: '#047857', margin: '0 0 8px' }}>
+              <Shield size={14} /> Validé MINSANTE — N° ordre {medecin.numero_ordre}
+            </p>
+          )}
           {medecin.annees_experience && (
             <p style={{ color: '#64748B', fontSize: '0.9rem', margin: 0 }}>
               {medecin.annees_experience} ans d'expérience
@@ -137,20 +231,99 @@ export default function MedecinDetailPage() {
         <Card style={{ padding: 24 }}>
           <h3 style={{ margin: '0 0 12px' }}><Award size={18} style={{ verticalAlign: 'middle' }} /> Compétences</h3>
           <div>
-            {(medecin.competences || []).map((c) => (
+            {(competences).map((c) => (
               <CompetenceTag key={c}>{c}</CompetenceTag>
             ))}
           </div>
-          {medecin.langues?.length > 0 && (
+          {langues.length > 0 && (
             <div style={{ marginTop: 20 }}>
               <h4 style={{ margin: '0 0 8px', fontSize: '0.9rem' }}>
                 <Languages size={16} style={{ verticalAlign: 'middle' }} /> Langues parlées
               </h4>
-              <p style={{ margin: 0, color: '#64748B' }}>{medecin.langues.join(', ')}</p>
+              <p style={{ margin: 0, color: '#64748B' }}>{langues.join(', ')}</p>
             </div>
           )}
         </Card>
       </div>
+
+      {!isPreview && isPatient && (
+        <Card style={{ padding: 24, marginTop: 24 }}>
+          <h3 style={{ margin: '0 0 16px' }}>Prendre rendez-vous</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div>
+              <label style={{ fontSize: '0.85rem', display: 'block', marginBottom: 4 }}>Date</label>
+              <input
+                type="date"
+                value={dateRdv}
+                onChange={(e) => setDateRdv(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #E2E8F0' }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '0.85rem', display: 'block', marginBottom: 4 }}>Motif</label>
+              <input
+                type="text"
+                value={motif}
+                onChange={(e) => setMotif(e.target.value)}
+                placeholder="Consultation..."
+                style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #E2E8F0' }}
+              />
+            </div>
+          </div>
+          <div style={{ marginTop: 16 }}>
+            <label style={{ fontSize: '0.85rem' }}>Créneau disponible</label>
+            {!dateRdv && (
+              <p style={{ margin: '8px 0 0', fontSize: '0.85rem', color: '#94A3B8' }}>Sélectionnez une date pour voir les créneaux.</p>
+            )}
+            {dateRdv && creneauxLoading && <p style={{ margin: '8px 0 0', fontSize: '0.85rem', color: '#64748B' }}>Chargement des créneaux...</p>}
+            {dateRdv && creneauxError && <p style={{ margin: '8px 0 0', fontSize: '0.85rem', color: '#DC2626' }}>Impossible de charger les créneaux.</p>}
+            {dateRdv && !creneauxLoading && !creneauxError && creneaux.length === 0 && (
+              <p style={{ margin: '8px 0 0', fontSize: '0.85rem', color: '#B45309' }}>
+                Aucun créneau ce jour-là. Essayez une autre date (lun–ven, 8h–18h).
+              </p>
+            )}
+            {dateRdv && creneaux.length > 0 && (
+              <SlotGrid>
+                {creneaux.map((c) => (
+                  <SlotBtn
+                    key={c.debut}
+                    type="button"
+                    $active={heureRdv === c.debut}
+                    onClick={() => setHeureRdv(c.debut)}
+                  >
+                    {c.debut} — {c.fin}
+                  </SlotBtn>
+                ))}
+              </SlotGrid>
+            )}
+          </div>
+          {medecin.accepte_teleconsultation && (
+            <div style={{ marginTop: 16, display: 'flex', gap: 16 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                <input type="radio" name="type" checked={typeConsultation === 'presentiel'} onChange={() => setTypeConsultation('presentiel')} />
+                Présentiel
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                <input type="radio" name="type" checked={typeConsultation === 'teleconsultation'} onChange={() => setTypeConsultation('teleconsultation')} />
+                <Video size={14} /> Téléconsultation
+              </label>
+            </div>
+          )}
+          {medecin.tarif_consultation_fcfa != null && (
+            <p style={{ fontSize: '0.85rem', color: '#64748B', marginTop: 8 }}>
+              Tarif consultation : {Number(medecin.tarif_consultation_fcfa).toLocaleString()} FCFA
+            </p>
+          )}
+          <CommissionSummary
+            breakdown={creneauxData?.commission || commissionPreview}
+            label="Tarif & frais plateforme"
+          />
+          <Button onClick={handleRdv} disabled={creerRdv.isPending || !dateRdv || !heureRdv} style={{ marginTop: 12 }}>
+            Demander un RDV
+          </Button>
+        </Card>
+      )}
 
       <Card style={{ padding: 24, marginTop: 24 }}>
         <h3 style={{ margin: '0 0 16px' }}>Avis patients</h3>
@@ -163,6 +336,7 @@ export default function MedecinDetailPage() {
           </div>
         )) : <p style={{ color: '#94A3B8' }}>Aucun avis pour le moment.</p>}
 
+        {!isPreview && isPatient && (
         <div style={{ marginTop: 16 }}>
           <p style={{ fontWeight: 600 }}>Laisser un avis</p>
           <StarSelect>
@@ -178,6 +352,7 @@ export default function MedecinDetailPage() {
           />
           <Button onClick={handleAvis} disabled={creerAvis.isPending}>Publier mon avis</Button>
         </div>
+        )}
       </Card>
     </div>
   );

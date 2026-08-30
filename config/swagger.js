@@ -4,11 +4,11 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'E-SANTE API',
+      title: 'DjamSanté API',
       version: '1.0.0',
       description: 'API REST - Application de santé pour l\'amélioration de l\'observance thérapeutique',
       contact: {
-        name: 'E-SANTE',
+        name: 'DjamSanté',
       },
     },
     servers: [

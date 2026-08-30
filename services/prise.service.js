@@ -1,25 +1,30 @@
 const { Op } = require('sequelize');
-const { HistoriquePrise, PriseProgrammee, Traitement } = require('../models');
-const { startOfDay, endOfDay } = require('../utils/helpers');
+const { sequelize, HistoriquePrise, PriseProgrammee, Traitement } = require('../models');
+const { startOfDay, endOfDay, localDateString } = require('../utils/helpers');
 const { SEUIL_RETARD_MINUTES, STATUT_PRISE } = require('../utils/constants');
+
+/** Normalise TIME MySQL → "HH:MM" */
+const formatHeure = (heure) => {
+  if (!heure) return '';
+  const str = String(heure);
+  const parts = str.split(':');
+  return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+};
 
 /**
  * Récupérer les prises du jour pour un patient
  */
 const getPrisesAujourdhui = async (patientId) => {
-  const today = new Date();
-  const debut = startOfDay(today);
-  const fin = endOfDay(today);
+  const dateJour = localDateString();
 
-  // Récupérer les traitements actifs avec leurs prises programmées
   const traitements = await Traitement.findAll({
     where: {
       patient_id: patientId,
       statut: 'actif',
-      date_debut: { [Op.lte]: today },
+      date_debut: { [Op.lte]: dateJour },
       [Op.or]: [
         { date_fin: null },
-        { date_fin: { [Op.gte]: today } },
+        { date_fin: { [Op.gte]: dateJour } },
       ],
     },
     include: [{
@@ -28,17 +33,18 @@ const getPrisesAujourdhui = async (patientId) => {
     }],
   });
 
-  // Construire la liste des prises du jour avec leur statut
   const prisesJour = [];
 
   for (const traitement of traitements) {
     for (const priseProgrammee of traitement.prises_programmees) {
-      // Vérifier si une entrée historique existe déjà pour aujourd'hui
       const historique = await HistoriquePrise.findOne({
         where: {
           prise_programmee_id: priseProgrammee.id,
           patient_id: patientId,
-          date_heure_prevue: { [Op.between]: [debut, fin] },
+          [Op.and]: sequelize.where(
+            sequelize.fn('DATE', sequelize.col('date_heure_prevue')),
+            dateJour,
+          ),
         },
       });
 
@@ -49,7 +55,7 @@ const getPrisesAujourdhui = async (patientId) => {
         dosage: traitement.dosage,
         forme: traitement.forme,
         instructions: traitement.instructions,
-        heure_prevue: priseProgrammee.heure_prise,
+        heure_prevue: formatHeure(priseProgrammee.heure_prise),
         statut: historique ? historique.statut : 'en_attente',
         historique_id: historique ? historique.id : null,
         date_heure_reelle: historique ? historique.date_heure_reelle : null,
@@ -57,7 +63,6 @@ const getPrisesAujourdhui = async (patientId) => {
     }
   }
 
-  // Trier par heure prévue
   prisesJour.sort((a, b) => a.heure_prevue.localeCompare(b.heure_prevue));
 
   return prisesJour;
@@ -85,47 +90,49 @@ const confirmerPrise = async (priseId, patientId, { statut, date_heure_reelle })
 
   const now = new Date();
   const heureReelle = date_heure_reelle ? new Date(date_heure_reelle) : now;
+  const dateJour = localDateString();
 
-  // Calculer le retard en minutes
-  const today = new Date();
-  const [h, m] = priseProgrammee.heure_prise.split(':').map(Number);
-  const heurePrevue = new Date(today.getFullYear(), today.getMonth(), today.getDate(), h, m);
+  const [h, m] = formatHeure(priseProgrammee.heure_prise).split(':').map(Number);
+  const heurePrevue = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
+
   const retardMinutes = statut === STATUT_PRISE.PRIS
     ? Math.max(0, Math.round((heureReelle - heurePrevue) / 60000))
     : 0;
 
-  // Déterminer le statut final
   let statutFinal = statut;
   if (statut === STATUT_PRISE.PRIS && retardMinutes > SEUIL_RETARD_MINUTES) {
     statutFinal = STATUT_PRISE.RETARD;
   }
 
-  // Vérifier si une entrée existe déjà pour aujourd'hui
-  const debut = startOfDay(today);
-  const fin = endOfDay(today);
   const existant = await HistoriquePrise.findOne({
     where: {
       prise_programmee_id: priseId,
       patient_id: patientId,
-      date_heure_prevue: { [Op.between]: [debut, fin] },
+      [Op.and]: sequelize.where(
+        sequelize.fn('DATE', sequelize.col('date_heure_prevue')),
+        dateJour,
+      ),
     },
   });
 
   if (existant) {
     await existant.update({
       statut: statutFinal,
-      date_heure_reelle: statut === STATUT_PRISE.OUBLIE ? null : heureReelle,
+      date_heure_reelle: statut === STATUT_PRISE.OUBLIE || statut === STATUT_PRISE.REPORTE
+        ? null
+        : heureReelle,
       retard_minutes: retardMinutes,
     });
     return existant;
   }
 
-  // Créer une nouvelle entrée historique
   const historique = await HistoriquePrise.create({
     prise_programmee_id: priseId,
     patient_id: patientId,
     date_heure_prevue: heurePrevue,
-    date_heure_reelle: statut === STATUT_PRISE.OUBLIE ? null : heureReelle,
+    date_heure_reelle: statut === STATUT_PRISE.OUBLIE || statut === STATUT_PRISE.REPORTE
+      ? null
+      : heureReelle,
     statut: statutFinal,
     retard_minutes: retardMinutes,
   });
@@ -165,13 +172,13 @@ const getHistorique = async (patientId, { date_debut, date_fin, traitement_id, p
     where,
     include,
     order: [['date_heure_prevue', 'DESC']],
-    limit: parseInt(limit),
+    limit: parseInt(limit, 10),
     offset,
   });
 
   return {
     total: count,
-    page: parseInt(page),
+    page: parseInt(page, 10),
     total_pages: Math.ceil(count / limit),
     data: rows,
   };

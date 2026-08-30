@@ -27,11 +27,50 @@ const Etablissement = sequelize.define('Etablissement', {
     type: DataTypes.STRING(100),
     allowNull: true,
   },
+  region: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+  },
+  latitude: {
+    type: DataTypes.DECIMAL(10, 8),
+    allowNull: true,
+  },
+  longitude: {
+    type: DataTypes.DECIMAL(11, 8),
+    allowNull: true,
+  },
+  numero_agrement: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+  },
+  statut_validation: {
+    type: DataTypes.ENUM('en_attente', 'valide', 'rejete', 'suspendu'),
+    allowNull: false,
+    defaultValue: 'valide',
+  },
+  fichier_photo_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+  },
+  fichier_cachet_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+  },
+  modes_paiement: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: ['especes', 'orange_money', 'wave'],
+  },
   telephone: {
     type: DataTypes.STRING(20),
     allowNull: true,
   },
   email: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+    unique: true,
+  },
+  password_hash: {
     type: DataTypes.STRING(255),
     allowNull: true,
   },
@@ -72,6 +111,11 @@ const Etablissement = sequelize.define('Etablissement', {
     type: DataTypes.BOOLEAN,
     allowNull: false,
     defaultValue: true,
+  },
+  coordonnees_paiement: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: null,
   },
 }, {
   tableName: 'etablissements',

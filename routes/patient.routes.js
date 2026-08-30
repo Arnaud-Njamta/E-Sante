@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const patientController = require('../controllers/patient.controller');
-const authMiddleware = require('../middlewares/auth.middleware');
-const { validate, updateProfileSchema, parametresVieSchema } = require('../middlewares/validation.middleware');
+const { patientAuth } = require('../middlewares/auth.middleware');
+const { validate, updateProfileSchema, parametresVieSchema, deleteAccountSchema } = require('../middlewares/validation.middleware');
 
 /**
  * @swagger
@@ -25,7 +25,7 @@ const { validate, updateProfileSchema, parametresVieSchema } = require('../middl
  *       401:
  *         description: Non authentifié
  */
-router.get('/profile', authMiddleware, patientController.getProfile);
+router.get('/profile', patientAuth, patientController.getProfile);
 
 /**
  * @swagger
@@ -67,7 +67,7 @@ router.get('/profile', authMiddleware, patientController.getProfile);
  *       200:
  *         description: Profil mis à jour
  */
-router.put('/profile', authMiddleware, validate(updateProfileSchema), patientController.updateProfile);
+router.put('/profile', patientAuth, validate(updateProfileSchema), patientController.updateProfile);
 
 /**
  * @swagger
@@ -106,6 +106,10 @@ router.put('/profile', authMiddleware, validate(updateProfileSchema), patientCon
  *       200:
  *         description: Paramètres mis à jour
  */
-router.put('/parametres-vie', authMiddleware, validate(parametresVieSchema), patientController.updateParametresVie);
+router.put('/parametres-vie', patientAuth, validate(parametresVieSchema), patientController.updateParametresVie);
+
+router.get('/export', patientAuth, patientController.exportData);
+router.delete('/account', patientAuth, validate(deleteAccountSchema), patientController.deleteAccount);
+router.get('/privacy', patientAuth, patientController.getPrivacyInfo);
 
 module.exports = router;

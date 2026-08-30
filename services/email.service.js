@@ -39,7 +39,7 @@ const sendResetPasswordEmail = async (email, token) => {
         
         <!-- Header -->
         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center;">
-          <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">🏥 E-Santé</h1>
+          <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">🏥 DjamSanté</h1>
           <p style="color: rgba(255,255,255,0.85); margin: 8px 0 0; font-size: 14px;">Votre santé, notre priorité</p>
         </div>
         
@@ -78,7 +78,7 @@ const sendResetPasswordEmail = async (email, token) => {
         <!-- Footer -->
         <div style="background-color: #f8f9fa; padding: 20px 30px; text-align: center; border-top: 1px solid #eee;">
           <p style="color: #aaa; font-size: 12px; margin: 0;">
-            © ${new Date().getFullYear()} E-Santé — Application d'observance thérapeutique
+            © ${new Date().getFullYear()} DjamSanté — Application d'observance thérapeutique
           </p>
         </div>
       </div>
@@ -87,9 +87,9 @@ const sendResetPasswordEmail = async (email, token) => {
   `;
 
     const mailOptions = {
-        from: process.env.SMTP_FROM || '"E-Santé" <noreply@e-sante.com>',
+        from: process.env.SMTP_FROM || '"DjamSanté" <noreply@e-sante.com>',
         to: email,
-        subject: '🔐 Réinitialisation de votre mot de passe — E-Santé',
+        subject: '🔐 Réinitialisation de votre mot de passe — DjamSanté',
         html: htmlContent,
     };
 

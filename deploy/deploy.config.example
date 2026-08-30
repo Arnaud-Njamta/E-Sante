@@ -1,0 +1,9 @@
+# Copiez ce fichier en deploy.config et remplissez vos valeurs
+# (deploy.config est ignoré par git)
+
+DOMAIN=djamsante.cm
+API_URL=https://api.djamsante.cm/api
+VPS_IP=203.0.113.50
+VPS_USER=root
+GIT_BRANCH=backend
+DB_PASSWORD=CHANGER_MOT_DE_PASSE

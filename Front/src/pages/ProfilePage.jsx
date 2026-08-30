@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
+import { Link, useNavigate } from 'react-router-dom';
 import Card from '../components/ui/Card';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
@@ -7,10 +8,12 @@ import Badge from '../components/ui/Badge';
 import { useAuth } from '../context/AuthContext';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
+import client from '../api/client';
+import ENDPOINTS from '../api/endpoints';
 import {
   User, Mail, Phone, CalendarDays, Clock, Save,
-  Shield, UserCircle, Bell, Sun, Sunset, Moon,
-  Camera, Download, Lock, Link, Info,
+  Shield, Bell, Sun, Sunset, Moon,
+  Camera, Download, Lock, Info, Trash2,
 } from 'lucide-react';
 
 /* ─── Styles ─── */
@@ -259,11 +262,28 @@ const SaveBar = styled.div`
   padding-top: ${({ theme }) => theme.spacing[4]};
 `;
 
+const Modal = styled.div`
+  position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+`;
+const ModalCard = styled(Card)`
+  width: 100%; max-width: 420px; padding: 24px;
+  h3 { margin: 0 0 16px; font-size: 1.1rem; }
+`;
+
 /* ─── Component ─── */
 export default function ProfilePage() {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, logout } = useAuth();
+  const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
-  const [toggles, setToggles] = useState({ reminders: true, refill: true, reports: false, twofa: true, sharing: true });
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
+  const [deleteForm, setDeleteForm] = useState({ password: '', confirmation: '' });
+  const [toggles, setToggles] = useState({
+    reminders: true, refill: true, reports: false,
+    sharing: !!user?.consentement_recherche,
+  });
   const { register, handleSubmit } = useForm({
     defaultValues: {
       prenom: user?.prenom || '',
@@ -273,6 +293,12 @@ export default function ProfilePage() {
       dateNaissance: user?.date_naissance || user?.dateNaissance || '',
     },
   });
+
+  useEffect(() => {
+    if (user?.consentement_recherche !== undefined) {
+      setToggles((p) => ({ ...p, sharing: !!user.consentement_recherche }));
+    }
+  }, [user?.consentement_recherche]);
 
   const onSubmit = async (formData) => {
     setSaving(true);
@@ -291,7 +317,69 @@ export default function ProfilePage() {
     }
   };
 
-  const toggle = (key) => setToggles((p) => ({ ...p, [key]: !p[key] }));
+  const toggle = async (key) => {
+    if (key === 'sharing') {
+      const next = !toggles.sharing;
+      setToggles((p) => ({ ...p, sharing: next }));
+      try {
+        await updateProfile({ consentement_recherche: next });
+        toast.success(next ? 'Consentement enregistré' : 'Consentement retiré');
+      } catch (err) {
+        setToggles((p) => ({ ...p, sharing: !next }));
+        toast.error(err.response?.data?.message || 'Erreur');
+      }
+      return;
+    }
+    setToggles((p) => ({ ...p, [key]: !p[key] }));
+  };
+
+  const handleExport = async () => {
+    try {
+      const { data } = await client.get(ENDPOINTS.patients.export);
+      const blob = new Blob([JSON.stringify(data.data || data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `medisante-export-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Export téléchargé');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Export impossible');
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (pwForm.next !== pwForm.confirm) {
+      toast.error('Les mots de passe ne correspondent pas');
+      return;
+    }
+    try {
+      await client.post(ENDPOINTS.auth.changePassword, {
+        current_password: pwForm.current,
+        new_password: pwForm.next,
+      });
+      toast.success('Mot de passe modifié');
+      setShowPasswordModal(false);
+      setPwForm({ current: '', next: '', confirm: '' });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Erreur');
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      await client.delete(ENDPOINTS.patients.account, {
+        data: { password: deleteForm.password, confirmation: deleteForm.confirmation },
+      });
+      toast.success('Compte supprimé');
+      logout();
+      navigate('/login', { replace: true });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Suppression impossible');
+    }
+  };
+
   const initials = `${(user?.prenom || 'P')[0]}${(user?.nom || '')[0] || ''}`.toUpperCase();
 
   return (
@@ -388,16 +476,9 @@ export default function ProfilePage() {
           <SectionHead><Shield /> <h3>Sécurité</h3></SectionHead>
           <SecurityGrid>
             <div>
-              <ToggleRow>
-                <ToggleInfo>
-                  <h4>Authentification 2 facteurs</h4>
-                  <p>Sécurisez votre compte avec un code par SMS</p>
-                </ToggleInfo>
-                <Toggle $on={toggles.twofa} onClick={() => toggle('twofa')} />
-              </ToggleRow>
-              <div style={{ marginTop: '1rem' }}>
+              <div style={{ marginTop: '0.5rem' }}>
                 <h4 style={{ fontWeight: 600, fontSize: '0.9rem', margin: '0 0 8px' }}>Gestion du mot de passe</h4>
-                <Button variant="outline" size="sm" icon={Lock} type="button">
+                <Button variant="outline" size="sm" icon={Lock} type="button" onClick={() => setShowPasswordModal(true)}>
                   Changer le mot de passe
                 </Button>
               </div>
@@ -416,13 +497,17 @@ export default function ProfilePage() {
         <GDPRCard>
           <GDPRContent>
             <GDPRText>
-              <h3><Shield /> Confidentialité & RGPD</h3>
-              <p>Vous avez le droit d'accéder et de contrôler vos données de santé. E-Santé est conforme au RGPD pour garantir que vos informations personnelles de santé sont traitées de manière sécurisée et transparente.</p>
+              <h3><Shield /> Confidentialité & données personnelles</h3>
+              <p>
+                Vous contrôlez vos données de santé : export, rectification et suppression depuis cette page.
+                DjamSanté applique les principes du RGPD et de la législation camerounaise sur les données personnelles.
+              </p>
             </GDPRText>
             <Button
               variant="secondary"
               icon={Download}
               type="button"
+              onClick={handleExport}
               style={{ background: 'rgba(255,255,255,0.15)', color: 'white', borderColor: 'rgba(255,255,255,0.3)' }}
             >
               Télécharger mes données
@@ -432,12 +517,60 @@ export default function ProfilePage() {
           <GDPRConsent>
             <Toggle $on={toggles.sharing} onClick={() => toggle('sharing')} />
             <div>
-              <strong>Partage de données</strong>
-              <p style={{ margin: '2px 0 0', fontSize: '0.8rem', opacity: 0.7 }}>Autoriser le partage de données anonymisées pour la recherche médicale.</p>
+              <strong>Partage de données anonymisées</strong>
+              <p style={{ margin: '2px 0 0', fontSize: '0.8rem', opacity: 0.7 }}>Recherche médicale — consentement révocable à tout moment.</p>
             </div>
           </GDPRConsent>
-          <GDPRLink href="#">Lire notre Politique de Confidentialité et nos Conditions d'Utilisation</GDPRLink>
+          <GDPRLink as={Link} to="/confidentialite">Lire notre Politique de Confidentialité</GDPRLink>
+          <div style={{ marginTop: 16 }}>
+            <Button variant="outline" size="sm" icon={Trash2} type="button"
+              onClick={() => setShowDeleteModal(true)}
+              style={{ color: '#FCA5A5', borderColor: 'rgba(252,165,165,0.5)' }}>
+              Supprimer mon compte
+            </Button>
+          </div>
         </GDPRCard>
+
+        {showPasswordModal && (
+          <Modal onClick={() => setShowPasswordModal(false)}>
+            <ModalCard onClick={(e) => e.stopPropagation()}>
+              <h3>Changer le mot de passe</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <Input label="Mot de passe actuel" type="password" value={pwForm.current}
+                  onChange={(e) => setPwForm((p) => ({ ...p, current: e.target.value }))} />
+                <Input label="Nouveau mot de passe" type="password" value={pwForm.next}
+                  onChange={(e) => setPwForm((p) => ({ ...p, next: e.target.value }))} />
+                <Input label="Confirmer" type="password" value={pwForm.confirm}
+                  onChange={(e) => setPwForm((p) => ({ ...p, confirm: e.target.value }))} />
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                  <Button variant="outline" type="button" onClick={() => setShowPasswordModal(false)}>Annuler</Button>
+                  <Button type="button" onClick={handleChangePassword}>Enregistrer</Button>
+                </div>
+              </div>
+            </ModalCard>
+          </Modal>
+        )}
+
+        {showDeleteModal && (
+          <Modal onClick={() => setShowDeleteModal(false)}>
+            <ModalCard onClick={(e) => e.stopPropagation()}>
+              <h3>Supprimer définitivement mon compte</h3>
+              <p style={{ fontSize: '0.85rem', color: '#64748B', marginBottom: 16 }}>
+                Cette action est irréversible. Toutes vos données seront effacées.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <Input label="Mot de passe" type="password" value={deleteForm.password}
+                  onChange={(e) => setDeleteForm((p) => ({ ...p, password: e.target.value }))} />
+                <Input label='Tapez "SUPPRIMER MON COMPTE"' value={deleteForm.confirmation}
+                  onChange={(e) => setDeleteForm((p) => ({ ...p, confirmation: e.target.value }))} />
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                  <Button variant="outline" type="button" onClick={() => setShowDeleteModal(false)}>Annuler</Button>
+                  <Button type="button" onClick={handleDeleteAccount} style={{ background: '#DC2626' }}>Supprimer</Button>
+                </div>
+              </div>
+            </ModalCard>
+          </Modal>
+        )}
 
         <SaveBar>
           <Button variant="outline" type="button">Annuler</Button>

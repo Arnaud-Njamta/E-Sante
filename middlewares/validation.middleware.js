@@ -1,4 +1,5 @@
 const Joi = require('joi');
+const { smsConfig } = require('../config/sms');
 
 const validate = (schema) => {
   return (req, res, next) => {
@@ -35,7 +36,18 @@ const registerSchema = Joi.object({
     'any.required': 'Le prénom est requis',
   }),
   date_naissance: Joi.date().iso().optional(),
-  telephone: Joi.string().optional(),
+  telephone: smsConfig.otpRequired
+    ? Joi.string().min(9).required().messages({
+      'any.required': 'Le téléphone est requis',
+      'string.min': 'Numéro de téléphone invalide',
+    })
+    : Joi.string().optional(),
+  otp_verification_token: smsConfig.otpRequired
+    ? Joi.string().length(64).required().messages({
+      'any.required': 'Vérification SMS requise',
+      'string.length': 'Jeton de vérification invalide',
+    })
+    : Joi.string().optional(),
 });
 
 const loginSchema = Joi.object({
@@ -57,6 +69,7 @@ const updateProfileSchema = Joi.object({
   allergies: Joi.array().items(Joi.string()).optional(),
   pathologies: Joi.array().items(Joi.string()).optional(),
   preferences_notification: Joi.object().optional(),
+  consentement_recherche: Joi.boolean().optional(),
 });
 
 const parametresVieSchema = Joi.object({
@@ -113,6 +126,40 @@ const resetPasswordSchema = Joi.object({
   }),
 });
 
+const otpSendSchema = Joi.object({
+  telephone: Joi.string().min(9).required().messages({
+    'any.required': 'Le téléphone est requis',
+    'string.min': 'Numéro de téléphone invalide',
+  }),
+  usage: Joi.string().valid('register', 'reset_password').required().messages({
+    'any.required': 'Usage requis',
+    'any.only': 'Usage invalide',
+  }),
+});
+
+const otpVerifySchema = Joi.object({
+  telephone: Joi.string().min(9).required().messages({
+    'any.required': 'Le téléphone est requis',
+  }),
+  code: Joi.string().min(4).max(8).required().messages({
+    'any.required': 'Le code est requis',
+  }),
+  usage: Joi.string().valid('register', 'reset_password').required(),
+});
+
+const resetPasswordSmsSchema = Joi.object({
+  telephone: Joi.string().min(9).required().messages({
+    'any.required': 'Le téléphone est requis',
+  }),
+  otp_verification_token: Joi.string().length(64).required().messages({
+    'any.required': 'Vérification SMS requise',
+  }),
+  password: Joi.string().min(8).required().messages({
+    'string.min': 'Le mot de passe doit contenir au moins 8 caractères',
+    'any.required': 'Le mot de passe est requis',
+  }),
+});
+
 const avisSchema = Joi.object({
   cible_type: Joi.string().valid('etablissement', 'medecin').required(),
   cible_id: Joi.string().uuid().required(),
@@ -129,6 +176,38 @@ const conversationSchema = Joi.object({
   message_initial: Joi.string().max(2000).optional(),
 });
 
+const changePasswordSchema = Joi.object({
+  current_password: Joi.string().required().messages({
+    'any.required': 'Le mot de passe actuel est requis',
+  }),
+  new_password: Joi.string().min(8).required().messages({
+    'string.min': 'Le nouveau mot de passe doit contenir au moins 8 caractères',
+    'any.required': 'Le nouveau mot de passe est requis',
+  }),
+});
+
+const deleteAccountSchema = Joi.object({
+  password: Joi.string().required().messages({
+    'any.required': 'Le mot de passe est requis pour confirmer la suppression',
+  }),
+  confirmation: Joi.string().valid('SUPPRIMER MON COMPTE').required().messages({
+    'any.only': 'Saisissez exactement : SUPPRIMER MON COMPTE',
+    'any.required': 'Confirmation requise',
+  }),
+});
+
+const inscriptionStatutSchema = Joi.object({
+  email: Joi.string().email().required(),
+  reference: Joi.string().uuid().required().messages({
+    'any.required': 'La référence de demande est requise',
+    'string.guid': 'Référence de demande invalide',
+  }),
+});
+
+const consentSchema = Joi.object({
+  consentement_recherche: Joi.boolean().required(),
+});
+
 module.exports = {
   validate,
   registerSchema,
@@ -139,7 +218,14 @@ module.exports = {
   confirmerPriseSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  resetPasswordSmsSchema,
+  otpSendSchema,
+  otpVerifySchema,
   avisSchema,
   messageSchema,
   conversationSchema,
+  changePasswordSchema,
+  deleteAccountSchema,
+  inscriptionStatutSchema,
+  consentSchema,
 };

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const statistiqueController = require('../controllers/statistique.controller');
-const authMiddleware = require('../middlewares/auth.middleware');
+const { patientAuth } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -53,7 +53,7 @@ const authMiddleware = require('../middlewares/auth.middleware');
  *                     periode_jours:
  *                       type: integer
  */
-router.get('/observance', authMiddleware, statistiqueController.getScoreObservance);
+router.get('/observance', patientAuth, statistiqueController.getScoreObservance);
 
 /**
  * @swagger
@@ -94,7 +94,7 @@ router.get('/observance', authMiddleware, statistiqueController.getScoreObservan
  *                     mensuelle:
  *                       type: array
  */
-router.get('/tendances', authMiddleware, statistiqueController.getTendances);
+router.get('/tendances', patientAuth, statistiqueController.getTendances);
 
 /**
  * @swagger
@@ -132,6 +132,6 @@ router.get('/tendances', authMiddleware, statistiqueController.getTendances);
  *                     patterns_oubli:
  *                       type: object
  */
-router.get('/risque', authMiddleware, statistiqueController.getNiveauRisque);
+router.get('/risque', patientAuth, statistiqueController.getNiveauRisque);
 
 module.exports = router;

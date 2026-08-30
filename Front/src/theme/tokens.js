@@ -1,5 +1,5 @@
 /**
- * E-Santé Design Tokens
+ * DjamSanté Design Tokens
  * Medical-grade design system — accessibility-first, WCAG AA compliant
  */
 

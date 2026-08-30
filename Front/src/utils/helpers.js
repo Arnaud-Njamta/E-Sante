@@ -70,3 +70,32 @@ export function truncate(str, max = 50) {
     if (!str || str.length <= max) return str;
     return str.substring(0, max) + '…';
 }
+
+/**
+ * Parse un champ JSON qui peut arriver en string depuis l'API
+ */
+export function parseJsonObject(value, fallback = {}) {
+    if (value && typeof value === 'object' && !Array.isArray(value)) return value;
+    if (typeof value === 'string') {
+        try {
+            const parsed = JSON.parse(value);
+            return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : fallback;
+        } catch {
+            return fallback;
+        }
+    }
+    return fallback;
+}
+
+export function parseJsonArray(value, fallback = []) {
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') {
+        try {
+            const parsed = JSON.parse(value);
+            return Array.isArray(parsed) ? parsed : fallback;
+        } catch {
+            return fallback;
+        }
+    }
+    return fallback;
+}

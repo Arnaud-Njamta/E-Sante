@@ -1,10 +1,35 @@
 const express = require('express');
 const router = express.Router();
 const etablissementController = require('../controllers/etablissement.controller');
+const structureController = require('../controllers/structure.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
+const { requireRole } = require('../middlewares/auth.middleware');
+const { uploadImage } = require('../middlewares/upload.middleware');
 
-router.get('/', authMiddleware, etablissementController.lister);
-router.get('/:id', authMiddleware, etablissementController.getById);
-router.get('/:id/horaires', authMiddleware, etablissementController.getHoraires);
+const structureRoles = ['pharmacie', 'hopital', 'clinique'];
+const hopitalCliniqueRoles = ['hopital', 'clinique'];
+
+router.get('/pharmacie/dashboard', authMiddleware, requireRole('pharmacie'), etablissementController.getPharmacieDashboard);
+router.get('/structure/dashboard', authMiddleware, requireRole(...structureRoles), etablissementController.getStructureDashboard);
+router.put('/me/profil', authMiddleware, requireRole(...structureRoles), etablissementController.updateProfil);
+router.put('/me/horaires', authMiddleware, requireRole(...structureRoles), etablissementController.updateHoraires);
+router.put('/me/localisation', authMiddleware, requireRole(...structureRoles), etablissementController.updateLocalisation);
+router.post('/me/photo', authMiddleware, requireRole(...structureRoles), uploadImage.single('photo'), etablissementController.uploadPhoto);
+
+router.get('/me/medecins', authMiddleware, requireRole(...hopitalCliniqueRoles), structureController.listMedecins);
+router.post('/me/medecins', authMiddleware, requireRole(...hopitalCliniqueRoles), structureController.addMedecin);
+router.put('/me/medecins/:id', authMiddleware, requireRole(...hopitalCliniqueRoles), structureController.updateMedecin);
+
+router.get('/me/services', authMiddleware, requireRole(...hopitalCliniqueRoles), structureController.listServices);
+router.post('/me/services', authMiddleware, requireRole(...hopitalCliniqueRoles), structureController.createService);
+router.put('/me/services/:id', authMiddleware, requireRole(...hopitalCliniqueRoles), structureController.updateService);
+router.delete('/me/services/:id', authMiddleware, requireRole(...hopitalCliniqueRoles), structureController.deleteService);
+
+router.get('/me/rendez-vous', authMiddleware, requireRole(...hopitalCliniqueRoles), structureController.listRendezVous);
+
+router.get('/', authMiddleware, requireRole('patient'), etablissementController.lister);
+router.get('/:id', authMiddleware, requireRole('patient'), etablissementController.getById);
+router.get('/:id/publications', authMiddleware, requireRole('patient'), etablissementController.getPublications);
+router.get('/:id/horaires', authMiddleware, requireRole('patient'), etablissementController.getHoraires);
 
 module.exports = router;

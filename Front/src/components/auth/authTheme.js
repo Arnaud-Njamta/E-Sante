@@ -1,5 +1,5 @@
 export const SANS = "'DM Sans', system-ui, -apple-system, sans-serif";
-export const SERIF = "'Fraunces', Georgia, 'Times New Roman', serif";
+export const SERIF = "'Playfair Display', Georgia, 'Times New Roman', serif";
 
 export const HERO_IMAGE = '/images/stop-feminicide-poster.jpg';
 

@@ -17,7 +17,7 @@ const SuccessWrap = styled.div`
 
   h2 {
     margin: 20px 0 8px;
-    font-family: 'Fraunces', Georgia, serif;
+    font-family: 'Playfair Display', Georgia, serif;
     font-size: 1.75rem;
     font-weight: 500;
     color: #1C1917;

@@ -76,29 +76,20 @@ const VisualBody = styled.div`
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 28px 44px 24px;
+  padding: 28px 44px 24px 28px;
 
   @media (max-width: 960px) {
-    padding: 24px 24px 20px;
+    padding: 24px 24px 20px 20px;
   }
-`;
-
-const HeroKicker = styled.p`
-  margin: 0;
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.75);
-  line-height: 1.5;
 `;
 
 const TitleArea = styled.div`
   flex: 1;
   display: flex;
-  align-items: center;
-  max-width: min(440px, 54%);
-  padding: 16px 0 24px;
+  align-items: flex-start;
+  max-width: min(440px, 52%);
+  padding-top: clamp(72px, 16vh, 128px);
+  margin-left: -4px;
 `;
 
 const HeroTitle = styled.h1`
@@ -423,10 +414,6 @@ export default function AuthShell({ children, wide = false }) {
         <FlagBar />
         <VisualShade />
         <VisualBody>
-          <HeroKicker>
-            Vous n&apos;êtes pas seule — 117 · 112 · 1515 · Cameroun
-          </HeroKicker>
-
           <TitleArea>
             <HeroTitle>{FEMINICIDE_BANNER.title}</HeroTitle>
           </TitleArea>

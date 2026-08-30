@@ -34,7 +34,13 @@ export default function LoginPage() {
       toast.success(`Bienvenue sur ${getBranding(result.role).appName} !`);
       navigate(getHomeRoute(result.role), { replace: true });
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Email ou mot de passe incorrect');
+      if (!err.response) {
+        toast.error('Impossible de joindre le serveur. Vérifiez votre connexion ou que l\'API est démarrée.');
+      } else if (err.response.status >= 500) {
+        toast.error('Serveur indisponible (erreur 502/500). Réessayez dans quelques instants.');
+      } else {
+        toast.error(err.response?.data?.message || 'Email ou mot de passe incorrect');
+      }
     } finally {
       setSubmitting(false);
     }

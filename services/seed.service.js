@@ -313,13 +313,23 @@ const seedDispensaireDemo = async () => {
 const seedAdminAccount = async () => {
   const bcrypt = require('bcrypt');
   const { Admin } = require('../models');
-  const hash = await bcrypt.hash('Admin123!', 12);
+  const email = (process.env.ADMIN_EMAIL || 'admin@e-sante.sn').trim().toLowerCase();
+  const password = process.env.ADMIN_PASSWORD || 'Admin123!';
+  const hash = await bcrypt.hash(password, 12);
   const [admin, created] = await Admin.findOrCreate({
-    where: { email: 'admin@e-sante.sn' },
-    defaults: { nom: 'Administrateur MINSANTE', password_hash: hash },
+    where: { email },
+    defaults: { nom: 'Administrateur MINSANTE', password_hash: hash, actif: true },
   });
-  if (!created && !admin.password_hash) {
-    await admin.update({ password_hash: hash });
+  if (!created) {
+    const mustReset = !admin.password_hash
+      || process.env.RESET_ADMIN_PASSWORD === 'true'
+      || (process.env.NODE_ENV !== 'production' && process.env.RESET_ADMIN_PASSWORD !== 'false');
+    if (mustReset) {
+      await admin.update({ password_hash: hash, actif: true });
+      console.log(`Compte admin assuré : ${email}`);
+    }
+  } else {
+    console.log(`Compte admin créé : ${email}`);
   }
   const medecin = await Medecin.findOne({ where: { nom: 'Ndiaye', prenom: 'Fatou' } });
   if (medecin && !medecin.accepte_teleconsultation) {
@@ -344,7 +354,7 @@ const seedAdminAccount = async () => {
     }
   }));
   if (created) {
-    console.log('Compte admin démo: admin@e-sante.sn / Admin123!');
+    console.log('Identifiants admin démo : admin@e-sante.sn / Admin123!');
   }
 };
 

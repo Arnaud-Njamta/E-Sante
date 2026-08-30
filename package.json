@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node --use-system-ca index.js",
     "dev": "nodemon --exec \"node --use-system-ca\" index.js",
+    "ensure-admin": "node scripts/ensure-admin.js",
     "test": "jest --runInBand --forceExit",
     "test:watch": "jest --watch",
     "build:front": "cd Front && npm run build",

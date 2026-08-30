@@ -157,25 +157,17 @@ app.use(errorMiddleware);
 
 
 const runSeeds = async () => {
+  await seedAdminAccount();
 
   if (IS_PROD && process.env.SEED_DEMO !== 'true') {
-
     console.log('Mode production : seeds démo désactivés.');
-
     return;
-
   }
 
   await seedDemoData();
-
   await seedDemoAccounts();
-
   await seedPublications();
-
   await seedDispensaireDemo();
-
-  await seedAdminAccount();
-
 };
 
 

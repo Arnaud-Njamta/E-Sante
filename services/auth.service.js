@@ -1,7 +1,9 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const { Patient, Medecin, Etablissement, Admin } = require('../models');
+const {
+  Patient, Medecin, Etablissement, Admin, InscriptionProfessionnel,
+} = require('../models');
 const { USER_ROLES, TYPE_ETABLISSEMENT, STATUT_VALIDATION } = require('../utils/constants');
 const emailService = require('./email.service');
 const { smsConfig } = require('../config/sms');
@@ -65,40 +67,63 @@ const register = async ({
 };
 
 const login = async ({ email, password }) => {
-  const admin = await Admin.findOne({ where: { email, actif: true } });
+  const normalizedEmail = (email || '').trim().toLowerCase();
+  if (!normalizedEmail || !password) {
+    const error = new Error('Email ou mot de passe incorrect');
+    error.statusCode = 401;
+    throw error;
+  }
+
+  const admin = await Admin.findOne({ where: { email: normalizedEmail, actif: true } });
   if (admin) {
     return loginEntity(admin, password, USER_ROLES.ADMIN);
   }
 
-  const patient = await Patient.findOne({ where: { email } });
+  const patient = await Patient.findOne({ where: { email: normalizedEmail } });
   if (patient) {
     return loginEntity(patient, password, USER_ROLES.PATIENT);
   }
 
-  const medecin = await Medecin.findOne({ where: { email } });
+  const medecin = await Medecin.findOne({ where: { email: normalizedEmail } });
   if (medecin) {
     return loginEntity(medecin, password, USER_ROLES.MEDECIN);
   }
 
   const pharmacie = await Etablissement.findOne({
-    where: { email, type: TYPE_ETABLISSEMENT.PHARMACIE },
+    where: { email: normalizedEmail, type: TYPE_ETABLISSEMENT.PHARMACIE },
   });
   if (pharmacie) {
     return loginEntity(pharmacie, password, USER_ROLES.PHARMACIE);
   }
 
   const hopital = await Etablissement.findOne({
-    where: { email, type: TYPE_ETABLISSEMENT.HOPITAL },
+    where: { email: normalizedEmail, type: TYPE_ETABLISSEMENT.HOPITAL },
   });
   if (hopital) {
     return loginEntity(hopital, password, USER_ROLES.HOPITAL);
   }
 
   const clinique = await Etablissement.findOne({
-    where: { email, type: TYPE_ETABLISSEMENT.CLINIQUE },
+    where: { email: normalizedEmail, type: TYPE_ETABLISSEMENT.CLINIQUE },
   });
   if (clinique) {
     return loginEntity(clinique, password, USER_ROLES.CLINIQUE);
+  }
+
+  const pendingInscription = await InscriptionProfessionnel.findOne({
+    where: {
+      email: normalizedEmail,
+      statut: ['en_attente', 'en_revision', 'documents_manquants'],
+    },
+    order: [['createdAt', 'DESC']],
+  });
+  if (pendingInscription) {
+    const error = new Error(
+      'Votre demande professionnelle est en attente de validation MINSANTE. '
+      + 'Vous pourrez vous connecter une fois le dossier approuvé.',
+    );
+    error.statusCode = 403;
+    throw error;
   }
 
   const error = new Error('Email ou mot de passe incorrect');

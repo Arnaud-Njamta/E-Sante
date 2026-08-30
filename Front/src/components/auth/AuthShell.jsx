@@ -24,13 +24,14 @@ const Shell = styled.div`
 `;
 
 const Visual = styled.aside`
-  position: relative;
-  min-height: 100vh;
-  color: #fff;
-  overflow: hidden;
   position: sticky;
   top: 0;
   height: 100vh;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  color: #fff;
+  overflow: hidden;
 
   @media (max-width: 960px) {
     position: relative;
@@ -42,6 +43,7 @@ const Visual = styled.aside`
     content: '';
     position: absolute;
     inset: 0;
+    z-index: 0;
     background: url('${HERO_IMAGE}') 58% center / cover no-repeat;
   }
 `;
@@ -49,15 +51,17 @@ const Visual = styled.aside`
 const VisualShade = styled.div`
   position: absolute;
   inset: 0;
+  z-index: 0;
   background:
-    linear-gradient(90deg, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.2) 45%, rgba(0, 0, 0, 0.05) 70%),
-    linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, 0.45) 100%);
+    linear-gradient(90deg, rgba(0, 0, 0, 0.52) 0%, rgba(0, 0, 0, 0.18) 42%, rgba(0, 0, 0, 0.02) 68%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.12) 0%, transparent 38%, rgba(0, 0, 0, 0.48) 100%);
 `;
 
 const FlagBar = styled.div`
   position: relative;
   z-index: 2;
   height: 3px;
+  flex-shrink: 0;
   background: linear-gradient(90deg,
     ${CAMEROON_COLORS.green} 33.3%,
     ${CAMEROON_COLORS.red} 33.3% 66.6%,
@@ -68,32 +72,33 @@ const FlagBar = styled.div`
 const VisualBody = styled.div`
   position: relative;
   z-index: 1;
-  height: 100%;
-  min-height: inherit;
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  align-items: flex-start;
-  text-align: left;
-  padding: 36px 44px 32px;
+  padding: 28px 44px 24px;
 
   @media (max-width: 960px) {
-    padding: 28px 24px 24px;
+    padding: 24px 24px 20px;
   }
 `;
 
-const TopBlock = styled.div`
-  max-width: min(420px, 58%);
-`;
-
 const HeroKicker = styled.p`
-  margin: 0 0 28px;
+  margin: 0;
   font-size: 0.62rem;
   font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.75);
   line-height: 1.5;
+`;
+
+const TitleArea = styled.div`
+  flex: 1;
+  display: flex;
+  align-items: center;
+  max-width: min(440px, 54%);
+  padding: 16px 0 24px;
 `;
 
 const HeroTitle = styled.h1`
@@ -109,8 +114,8 @@ const HeroTitle = styled.h1`
 
 const BottomBlock = styled.div`
   width: 100%;
-  padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
 `;
 
 const HeroSub = styled.p`
@@ -418,12 +423,13 @@ export default function AuthShell({ children, wide = false }) {
         <FlagBar />
         <VisualShade />
         <VisualBody>
-          <TopBlock>
-            <HeroKicker>
-              Vous n&apos;êtes pas seule — 117 · 112 · 1515 · Cameroun
-            </HeroKicker>
+          <HeroKicker>
+            Vous n&apos;êtes pas seule — 117 · 112 · 1515 · Cameroun
+          </HeroKicker>
+
+          <TitleArea>
             <HeroTitle>{FEMINICIDE_BANNER.title}</HeroTitle>
-          </TopBlock>
+          </TitleArea>
 
           <BottomBlock>
             <HeroSub>

@@ -1,36 +1,46 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Link, useNavigate } from 'react-router-dom';
-import { Stethoscope, Pill, Building2, Hospital, Upload, CheckCircle, AlertCircle } from 'lucide-react';
-import Card from '../components/ui/Card';
-import Input from '../components/ui/Input';
-import Button from '../components/ui/Button';
+import { Stethoscope, Pill, Building2, Hospital, CheckCircle, AlertCircle } from 'lucide-react';
 import { useInscriptionProfessionnel, fetchDocumentsRequis } from '../hooks/useInscription';
+import { getBranding } from '../config/branding';
 import toast from 'react-hot-toast';
+import AuthShell, {
+  Wordmark, SectionTitle, SectionHint, AuthForm, Field, FieldLabel,
+  FieldInput, FieldSelect, AuthSubmit, Footnotes, Notice, SubSection,
+  TypeGrid, TypeCard, FormGrid, DocZone,
+} from '../components/auth/AuthShell';
 
-const Page = styled.div` max-width: 720px; margin: 0 auto; `;
-const TypeGrid = styled.div` display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 24px; `;
-const TypeCard = styled.button`
-  padding: 20px; border-radius: 12px; border: 2px solid ${({ $active, theme }) => ($active ? theme.colors.primary[500] : '#E2E8F0')};
-  background: ${({ $active, theme }) => ($active ? theme.colors.primary[50] : 'white')};
-  cursor: pointer; text-align: left;
-  h3 { margin: 8px 0 4px; font-size: 1rem; }
-  p { margin: 0; font-size: 0.8rem; color: #64748B; }
-`;
-const DocZone = styled.div`
-  border: 2px dashed #CBD5E1; border-radius: 8px; padding: 16px; margin-bottom: 12px;
-  label { display: block; font-weight: 500; margin-bottom: 8px; font-size: 0.9rem; }
-  input { font-size: 0.85rem; }
-`;
-const InfoBox = styled.div`
-  background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 8px; padding: 16px; margin-bottom: 24px; font-size: 0.85rem; color: #0369A1;
+const SuccessWrap = styled.div`
+  text-align: center;
+  padding: 20px 0 40px;
+
+  h2 {
+    margin: 20px 0 8px;
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 1.75rem;
+    font-weight: 500;
+    color: #1C1917;
+  }
+
+  p { color: #6B6560; line-height: 1.6; font-size: 0.92rem; }
+
+  .warn {
+    margin-top: 12px;
+    color: #B45309;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 0.85rem;
+  }
 `;
 
 const TYPES = [
   { id: 'medecin', label: 'Médecin', icon: Stethoscope, desc: 'Ordre des médecins, diplôme' },
-  { id: 'pharmacie', label: 'Pharmacie', icon: Pill, desc: 'Agrément officine, autorisation' },
-  { id: 'clinique', label: 'Clinique', icon: Building2, desc: 'Agrément structure privée' },
-  { id: 'hopital', label: 'Hôpital', icon: Hospital, desc: 'Autorisation ministère de la Santé' },
+  { id: 'pharmacie', label: 'Pharmacie', icon: Pill, desc: 'Agrément officine' },
+  { id: 'clinique', label: 'Clinique', icon: Building2, desc: 'Structure privée agréée' },
+  { id: 'hopital', label: 'Hôpital', icon: Hospital, desc: 'Autorisation MINSANTE' },
 ];
 
 const REGIONS = [
@@ -41,6 +51,7 @@ const REGIONS = [
 export default function RegisterProfessionnelPage() {
   const navigate = useNavigate();
   const mutation = useInscriptionProfessionnel();
+  const branding = getBranding('medecin');
   const [type, setType] = useState('medecin');
   const [docsRequis, setDocsRequis] = useState({ documents: {}, operateurs_mobile_money: [], note_paiement: '' });
   const [files, setFiles] = useState({});
@@ -54,6 +65,8 @@ export default function RegisterProfessionnelPage() {
   useEffect(() => {
     fetchDocumentsRequis().then(setDocsRequis).catch(() => {});
   }, []);
+
+  const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -85,16 +98,28 @@ export default function RegisterProfessionnelPage() {
 
   if (success) {
     return (
-      <Page style={{ padding: 40, textAlign: 'center' }}>
-        <CheckCircle size={48} color="#22C55E" />
-        <h2>Demande enregistrée</h2>
-        <p style={{ color: '#64748B' }}>{success.message}</p>
-        {success.documents_manquants?.length > 0 && (
-          <p style={{ color: '#F59E0B' }}><AlertCircle size={16} /> Documents manquants : {success.documents_manquants.join(', ')}</p>
-        )}
-        <p style={{ fontSize: '0.9rem' }}>Délai de validation : 24-72h ouvrées. Conformément au cadre MINSANTE / santé numérique au Cameroun.</p>
-        <Button onClick={() => navigate('/login')} style={{ marginTop: 16 }}>Retour connexion</Button>
-      </Page>
+      <AuthShell
+        wide
+        visualLead="Votre demande a été transmise à l'équipe de validation MINSANTE."
+      >
+        <SuccessWrap>
+          <CheckCircle size={48} color="#0B3D30" strokeWidth={1.5} />
+          <h2>Demande enregistrée</h2>
+          <p>{success.message}</p>
+          {success.documents_manquants?.length > 0 && (
+            <p className="warn">
+              <AlertCircle size={16} />
+              Documents manquants : {success.documents_manquants.join(', ')}
+            </p>
+          )}
+          <p style={{ marginTop: 16 }}>
+            Délai de validation : 24 à 72 h ouvrées.
+          </p>
+          <AuthSubmit type="button" onClick={() => navigate('/login')} style={{ marginTop: 28, maxWidth: 280 }}>
+            Retour à la connexion
+          </AuthSubmit>
+        </SuccessWrap>
+      </AuthShell>
     );
   }
 
@@ -106,111 +131,154 @@ export default function RegisterProfessionnelPage() {
   ];
 
   return (
-    <Page>
-      <h1 style={{ margin: '0 0 8px' }}>Inscription professionnelle</h1>
-      <p style={{ color: '#64748B', marginBottom: 24 }}>Médecins, pharmacies, cliniques et hôpitaux — validation des documents obligatoire.</p>
+    <AuthShell
+      wide
+      visualLead="Rejoignez le réseau santé numérique camerounais — validation MINSANTE sous 72 h."
+    >
+      <Wordmark>
+        <h2>{branding.appName}</h2>
+        <p>Inscription professionnelle</p>
+      </Wordmark>
 
-      <InfoBox>
-        <strong>Contexte Cameroun :</strong> remplacez WhatsApp pour les ordonnances et consultations, avec traçabilité MINSANTE.
-        Vos données restent hébergées localement. Conformité DPN (Dossier Patient Numérique) en cours de déploiement.
-      </InfoBox>
+      <SectionTitle>Demande d&apos;accès</SectionTitle>
+      <SectionHint>
+        Médecins, pharmacies, cliniques et hôpitaux — documents obligatoires pour validation.
+      </SectionHint>
+
+      <Notice>
+        <strong>Contexte Cameroun :</strong> traçabilité MINSANTE, données hébergées localement,
+        conformité DPN en cours de déploiement.
+      </Notice>
 
       <TypeGrid>
         {TYPES.map((t) => (
           <TypeCard key={t.id} type="button" $active={type === t.id} onClick={() => setType(t.id)}>
-            <t.icon size={24} />
+            <t.icon size={20} strokeWidth={1.75} />
             <h3>{t.label}</h3>
             <p>{t.desc}</p>
           </TypeCard>
         ))}
       </TypeGrid>
 
-      <Card style={{ padding: 24 }}>
-        <form onSubmit={handleSubmit}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            {type === 'medecin' ? (
-              <>
-                <Input label="Prénom" value={form.prenom} onChange={(e) => setForm({ ...form, prenom: e.target.value })} required />
-                <Input label="Nom" value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} required />
-                <Input label="Spécialité" value={form.specialite} onChange={(e) => setForm({ ...form, specialite: e.target.value })} />
-                <Input label="N° Ordre des médecins" value={form.numero_ordre} onChange={(e) => setForm({ ...form, numero_ordre: e.target.value })} required />
-              </>
-            ) : (
-              <>
-                <Input label="Nom de la structure" value={form.nom_structure} onChange={(e) => setForm({ ...form, nom_structure: e.target.value })} required style={{ gridColumn: '1 / -1' }} />
-                <Input label="N° Agrément" value={form.numero_agrement} onChange={(e) => setForm({ ...form, numero_agrement: e.target.value })} required />
-              </>
-            )}
-            <Input label="Email professionnel" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
-            <Input label="Mot de passe" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
-            <Input label="Téléphone" value={form.telephone} onChange={(e) => setForm({ ...form, telephone: e.target.value })} placeholder="+237 6XX XX XX XX" />
-            <Input label="Ville" value={form.ville} onChange={(e) => setForm({ ...form, ville: e.target.value })} />
-            <div>
-              <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Région</label>
-              <select value={form.region} onChange={(e) => setForm({ ...form, region: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #E2E8F0' }}>
-                {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
-              </select>
-            </div>
-          </div>
+      <AuthForm onSubmit={handleSubmit}>
+        <SubSection>Identité</SubSection>
+        <FormGrid>
+          {type === 'medecin' ? (
+            <>
+              <Field>
+                <FieldLabel>Prénom</FieldLabel>
+                <FieldInput value={form.prenom} onChange={set('prenom')} required />
+              </Field>
+              <Field>
+                <FieldLabel>Nom</FieldLabel>
+                <FieldInput value={form.nom} onChange={set('nom')} required />
+              </Field>
+              <Field>
+                <FieldLabel>Spécialité</FieldLabel>
+                <FieldInput value={form.specialite} onChange={set('specialite')} placeholder="Ex. Cardiologie" />
+              </Field>
+              <Field>
+                <FieldLabel>N° Ordre des médecins</FieldLabel>
+                <FieldInput value={form.numero_ordre} onChange={set('numero_ordre')} required />
+              </Field>
+            </>
+          ) : (
+            <>
+              <Field className="full">
+                <FieldLabel>Nom de la structure</FieldLabel>
+                <FieldInput value={form.nom_structure} onChange={set('nom_structure')} required />
+              </Field>
+              <Field className="full">
+                <FieldLabel>N° Agrément</FieldLabel>
+                <FieldInput value={form.numero_agrement} onChange={set('numero_agrement')} required />
+              </Field>
+            </>
+          )}
+          <Field>
+            <FieldLabel>Email professionnel</FieldLabel>
+            <FieldInput type="email" value={form.email} onChange={set('email')} required />
+          </Field>
+          <Field>
+            <FieldLabel>Mot de passe</FieldLabel>
+            <FieldInput type="password" value={form.password} onChange={set('password')} required />
+          </Field>
+          <Field>
+            <FieldLabel>Téléphone</FieldLabel>
+            <FieldInput value={form.telephone} onChange={set('telephone')} placeholder="+237 6XX XX XX XX" />
+          </Field>
+          <Field>
+            <FieldLabel>Ville</FieldLabel>
+            <FieldInput value={form.ville} onChange={set('ville')} />
+          </Field>
+          <Field>
+            <FieldLabel>Région</FieldLabel>
+            <FieldSelect value={form.region} onChange={set('region')}>
+              {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
+            </FieldSelect>
+          </Field>
+        </FormGrid>
 
-          <h3 style={{ margin: '24px 0 12px' }}>Coordonnées de paiement (Mobile Money)</h3>
-          <InfoBox style={{ background: '#F0FDF9', borderColor: '#A7F3D0', color: '#047857' }}>
-            {docsRequis.note_paiement || 'Obligatoire pour recevoir les paiements des patients sur DjamSanté (consultations, réservations pharmacie).'}
-          </InfoBox>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div>
-              <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Opérateur *</label>
-              <select
-                value={form.operateur_mobile}
-                onChange={(e) => setForm({ ...form, operateur_mobile: e.target.value })}
-                style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #E2E8F0' }}
-                required
-              >
-                {operateurs.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
-              </select>
-            </div>
-            <Input
-              label="Numéro Mobile Money *"
+        <SubSection>Paiement Mobile Money</SubSection>
+        <Notice style={{ marginBottom: 16 }}>
+          {docsRequis.note_paiement || 'Obligatoire pour recevoir les paiements patients sur DjamSanté.'}
+        </Notice>
+        <FormGrid>
+          <Field>
+            <FieldLabel>Opérateur</FieldLabel>
+            <FieldSelect value={form.operateur_mobile} onChange={set('operateur_mobile')} required>
+              {operateurs.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+            </FieldSelect>
+          </Field>
+          <Field>
+            <FieldLabel>Numéro Mobile Money</FieldLabel>
+            <FieldInput
               value={form.numero_mobile_money}
-              onChange={(e) => setForm({ ...form, numero_mobile_money: e.target.value })}
+              onChange={set('numero_mobile_money')}
               placeholder="+237 6XX XX XX XX"
               required
             />
-            <Input
-              label="Titulaire du compte *"
+          </Field>
+          <Field className={type === 'medecin' ? '' : 'full'}>
+            <FieldLabel>Titulaire du compte</FieldLabel>
+            <FieldInput
               value={form.titulaire_compte}
-              onChange={(e) => setForm({ ...form, titulaire_compte: e.target.value })}
+              onChange={set('titulaire_compte')}
               placeholder={type === 'medecin' ? 'Dr. Prénom Nom' : 'Nom de la structure'}
               required
-              style={{ gridColumn: type === 'medecin' ? 'span 1' : '1 / -1' }}
             />
-            {type !== 'medecin' && (
-              <Input
-                label="N° marchand (optionnel)"
+          </Field>
+          {type !== 'medecin' && (
+            <Field>
+              <FieldLabel>N° marchand (optionnel)</FieldLabel>
+              <FieldInput
                 value={form.numero_marchand}
-                onChange={(e) => setForm({ ...form, numero_marchand: e.target.value })}
-                placeholder="Si vous avez un compte marchand Orange/MTN"
+                onChange={set('numero_marchand')}
+                placeholder="Compte marchand Orange / MTN"
               />
-            )}
-          </div>
+            </Field>
+          )}
+        </FormGrid>
 
-          <h3 style={{ margin: '24px 0 12px' }}><Upload size={18} style={{ verticalAlign: 'middle' }} /> Documents justificatifs</h3>
-          {requiredDocs.map((doc) => (
-            <DocZone key={doc}>
-              <label>{doc.replace('_', ' ')} *</label>
-              <input type="file" accept="image/*,.pdf" onChange={(e) => setFiles({ ...files, [doc]: e.target.files[0] })} />
-            </DocZone>
-          ))}
+        <SubSection>Documents justificatifs</SubSection>
+        {requiredDocs.map((doc) => (
+          <DocZone key={doc}>
+            <label>{doc.replace(/_/g, ' ')}</label>
+            <input
+              type="file"
+              accept="image/*,.pdf"
+              onChange={(e) => setFiles({ ...files, [doc]: e.target.files[0] })}
+            />
+          </DocZone>
+        ))}
 
-          <Button type="submit" disabled={mutation.isPending} style={{ width: '100%', marginTop: 16 }}>
-            {mutation.isPending ? 'Envoi...' : 'Soumettre ma demande'}
-          </Button>
-        </form>
-      </Card>
+        <AuthSubmit type="submit" disabled={mutation.isPending}>
+          {mutation.isPending ? 'Envoi en cours…' : 'Soumettre ma demande'}
+        </AuthSubmit>
+      </AuthForm>
 
-      <p style={{ textAlign: 'center', marginTop: 16, fontSize: '0.85rem' }}>
-        Déjà inscrit ? <Link to="/login">Se connecter</Link>
-      </p>
-    </Page>
+      <Footnotes>
+        <p>Déjà inscrit ? <Link to="/login">Se connecter</Link></p>
+      </Footnotes>
+    </AuthShell>
   );
 }

@@ -39,5 +39,6 @@ router.use('/publications', publicationRoutes);
 router.use('/ai', require('./ai.routes'));
 router.use('/commissions', require('./commission.routes'));
 router.use('/paiements', require('./paiement.routes'));
+router.use('/admin', require('./admin.routes'));
 
 module.exports = router;

@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
-import { Shield, Check, X, FileText } from 'lucide-react';
+import styled from 'styled-components';
+import { Shield, Check, X, ChevronDown, ChevronUp } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Spinner from '../components/ui/Spinner';
 import ErrorState from '../components/ui/ErrorState';
+import PageHeader from '../components/ui/PageHeader';
+import AdminDocumentPanel from '../components/admin/AdminDocumentPanel';
 import { useInscriptionsEnAttente, useValiderInscription, useRejeterInscription } from '../hooks/useInscription';
+import { useAdminAuditLogs } from '../hooks/useAdminAudit';
 import toast from 'react-hot-toast';
 
 const TYPE_LABELS = {
@@ -20,18 +24,133 @@ const OPERATEUR_LABELS = {
   wave: 'Wave',
 };
 
+const InscriptionCard = styled(Card)`
+  padding: 22px;
+  margin-bottom: 14px;
+`;
+
+const TypeBadge = styled.span`
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: ${({ theme }) => theme.colors.deep};
+`;
+
+const Meta = styled.p`
+  margin: 0;
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+const Actions = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+`;
+
+const ExpandBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.deep};
+  cursor: pointer;
+
+  &:hover { text-decoration: underline; }
+`;
+
+const RejectArea = styled.div`
+  margin-top: 14px;
+
+  textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: ${({ theme }) => theme.radii.md};
+    border: 1px solid ${({ theme }) => theme.colors.border};
+    font-family: inherit;
+    font-size: 0.88rem;
+    margin-bottom: 8px;
+    resize: vertical;
+  }
+`;
+
+const Timeline = styled.ul`
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  padding-top: 14px;
+
+  li {
+    font-size: 0.78rem;
+    color: ${({ theme }) => theme.colors.textSecondary};
+    padding: 6px 0;
+    border-bottom: 1px dashed ${({ theme }) => theme.colors.border};
+
+    &:last-child { border-bottom: none; }
+
+    strong { color: ${({ theme }) => theme.colors.text}; }
+  }
+`;
+
+const ACTION_LABELS = {
+  inscription_soumise: 'Demande soumise',
+  inscription_validee: 'Inscription validée',
+  inscription_rejetee: 'Inscription rejetée',
+  document_consulte: 'Document consulté',
+};
+
+function formatDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('fr-FR', {
+    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  });
+}
+
+function InscriptionAuditTimeline({ inscriptionId }) {
+  const { data } = useAdminAuditLogs({
+    cible_type: 'inscription',
+    cible_id: inscriptionId,
+    limit: 15,
+  });
+  const logs = data?.logs || [];
+  if (!logs.length) return null;
+
+  return (
+    <Timeline>
+      {logs.map((log) => (
+        <li key={log.id}>
+          <strong>{ACTION_LABELS[log.action] || log.action}</strong>
+          {' — '}{log.acteur_label}
+          {' · '}{formatDate(log.createdAt)}
+          {log.details?.nom_original && ` · ${log.details.nom_original}`}
+        </li>
+      ))}
+    </Timeline>
+  );
+}
+
 export default function AdminInscriptionsPage() {
   const { data: inscriptions, isLoading, error, refetch } = useInscriptionsEnAttente();
   const valider = useValiderInscription();
   const rejeter = useRejeterInscription();
   const [motif, setMotif] = useState('');
   const [selected, setSelected] = useState(null);
+  const [expanded, setExpanded] = useState(null);
 
   const handleValider = async (id) => {
     try {
       await valider.mutateAsync(id);
       toast.success('Inscription validée — compte créé');
       setSelected(null);
+      setExpanded(null);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur');
     }
@@ -43,6 +162,7 @@ export default function AdminInscriptionsPage() {
       await rejeter.mutateAsync({ id, motif_rejet: motif });
       toast.success('Inscription rejetée');
       setSelected(null);
+      setExpanded(null);
       setMotif('');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur');
@@ -56,68 +176,76 @@ export default function AdminInscriptionsPage() {
 
   return (
     <div>
-      <h1 style={{ margin: '0 0 8px' }}><Shield size={24} style={{ verticalAlign: 'middle' }} /> Validation MINSANTE</h1>
-      <p style={{ color: '#64748B', marginBottom: 24 }}>
-        Dossiers professionnels en attente de validation — conformité CSU Cameroun
-      </p>
+      <PageHeader
+        title={<> <Shield size={22} style={{ verticalAlign: 'middle', marginRight: 8 }} /> Validation MINSANTE</>}
+        subtitle="Dossiers professionnels en attente — consultez les pièces jointes avant validation."
+      />
 
       {list.length === 0 ? (
         <Card style={{ padding: 40, textAlign: 'center', color: '#94A3B8' }}>
           Aucune demande en attente pour le moment.
         </Card>
-      ) : list.map((ins) => (
-        <Card key={ins.id} style={{ padding: 20, marginBottom: 12 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-            <div>
-              <span style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', color: '#0D9488' }}>
-                {TYPE_LABELS[ins.type_profil] || ins.type_profil}
-              </span>
-              <h3 style={{ margin: '4px 0' }}>
-                {ins.prenom ? `${ins.prenom} ${ins.nom}` : ins.nom_structure || ins.nom}
-              </h3>
-              <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748B' }}>
-                {ins.email} — {ins.ville}{ins.region ? `, ${ins.region}` : ''}
-              </p>
-              {ins.numero_ordre && <p style={{ margin: '4px 0 0', fontSize: '0.8rem' }}>N° ordre : {ins.numero_ordre}</p>}
-              {ins.numero_agrement && <p style={{ margin: '4px 0 0', fontSize: '0.8rem' }}>Agrément : {ins.numero_agrement}</p>}
-              {ins.donnees?.paiement && (
-                <p style={{ margin: '8px 0 0', fontSize: '0.8rem', color: '#0F766E' }}>
-                  💳 {OPERATEUR_LABELS[ins.donnees.paiement.operateur] || ins.donnees.paiement.operateur}
-                  {' — '}{ins.donnees.paiement.numero}
-                  {' ('}{ins.donnees.paiement.titulaire}{')'}
-                  {ins.donnees.paiement.numero_marchand && ` · Marchand: ${ins.donnees.paiement.numero_marchand}`}
-                </p>
-              )}
-              <p style={{ margin: '8px 0 0', fontSize: '0.75rem', color: '#94A3B8' }}>Statut : {ins.statut}</p>
+      ) : list.map((ins) => {
+        const isOpen = expanded === ins.id;
+        return (
+          <InscriptionCard key={ins.id}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+              <div>
+                <TypeBadge>{TYPE_LABELS[ins.type_profil] || ins.type_profil}</TypeBadge>
+                <h3 style={{ margin: '6px 0 4px', fontFamily: 'var(--font-serif, Georgia, serif)', fontWeight: 500 }}>
+                  {ins.prenom ? `${ins.prenom} ${ins.nom}` : ins.nom_structure || ins.nom}
+                </h3>
+                <Meta>
+                  {ins.email} — {ins.ville}{ins.region ? `, ${ins.region}` : ''}
+                </Meta>
+                {ins.numero_ordre && <Meta style={{ marginTop: 4 }}>N° ordre : {ins.numero_ordre}</Meta>}
+                {ins.numero_agrement && <Meta style={{ marginTop: 4 }}>Agrément : {ins.numero_agrement}</Meta>}
+                {ins.donnees?.paiement && (
+                  <Meta style={{ marginTop: 8, color: '#0F766E' }}>
+                    {OPERATEUR_LABELS[ins.donnees.paiement.operateur] || ins.donnees.paiement.operateur}
+                    {' — '}{ins.donnees.paiement.numero}
+                    {' ('}{ins.donnees.paiement.titulaire}{')'}
+                    {ins.donnees.paiement.numero_marchand && ` · Marchand: ${ins.donnees.paiement.numero_marchand}`}
+                  </Meta>
+                )}
+                <Meta style={{ marginTop: 8, fontSize: '0.75rem' }}>Statut : {ins.statut}</Meta>
+              </div>
+              <Actions>
+                <Button size="sm" onClick={() => handleValider(ins.id)} disabled={valider.isPending}>
+                  <Check size={14} /> Valider
+                </Button>
+                <Button size="sm" variant="secondary" onClick={() => setSelected(selected === ins.id ? null : ins.id)}>
+                  <X size={14} /> Rejeter
+                </Button>
+              </Actions>
             </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-              <Button size="sm" onClick={() => handleValider(ins.id)} disabled={valider.isPending}>
-                <Check size={14} /> Valider
-              </Button>
-              <Button size="sm" variant="secondary" onClick={() => setSelected(selected === ins.id ? null : ins.id)}>
-                <X size={14} /> Rejeter
-              </Button>
-            </div>
-          </div>
-          {ins.documents?.length > 0 && (
-            <div style={{ marginTop: 12, fontSize: '0.8rem' }}>
-              <FileText size={14} style={{ verticalAlign: 'middle' }} /> {ins.documents.length} document(s) joint(s)
-            </div>
-          )}
-          {selected === ins.id && (
-            <div style={{ marginTop: 12 }}>
-              <textarea
-                placeholder="Motif de rejet (obligatoire)"
-                value={motif}
-                onChange={(e) => setMotif(e.target.value)}
-                rows={2}
-                style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #E2E8F0', marginBottom: 8 }}
-              />
-              <Button size="sm" variant="secondary" onClick={() => handleRejeter(ins.id)}>Confirmer le rejet</Button>
-            </div>
-          )}
-        </Card>
-      ))}
+
+            <ExpandBtn type="button" onClick={() => setExpanded(isOpen ? null : ins.id)}>
+              {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              {isOpen ? 'Masquer le dossier' : `Voir le dossier (${ins.documents?.length || 0} document${(ins.documents?.length || 0) > 1 ? 's' : ''})`}
+            </ExpandBtn>
+
+            {isOpen && (
+              <>
+                <AdminDocumentPanel documents={ins.documents} />
+                <InscriptionAuditTimeline inscriptionId={ins.id} />
+              </>
+            )}
+
+            {selected === ins.id && (
+              <RejectArea>
+                <textarea
+                  placeholder="Motif de rejet (obligatoire)"
+                  value={motif}
+                  onChange={(e) => setMotif(e.target.value)}
+                  rows={2}
+                />
+                <Button size="sm" variant="secondary" onClick={() => handleRejeter(ins.id)}>Confirmer le rejet</Button>
+              </RejectArea>
+            )}
+          </InscriptionCard>
+        );
+      })}
     </div>
   );
 }

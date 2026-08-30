@@ -1,12 +1,13 @@
 const bcrypt = require('bcrypt');
 const {
-  InscriptionProfessionnel, Medecin, Etablissement, Patient,
+  InscriptionProfessionnel, Medecin, Etablissement, Patient, Fichier,
 } = require('../models');
 const {
   USER_ROLES, TYPE_ETABLISSEMENT, STATUT_VALIDATION,
 } = require('../utils/constants');
 const { saveFichier, mapTypeFichier } = require('./fichier.service');
 const { validerCoordonneesPaiement, OPERATEURS_MOBILE_MONEY } = require('../config/paiement');
+const adminAudit = require('./admin-audit.service');
 
 const SALT_ROUNDS = 12;
 
@@ -15,6 +16,36 @@ const DOCUMENTS_REQUIS = {
   pharmacie: ['agrement', 'autorisation'],
   hopital: ['agrement', 'autorisation'],
   clinique: ['agrement', 'autorisation'],
+};
+
+const DOC_LABELS = {
+  diplome: 'Diplôme',
+  carte_ordre: 'Carte ordre des médecins',
+  agrement: 'Agrément',
+  autorisation: 'Autorisation MINSANTE',
+  document: 'Document',
+};
+
+const sanitizeInscriptionForAdmin = async (inscription) => {
+  const plain = inscription.toJSON ? inscription.toJSON() : { ...inscription };
+  if (plain.donnees) {
+    const { password_hash_pending, ...safeDonnees } = plain.donnees;
+    plain.donnees = safeDonnees;
+  }
+  if (plain.documents?.length) {
+    const ids = plain.documents.map((d) => d.fichier_id).filter(Boolean);
+    const fichiers = await Fichier.findAll({
+      where: { id: ids },
+      attributes: ['id', 'mime_type', 'nom_original'],
+    });
+    const map = Object.fromEntries(fichiers.map((f) => [f.id, f]));
+    plain.documents = plain.documents.map((d) => ({
+      ...d,
+      mime_type: map[d.fichier_id]?.mime_type || null,
+      nom_original: map[d.fichier_id]?.nom_original || null,
+    }));
+  }
+  return plain;
 };
 
 const creerInscription = async (payload, files = []) => {
@@ -87,6 +118,20 @@ const creerInscription = async (payload, files = []) => {
   };
   await inscription.save();
 
+  await adminAudit.log({
+    categorie: adminAudit.CATEGORIES.INSCRIPTION,
+    action: adminAudit.ACTIONS.INSCRIPTION_SOUMISE,
+    cible_type: 'inscription',
+    cible_id: inscription.id,
+    details: {
+      type_profil,
+      email,
+      statut: inscription.statut,
+      documents_fournis: fournis,
+      documents_manquants: manquants,
+    },
+  });
+
   return {
     id: inscription.id,
     statut: inscription.statut,
@@ -97,7 +142,7 @@ const creerInscription = async (payload, files = []) => {
   };
 };
 
-const validerInscription = async (inscriptionId, { valide_par = 'admin' } = {}) => {
+const validerInscription = async (inscriptionId, { valide_par = 'admin', admin = null, ip = null } = {}) => {
   const inscription = await InscriptionProfessionnel.findByPk(inscriptionId);
   if (!inscription) {
     const error = new Error('Inscription non trouvée');
@@ -164,10 +209,25 @@ const validerInscription = async (inscriptionId, { valide_par = 'admin' } = {}) 
   inscription.date_validation = new Date();
   await inscription.save();
 
+  await adminAudit.log({
+    categorie: adminAudit.CATEGORIES.INSCRIPTION,
+    action: adminAudit.ACTIONS.INSCRIPTION_VALIDEE,
+    acteur: admin,
+    cible_type: 'inscription',
+    cible_id: inscription.id,
+    ip,
+    details: {
+      type_profil: inscription.type_profil,
+      email: inscription.email,
+      compte_id: compteId,
+      valide_par,
+    },
+  });
+
   return { compte_id: compteId, type: inscription.type_profil };
 };
 
-const rejeterInscription = async (inscriptionId, motif_rejet) => {
+const rejeterInscription = async (inscriptionId, motif_rejet, { admin = null, ip = null } = {}) => {
   const inscription = await InscriptionProfessionnel.findByPk(inscriptionId);
   if (!inscription) {
     const error = new Error('Inscription non trouvée');
@@ -177,13 +237,31 @@ const rejeterInscription = async (inscriptionId, motif_rejet) => {
   inscription.statut = 'rejete';
   inscription.motif_rejet = motif_rejet;
   await inscription.save();
+
+  await adminAudit.log({
+    categorie: adminAudit.CATEGORIES.INSCRIPTION,
+    action: adminAudit.ACTIONS.INSCRIPTION_REJETEE,
+    acteur: admin,
+    cible_type: 'inscription',
+    cible_id: inscription.id,
+    ip,
+    details: {
+      type_profil: inscription.type_profil,
+      email: inscription.email,
+      motif_rejet,
+    },
+  });
+
   return inscription;
 };
 
-const listerEnAttente = async () => InscriptionProfessionnel.findAll({
-  where: { statut: ['en_attente', 'en_revision', 'documents_manquants'] },
-  order: [['createdAt', 'ASC']],
-});
+const listerEnAttente = async () => {
+  const inscriptions = await InscriptionProfessionnel.findAll({
+    where: { statut: ['en_attente', 'en_revision', 'documents_manquants'] },
+    order: [['createdAt', 'ASC']],
+  });
+  return Promise.all(inscriptions.map(sanitizeInscriptionForAdmin));
+};
 
 const getStatutDemande = async (email, reference) => {
   const inscription = await InscriptionProfessionnel.findOne({
@@ -214,5 +292,7 @@ module.exports = {
   listerEnAttente,
   getStatutDemande,
   DOCUMENTS_REQUIS,
+  DOC_LABELS,
   OPERATEURS_MOBILE_MONEY,
+  sanitizeInscriptionForAdmin,
 };

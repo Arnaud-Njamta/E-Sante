@@ -162,6 +162,9 @@ const ENDPOINTS = {
         recu: (id) => `/paiements/${id}/recu`,
         liste: '/paiements/mes-paiements',
     },
+    admin: {
+        auditLogs: '/admin/audit-logs',
+    },
 };
 
 export default ENDPOINTS;

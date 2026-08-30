@@ -117,6 +117,32 @@ const runPendingMigrations = async () => {
       console.warn('Migration statut rendez_vous:', err.message);
     }
   }
+
+  const [auditTables] = await sequelize.query(
+    "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'admin_audit_logs'",
+  );
+  if (auditTables.length === 0) {
+    await sequelize.query(`
+      CREATE TABLE \`admin_audit_logs\` (
+        \`id\` CHAR(36) NOT NULL,
+        \`categorie\` VARCHAR(40) NOT NULL,
+        \`action\` VARCHAR(60) NOT NULL,
+        \`acteur_id\` CHAR(36) NULL,
+        \`acteur_label\` VARCHAR(120) NULL,
+        \`cible_type\` VARCHAR(40) NULL,
+        \`cible_id\` CHAR(36) NULL,
+        \`details\` JSON NULL,
+        \`ip\` VARCHAR(45) NULL,
+        \`createdAt\` DATETIME NOT NULL,
+        PRIMARY KEY (\`id\`),
+        INDEX \`admin_audit_logs_categorie\` (\`categorie\`),
+        INDEX \`admin_audit_logs_action\` (\`action\`),
+        INDEX \`admin_audit_logs_cible\` (\`cible_type\`, \`cible_id\`),
+        INDEX \`admin_audit_logs_created\` (\`createdAt\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+    console.log('Migration: table admin_audit_logs créée.');
+  }
 };
 
 

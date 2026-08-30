@@ -20,6 +20,7 @@ const PublicationLike = require('./PublicationLike');
 const PublicationComment = require('./PublicationComment');
 const ReservationDispensaire = require('./ReservationDispensaire');
 const OrdonnanceAuditLog = require('./OrdonnanceAuditLog');
+const AdminAuditLog = require('./AdminAuditLog');
 const Admin = require('./Admin');
 const Transaction = require('./Transaction');
 const OtpCode = require('./OtpCode');
@@ -120,6 +121,7 @@ module.exports = {
   PublicationComment,
   ReservationDispensaire,
   OrdonnanceAuditLog,
+  AdminAuditLog,
   Admin,
   Transaction,
   OtpCode,

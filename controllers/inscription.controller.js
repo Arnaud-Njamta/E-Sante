@@ -37,7 +37,11 @@ const listerEnAttente = async (req, res, next) => {
 
 const valider = async (req, res, next) => {
   try {
-    const result = await inscriptionService.validerInscription(req.params.id, req.body);
+    const result = await inscriptionService.validerInscription(req.params.id, {
+      valide_par: req.user?.profile?.email || req.user?.id,
+      admin: req.user,
+      ip: req.ip,
+    });
     res.json({ success: true, data: result, message: 'Compte professionnel activé' });
   } catch (error) {
     next(error);
@@ -46,7 +50,11 @@ const valider = async (req, res, next) => {
 
 const rejeter = async (req, res, next) => {
   try {
-    const result = await inscriptionService.rejeterInscription(req.params.id, req.body.motif_rejet);
+    const result = await inscriptionService.rejeterInscription(
+      req.params.id,
+      req.body.motif_rejet,
+      { admin: req.user, ip: req.ip },
+    );
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);

@@ -6,7 +6,7 @@ import { getBranding, getDisplayName } from '../../config/branding';
 import { getInitials } from '../../utils/helpers';
 import {
   LayoutDashboard, Heart, Clock, FileText, BarChart3, User, LogOut,
-  ChevronLeft, Building2, MessageCircle, Stethoscope, Star, Pill, Newspaper, Camera, Package, Shield, Wallet,
+  ChevronLeft, Building2, MessageCircle, Stethoscope, Star, Pill, Newspaper, Camera, Package, Shield, Wallet, ScrollText,
 } from 'lucide-react';
 
 const SidebarContainer = styled.aside`
@@ -246,6 +246,7 @@ const ROLE_NAV = {
   ],
   admin: [
     { to: '/admin/inscriptions', icon: Shield, label: 'Validations MINSANTE', section: 'principal' },
+    { to: '/admin/audit', icon: ScrollText, label: 'Journal de contrôle', section: 'principal' },
     { to: '/admin/commissions', icon: BarChart3, label: 'Finances & commissions', section: 'principal' },
   ],
 };

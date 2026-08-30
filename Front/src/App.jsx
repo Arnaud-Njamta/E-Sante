@@ -46,6 +46,7 @@ const StructureRendezVousPage = React.lazy(() => import('./pages/StructureRendez
 const ActualitesPage = React.lazy(() => import('./pages/ActualitesPage'));
 const TeleconsultationPage = React.lazy(() => import('./pages/TeleconsultationPage'));
 const AdminInscriptionsPage = React.lazy(() => import('./pages/AdminInscriptionsPage'));
+const AdminAuditPage = React.lazy(() => import('./pages/AdminAuditPage'));
 const AdminCommissionsPage = React.lazy(() => import('./pages/AdminCommissionsPage'));
 const PatientPaiementsPage = React.lazy(() => import('./pages/PatientPaiementsPage'));
 const PharmacieOrdonnanceVerifyPage = React.lazy(() => import('./pages/PharmacieOrdonnanceVerifyPage'));
@@ -157,6 +158,7 @@ export default function App() {
 
                                 <Route element={<RoleRoute allowedRoles={[ROLES.ADMIN]}><AppLayout /></RoleRoute>}>
                                     <Route path="/admin/inscriptions" element={<AdminInscriptionsPage />} />
+                                    <Route path="/admin/audit" element={<AdminAuditPage />} />
                                     <Route path="/admin/commissions" element={<AdminCommissionsPage />} />
                                 </Route>
 

@@ -178,7 +178,9 @@ const validateJwtSecret = () => {
 
   if (IS_PROD && (secret.length < 32 || secret.includes('your_secret') || secret.includes('change_me'))) {
 
-    console.error('❌ JWT_SECRET trop faible pour la production. Utilisez une clé aléatoire d\'au moins 32 caractères.');
+    console.error('❌ JWT_SECRET invalide pour la production.');
+    console.error('   Générez une clé : openssl rand -base64 48');
+    console.error('   Puis mettez-la dans /var/www/djamsante/.env');
 
     process.exit(1);
 
@@ -254,6 +256,7 @@ const start = async () => {
   } catch (error) {
 
     console.error('Erreur au démarrage:', error.message);
+    if (error.stack) console.error(error.stack);
 
     process.exit(1);
 

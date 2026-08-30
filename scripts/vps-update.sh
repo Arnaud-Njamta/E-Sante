@@ -20,8 +20,11 @@ echo "=== [3/5] Compte admin ==="
 npm run ensure-admin
 
 echo "=== [4/5] Redémarrage API ==="
-pm2 restart djamsante-api
-sleep 2
+mkdir -p logs uploads data
+chmod +x scripts/start-api.sh scripts/diagnose-api.sh 2>/dev/null || true
+pm2 delete djamsante-api 2>/dev/null || true
+pm2 start ecosystem.config.js
+sleep 3
 pm2 status djamsante-api
 
 echo "=== [5/5] Build frontend ==="

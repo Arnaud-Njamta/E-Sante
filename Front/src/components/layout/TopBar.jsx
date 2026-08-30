@@ -3,14 +3,13 @@ import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getTodayFormatted, getGreeting } from '../../utils/helpers';
-import { getDisplayName } from '../../config/branding';
+import { getBranding, getDisplayName } from '../../config/branding';
 import { ROLES } from '../../config/branding';
 import { Menu, Search } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 
 const TopBarContainer = styled.header`
   height: 68px;
-  background: ${({ theme }) => theme.colors.surface};
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   display: flex;
   align-items: center;
@@ -20,7 +19,11 @@ const TopBarContainer = styled.header`
   top: 0;
   z-index: ${({ theme }) => theme.zIndex.topbar};
   backdrop-filter: blur(12px);
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(245, 242, 237, 0.92);
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.md}) {
+    padding: 0 ${({ theme }) => theme.spacing[4]};
+  }
 `;
 
 const LeftSection = styled.div`
@@ -56,6 +59,28 @@ const GreetingBlock = styled.div`
     text-transform: capitalize;
   }
   @media (max-width: ${({ theme }) => theme.breakpoints.sm}) { p { display: none; } }
+`;
+
+const MobileBrand = styled.div`
+  display: none;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.md}) {
+    display: block;
+    h1 {
+      margin: 0;
+      font-family: ${({ theme }) => theme.typography.fontFamilySerif};
+      font-size: 1.35rem;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+      color: ${({ theme }) => theme.colors.text};
+      line-height: 1.1;
+    }
+    p {
+      margin: 2px 0 0;
+      font-size: 0.72rem;
+      color: ${({ theme }) => theme.colors.textMuted};
+    }
+  }
 `;
 
 const RightSection = styled.div`
@@ -113,9 +138,10 @@ const SEARCH_ROUTES = {
   [ROLES.CLINIQUE]: { path: '/clinique/dispensaire', tab: null },
 };
 
-export default function TopBar({ onMenuToggle }) {
+export default function TopBar({ onMenuToggle, patientMobile = false }) {
   const navigate = useNavigate();
   const { user, role } = useAuth();
+  const branding = getBranding(role);
   const [query, setQuery] = useState('');
   const greeting = getGreeting();
   const today = getTodayFormatted();
@@ -150,14 +176,23 @@ export default function TopBar({ onMenuToggle }) {
   return (
     <TopBarContainer>
       <LeftSection>
-        <MenuButton onClick={onMenuToggle} aria-label="Menu"><Menu /></MenuButton>
-        <GreetingBlock>
-          <h2>{greeting}, {name}</h2>
-          <p>{today}</p>
-        </GreetingBlock>
+        {!patientMobile && (
+          <MenuButton onClick={onMenuToggle} aria-label="Menu"><Menu /></MenuButton>
+        )}
+        {patientMobile ? (
+          <MobileBrand>
+            <h1>{branding.appName}</h1>
+            <p>{branding.tagline}</p>
+          </MobileBrand>
+        ) : (
+          <GreetingBlock>
+            <h2>{greeting}, {name}</h2>
+            <p>{today}</p>
+          </GreetingBlock>
+        )}
       </LeftSection>
       <RightSection>
-        {showSearch && (
+        {showSearch && !patientMobile && (
           <SearchForm onSubmit={handleSearch}>
             <Search size={16} />
             <input

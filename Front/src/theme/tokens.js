@@ -1,9 +1,21 @@
 /**
  * DjamSanté Design Tokens
- * Medical-grade design system — accessibility-first, WCAG AA compliant
+ * Charte éditoriale (connexion) + système UI intérieur
  */
 
+const editorial = {
+  ink: '#1C1917',
+  paper: '#F5F2ED',
+  muted: '#6B6560',
+  line: '#DDD6CE',
+  deep: '#0B3D30',
+  sans: "'DM Sans', system-ui, -apple-system, sans-serif",
+  serif: "'Playfair Display', Georgia, 'Times New Roman', serif",
+};
+
 const tokens = {
+  editorial,
+
   colors: {
     // Primary — Trust Blue
     primary: {
@@ -71,22 +83,25 @@ const tokens = {
       800: '#1E293B',
       900: '#0F172A',
     },
-    // Semantic aliases
-    background: '#F8FAFC',
+    // Semantic aliases — charte éditoriale DjamSanté
+    background: editorial.paper,
     surface: '#FFFFFF',
-    surfaceHover: '#F1F5F9',
-    border: '#E2E8F0',
-    borderFocus: '#2D7FF9',
-    text: '#0F172A',
-    textSecondary: '#64748B',
-    textMuted: '#94A3B8',
+    surfaceHover: '#F0EBE4',
+    border: editorial.line,
+    borderFocus: editorial.deep,
+    text: editorial.ink,
+    textSecondary: editorial.muted,
+    textMuted: '#A8A29E',
     textOnPrimary: '#FFFFFF',
+    ink: editorial.ink,
+    deep: editorial.deep,
     // Overlay
-    overlay: 'rgba(15, 23, 42, 0.5)',
+    overlay: 'rgba(28, 25, 23, 0.45)',
   },
 
   typography: {
-    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    fontFamily: editorial.sans,
+    fontFamilySerif: editorial.serif,
     fontFamilyMono: "'JetBrains Mono', 'Fira Code', monospace",
     sizes: {
       xs:   '0.75rem',    // 12px
@@ -128,21 +143,22 @@ const tokens = {
   },
 
   radii: {
+    editorial: '2px',
     sm: '6px',
     md: '8px',
-    lg: '12px',
-    xl: '16px',
-    '2xl': '20px',
+    lg: '10px',
+    xl: '14px',
+    '2xl': '18px',
     full: '999px',
   },
 
   shadows: {
-    xs:  '0 1px 2px rgba(0, 0, 0, 0.04)',
-    sm:  '0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04)',
-    md:  '0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -1px rgba(0, 0, 0, 0.04)',
-    lg:  '0 10px 15px -3px rgba(0, 0, 0, 0.06), 0 4px 6px -2px rgba(0, 0, 0, 0.04)',
-    xl:  '0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.03)',
-    focus: '0 0 0 3px rgba(45, 127, 249, 0.3)',
+    xs:  '0 1px 2px rgba(28, 25, 23, 0.04)',
+    sm:  '0 1px 3px rgba(28, 25, 23, 0.06)',
+    md:  '0 4px 12px rgba(28, 25, 23, 0.06)',
+    lg:  '0 8px 20px rgba(28, 25, 23, 0.08)',
+    xl:  '0 16px 32px rgba(28, 25, 23, 0.1)',
+    focus: '0 0 0 3px rgba(11, 61, 48, 0.2)',
   },
 
   breakpoints: {
@@ -162,6 +178,7 @@ const tokens = {
   zIndex: {
     sidebar: 100,
     topbar: 110,
+    bottomNav: 115,
     modal: 200,
     toast: 300,
     tooltip: 400,

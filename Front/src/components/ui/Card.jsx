@@ -15,9 +15,9 @@ const StyledCard = styled.div`
         css`
       cursor: pointer;
       &:hover {
-        border-color: ${({ theme }) => theme.colors.primary[200]};
-        box-shadow: ${({ theme }) => theme.shadows.md};
-        transform: translateY(-2px);
+        border-color: ${({ theme }) => theme.colors.textMuted};
+        box-shadow: ${({ theme }) => theme.shadows.sm};
+        transform: translateY(-1px);
       }
     `}
 
@@ -36,8 +36,10 @@ const CardHeader = styled.div`
 `;
 
 const CardTitle = styled.h3`
-  font-size: ${({ theme }) => theme.typography.sizes.md};
-  font-weight: ${({ theme }) => theme.typography.weights.semibold};
+  font-family: ${({ theme }) => theme.typography.fontFamilySerif};
+  font-size: ${({ theme }) => theme.typography.sizes.lg};
+  font-weight: 500;
+  letter-spacing: -0.01em;
   color: ${({ theme }) => theme.colors.text};
   margin: 0;
 `;

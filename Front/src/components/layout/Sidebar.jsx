@@ -42,8 +42,8 @@ const LogoSection = styled.div`
 const LogoIcon = styled.div`
   width: 40px;
   height: 40px;
-  border-radius: ${({ theme }) => theme.radii.lg};
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.primary[500]}, ${({ theme }) => theme.colors.primary[600]});
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ theme }) => theme.colors.ink};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -56,8 +56,10 @@ const LogoText = styled.div`
   overflow: hidden;
   white-space: nowrap;
   h1 {
-    font-size: ${({ theme }) => theme.typography.sizes.md};
-    font-weight: ${({ theme }) => theme.typography.weights.bold};
+    font-family: ${({ theme }) => theme.typography.fontFamilySerif};
+    font-size: ${({ theme }) => theme.typography.sizes.lg};
+    font-weight: 500;
+    letter-spacing: -0.02em;
     color: ${({ theme }) => theme.colors.text};
     margin: 0;
   }
@@ -103,15 +105,15 @@ const NavItem = styled(NavLink)`
   svg { width: 20px; height: 20px; flex-shrink: 0; }
 
   &:hover {
-    background: ${({ theme }) => theme.colors.primary[50]};
-    color: ${({ theme }) => theme.colors.primary[600]};
+    background: ${({ theme }) => theme.colors.surfaceHover};
+    color: ${({ theme }) => theme.colors.ink};
   }
 
   &.active {
-    background: ${({ theme }) => theme.colors.primary[50]};
-    color: ${({ theme }) => theme.colors.primary[600]};
+    background: ${({ theme }) => theme.colors.surfaceHover};
+    color: ${({ theme }) => theme.colors.ink};
     font-weight: ${({ theme }) => theme.typography.weights.semibold};
-    svg { color: ${({ theme }) => theme.colors.primary[500]}; }
+    svg { color: ${({ theme }) => theme.colors.deep}; }
   }
 `;
 

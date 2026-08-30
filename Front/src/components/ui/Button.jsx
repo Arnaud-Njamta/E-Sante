@@ -3,12 +3,13 @@ import styled, { css } from 'styled-components';
 
 const variants = {
     primary: css`
-    background: linear-gradient(135deg, ${({ theme }) => theme.colors.primary[500]}, ${({ theme }) => theme.colors.primary[600]});
+    background: ${({ theme }) => theme.colors.ink};
     color: ${({ theme }) => theme.colors.textOnPrimary};
+    border-radius: ${({ theme }) => theme.radii.editorial};
     &:hover:not(:disabled) {
-      background: linear-gradient(135deg, ${({ theme }) => theme.colors.primary[600]}, ${({ theme }) => theme.colors.primary[700]});
-      transform: translateY(-1px);
-      box-shadow: ${({ theme }) => theme.shadows.md};
+      background: ${({ theme }) => theme.colors.deep};
+      transform: translateY(1px);
+      box-shadow: none;
     }
   `,
     secondary: css`

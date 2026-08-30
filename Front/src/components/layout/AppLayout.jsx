@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { Outlet } from 'react-router-dom';
+import { useTheme } from 'styled-components';
+import { useAuth } from '../../context/AuthContext';
+import useMediaQuery from '../../hooks/useMediaQuery';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
+import PatientBottomNav from './PatientBottomNav';
 import AiAssistantWidget from '../ai/AiAssistantWidget';
 
 const LayoutWrapper = styled.div`
@@ -30,9 +34,16 @@ const PageContent = styled.div`
   max-width: 1400px;
   width: 100%;
   margin: 0 auto;
+  padding-bottom: ${({ $patientMobile, theme }) => (
+    $patientMobile ? `calc(88px + ${theme.spacing[4]})` : theme.spacing[6]
+  )};
 
   @media (max-width: ${({ theme }) => theme.breakpoints.sm}) {
-    padding: ${({ theme }) => theme.spacing[4]};
+    padding: ${({ theme, $patientMobile }) => (
+      $patientMobile
+        ? `calc(${theme.spacing[4]} + 4px) ${theme.spacing[4]} calc(88px + ${theme.spacing[4]})`
+        : theme.spacing[4]
+    )};
   }
 `;
 
@@ -49,26 +60,39 @@ const MobileOverlay = styled.div`
 `;
 
 export default function AppLayout() {
-    const [collapsed, setCollapsed] = useState(false);
-    const [mobileOpen, setMobileOpen] = useState(false);
+  const theme = useTheme();
+  const { role } = useAuth();
+  const isMobile = useMediaQuery(`(max-width: ${theme.breakpoints.md})`);
+  const isPatientMobile = role === 'patient' && isMobile;
 
-    const sidebarWidth = collapsed ? '72px' : '260px';
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-    return (
-        <LayoutWrapper>
-            <Sidebar
-                collapsed={collapsed}
-                onToggle={() => setCollapsed((c) => !c)}
-                mobileOpen={mobileOpen}
-            />
-            <MobileOverlay $show={mobileOpen} onClick={() => setMobileOpen(false)} />
-            <MainArea $sidebarWidth={sidebarWidth}>
-                <TopBar onMenuToggle={() => setMobileOpen((o) => !o)} />
-                <PageContent>
-                    <Outlet />
-                </PageContent>
-            </MainArea>
-            <AiAssistantWidget />
-        </LayoutWrapper>
-    );
+  const sidebarWidth = isPatientMobile ? '0px' : (collapsed ? '72px' : '260px');
+
+  return (
+    <LayoutWrapper>
+      {!isPatientMobile && (
+        <Sidebar
+          collapsed={collapsed}
+          onToggle={() => setCollapsed((c) => !c)}
+          mobileOpen={mobileOpen}
+        />
+      )}
+      {!isPatientMobile && (
+        <MobileOverlay $show={mobileOpen} onClick={() => setMobileOpen(false)} />
+      )}
+      <MainArea $sidebarWidth={sidebarWidth}>
+        <TopBar
+          patientMobile={isPatientMobile}
+          onMenuToggle={() => setMobileOpen((o) => !o)}
+        />
+        <PageContent $patientMobile={isPatientMobile}>
+          <Outlet />
+        </PageContent>
+      </MainArea>
+      {isPatientMobile && <PatientBottomNav />}
+      <AiAssistantWidget />
+    </LayoutWrapper>
+  );
 }

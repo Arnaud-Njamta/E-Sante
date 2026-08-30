@@ -9,7 +9,7 @@ export function buildTheme(role = 'patient') {
     colors: {
       ...baseTokens.colors,
       primary: branding.primary,
-      borderFocus: branding.primary[500],
+      borderFocus: branding.primary[500] || baseTokens.colors.deep,
     },
   };
 }

@@ -6,6 +6,8 @@ import {
   Shield, Video, UserRound, Calendar,
 } from 'lucide-react';
 import { useAiChat, useAiBookRdv } from '../../hooks/useAiAssistant';
+import useMediaQuery from '../../hooks/useMediaQuery';
+import { useTheme } from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import {
   WELCOME_AI_PATIENT, WELCOME_AI_MEDECIN, EMERGENCY, EMERGENCY_FOOTER,
@@ -25,7 +27,9 @@ const spin = keyframes`
 
 const FAB = styled.button`
   position: fixed;
-  bottom: 24px;
+  bottom: ${({ $lifted }) => ($lifted
+    ? 'calc(84px + env(safe-area-inset-bottom, 0px))'
+    : '24px')};
   right: 24px;
   width: 60px;
   height: 60px;
@@ -47,7 +51,9 @@ const FAB = styled.button`
 
 const Panel = styled.div`
   position: fixed;
-  bottom: 96px;
+  bottom: ${({ $lifted }) => ($lifted
+    ? 'calc(156px + env(safe-area-inset-bottom, 0px))'
+    : '96px')};
   right: 24px;
   width: 400px;
   max-width: calc(100vw - 24px);
@@ -394,9 +400,12 @@ function MessageContent({ msg, onBookSlot, bookingKey, isPatient }) {
 }
 
 export default function AiAssistantWidget() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(`(max-width: ${theme.breakpoints.md})`);
   const { role } = useAuth();
   const isMedecin = role === 'medecin';
   const isPatient = role === 'patient';
+  const liftFab = isPatient && isMobile;
   const welcome = isMedecin ? WELCOME_AI_MEDECIN : WELCOME_AI_PATIENT;
   const suggestions = isMedecin ? SUGGESTIONS_MEDECIN : SUGGESTIONS_PATIENT;
 
@@ -482,7 +491,7 @@ export default function AiAssistantWidget() {
   return (
     <>
       {open && (
-        <Panel>
+        <Panel $lifted={liftFab}>
           <Header>
             <div className="info">
               <div className="avatar"><Bot size={22} /></div>
@@ -560,7 +569,7 @@ export default function AiAssistantWidget() {
         </Panel>
       )}
 
-      <FAB onClick={() => setOpen((o) => !o)} aria-label="Dr. DjamSanté" title="Dr. DjamSanté — Assistant IA">
+      <FAB $lifted={liftFab} onClick={() => setOpen((o) => !o)} aria-label="Dr. DjamSanté" title="Dr. DjamSanté — Assistant IA">
         {open ? <X size={26} /> : <Bot size={26} />}
       </FAB>
     </>

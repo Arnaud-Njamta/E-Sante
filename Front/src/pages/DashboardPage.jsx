@@ -27,8 +27,16 @@ const drawCircle = keyframes`
 const PageHeader = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing[6]};
   animation: fadeIn 0.4s ease both;
-  h1 { font-size: 1.75rem; font-weight: 700; color: ${({ theme }) => theme.colors.text}; margin: 0 0 4px; }
-  p  { font-size: 0.9rem; color: ${({ theme }) => theme.colors.textSecondary}; margin: 0; }
+  h1 {
+    font-family: ${({ theme }) => theme.typography.fontFamilySerif};
+    font-size: clamp(1.65rem, 3vw, 2rem);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: ${({ theme }) => theme.colors.text};
+    margin: 0 0 6px;
+    line-height: 1.15;
+  }
+  p  { font-size: 0.92rem; color: ${({ theme }) => theme.colors.textSecondary}; margin: 0; line-height: 1.55; }
 `;
 
 const TopGrid = styled.div`

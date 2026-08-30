@@ -21,7 +21,7 @@ import toast from 'react-hot-toast';
 const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000';
 
 const Page = styled.div`
-  max-width: 1100px;
+  max-width: 1080px;
   margin: 0 auto;
 `;
 
@@ -30,7 +30,7 @@ const TopBar = styled.div`
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 28px;
   flex-wrap: wrap;
 `;
 
@@ -38,173 +38,173 @@ const BackBtn = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 12px;
-  background: ${({ theme }) => theme.colors.surface};
-  color: ${({ theme }) => theme.colors.text};
+  padding: 10px 0;
+  border: none;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  transition: color 0.15s;
 
   &:hover {
-    border-color: ${CAMEROON_COLORS.green};
-    color: ${CAMEROON_COLORS.greenDark};
-    background: #F0FDF9;
+    color: ${({ theme }) => theme.colors.ink};
   }
 `;
 
-const Hero = styled.div`
-  position: relative;
-  border-radius: 20px;
-  overflow: hidden;
-  padding: 32px 28px;
-  margin-bottom: 28px;
-  background: linear-gradient(135deg, ${CAMEROON_COLORS.green} 0%, ${CAMEROON_COLORS.greenDark} 55%, #0a3d32 100%);
-  color: white;
+const Hero = styled.header`
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
 
-  &::after {
-    content: '';
-    position: absolute;
-    top: -40px; right: -40px;
-    width: 200px; height: 200px;
-    border-radius: 50%;
-    background: rgba(252, 209, 22, 0.12);
+  .kicker {
+    margin: 0 0 10px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: ${({ theme }) => theme.colors.textMuted};
   }
 
   h1 {
-    margin: 0 0 8px;
-    font-size: 1.65rem;
-    font-weight: 800;
+    margin: 0 0 10px;
+    font-family: ${({ theme }) => theme.typography.fontFamilySerif};
+    font-size: clamp(1.85rem, 4vw, 2.5rem);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: ${({ theme }) => theme.colors.text};
+    line-height: 1.12;
     display: flex;
     align-items: center;
-    gap: 10px;
-    position: relative;
-    z-index: 1;
+    gap: 12px;
   }
 
   p {
     margin: 0;
-    font-size: 0.92rem;
-    opacity: 0.92;
-    line-height: 1.55;
-    max-width: 560px;
-    position: relative;
-    z-index: 1;
+    font-size: 0.95rem;
+    color: ${({ theme }) => theme.colors.textSecondary};
+    line-height: 1.6;
+    max-width: 580px;
   }
 `;
 
 const FilterRow = styled.div`
   display: flex;
   gap: 8px;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
   flex-wrap: wrap;
 `;
 
 const FilterChip = styled.button`
-  padding: 8px 16px;
-  border-radius: 24px;
-  font-size: 0.82rem;
+  padding: 9px 16px;
+  border-radius: ${({ theme }) => theme.radii.full};
+  font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
-  border: 1.5px solid ${({ $active }) => ($active ? CAMEROON_COLORS.green : '#E2E8F0')};
-  background: ${({ $active }) => ($active ? CAMEROON_COLORS.green : 'white')};
-  color: ${({ $active }) => ($active ? 'white' : '#475569')};
+  border: 1px solid ${({ theme, $active }) => ($active ? theme.colors.ink : theme.colors.border)};
+  background: ${({ theme, $active }) => ($active ? theme.colors.ink : theme.colors.surface)};
+  color: ${({ theme, $active }) => ($active ? '#fff' : theme.colors.textSecondary)};
   transition: all 0.15s;
+  font-family: inherit;
 
   &:hover {
-    border-color: ${CAMEROON_COLORS.green};
-    color: ${({ $active }) => ($active ? 'white' : CAMEROON_COLORS.greenDark)};
+    border-color: ${({ theme }) => theme.colors.ink};
+    color: ${({ theme, $active }) => ($active ? '#fff' : theme.colors.ink)};
   }
 `;
 
 const FeedGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
 `;
 
 const PostCard = styled(Card)`
   padding: 0;
   overflow: hidden;
-  border: 1px solid #E2E8F0;
-  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.lg};
+  background: ${({ theme }) => theme.colors.surface};
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 28px rgba(0, 122, 94, 0.1);
+    transform: translateY(-3px);
+    box-shadow: ${({ theme }) => theme.shadows.md};
   }
 `;
 
 const PostImage = styled.div`
   height: 200px;
-  background: ${({ $url }) => ($url
+  background: ${({ $url, theme }) => ($url
     ? `url(${$url}) center/cover`
-    : `linear-gradient(145deg, ${CAMEROON_COLORS.green}22, ${CAMEROON_COLORS.yellow}33)`)};
+    : `linear-gradient(145deg, ${theme.colors.background}, ${theme.colors.border})`)};
   position: relative;
 
   &::after {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.15) 100%);
+    background: linear-gradient(180deg, transparent 55%, rgba(28, 25, 23, 0.18) 100%);
   }
 `;
 
 const PostBody = styled.div`
-  padding: 18px;
+  padding: 20px;
 `;
 
 const MetaRow = styled.div`
   display: flex;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: 10px;
+  margin-bottom: 12px;
   flex-wrap: wrap;
   align-items: center;
 `;
 
 const TypeBadge = styled.span`
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   padding: 4px 10px;
-  border-radius: 20px;
+  border-radius: ${({ theme }) => theme.radii.full};
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
-  background: ${({ $type }) => ($type === 'realisation' ? '#FEF3C7' : '#D1FAE5')};
-  color: ${({ $type }) => ($type === 'realisation' ? '#92400E' : CAMEROON_COLORS.greenDark)};
+  letter-spacing: 0.06em;
+  background: ${({ $type, theme }) => ($type === 'realisation'
+    ? 'rgba(252, 209, 22, 0.2)'
+    : 'rgba(11, 61, 48, 0.08)')};
+  color: ${({ $type, theme }) => ($type === 'realisation' ? '#92400E' : theme.colors.deep)};
 `;
 
 const AuteurBadge = styled.span`
-  font-size: 0.75rem;
-  color: #64748B;
+  font-size: 0.76rem;
+  color: ${({ theme }) => theme.colors.textSecondary};
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 
   &::before {
     content: '';
-    width: 24px; height: 24px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
-    background: linear-gradient(135deg, ${CAMEROON_COLORS.green}, ${CAMEROON_COLORS.greenDark});
+    background: ${({ theme }) => theme.colors.ink};
     flex-shrink: 0;
   }
 `;
 
 const PostTitle = styled.h3`
-  margin: 0 0 8px;
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #0F172A;
-  line-height: 1.35;
+  margin: 0 0 10px;
+  font-family: ${({ theme }) => theme.typography.fontFamilySerif};
+  font-size: 1.15rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: ${({ theme }) => theme.colors.text};
+  line-height: 1.3;
 `;
 
 const PostContent = styled.p`
   margin: 0;
-  font-size: 0.86rem;
-  color: #64748B;
-  line-height: 1.6;
+  font-size: 0.88rem;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  line-height: 1.65;
   display: -webkit-box;
   -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
@@ -214,9 +214,9 @@ const PostContent = styled.p`
 const PostFooter = styled.div`
   display: flex;
   gap: 16px;
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid #F1F5F9;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
   align-items: center;
 `;
 
@@ -227,14 +227,14 @@ const LikeBtn = styled.button`
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   font-weight: 600;
-  color: ${({ $liked }) => ($liked ? '#EF4444' : '#64748B')};
-  padding: 4px 8px;
-  border-radius: 8px;
-  transition: background 0.15s;
+  color: ${({ $liked, theme }) => ($liked ? CAMEROON_COLORS.red : theme.colors.textMuted)};
+  padding: 4px 0;
+  transition: color 0.15s;
+  font-family: inherit;
 
-  &:hover { background: #FEF2F2; }
+  &:hover { color: ${CAMEROON_COLORS.red}; }
 `;
 
 const CommentBtn = styled.button`
@@ -244,39 +244,80 @@ const CommentBtn = styled.button`
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   font-weight: 600;
-  color: ${({ $open }) => ($open ? CAMEROON_COLORS.greenDark : '#64748B')};
-  padding: 4px 8px;
-  border-radius: 8px;
-  transition: background 0.15s;
+  color: ${({ $open, theme }) => ($open ? theme.colors.deep : theme.colors.textMuted)};
+  padding: 4px 0;
+  transition: color 0.15s;
+  font-family: inherit;
 
-  &:hover { background: #F0FDF9; }
+  &:hover { color: ${({ theme }) => theme.colors.ink}; }
 `;
 
 const CommentsPanel = styled.div`
-  border-top: 1px solid #F1F5F9;
-  padding: 14px 18px 16px;
-  background: #FAFBFC;
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  padding: 16px 20px 18px;
+  background: ${({ theme }) => theme.colors.background};
 `;
 
 const CommentItem = styled.div`
   padding: 10px 0;
   font-size: 0.85rem;
-  border-bottom: 1px solid #F1F5F9;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
 
   &:last-of-type { border-bottom: none; }
 
-  strong { color: ${CAMEROON_COLORS.greenDark}; display: block; margin-bottom: 2px; }
-  p { margin: 0; color: #475569; line-height: 1.5; }
-  time { font-size: 0.72rem; color: #94A3B8; }
+  strong {
+    font-weight: 600;
+    color: ${({ theme }) => theme.colors.text};
+    display: block;
+    margin-bottom: 3px;
+  }
+  p { margin: 0; color: ${({ theme }) => theme.colors.textSecondary}; line-height: 1.55; }
+  time { font-size: 0.72rem; color: ${({ theme }) => theme.colors.textMuted}; }
 `;
 
 const PublishCard = styled(Card)`
-  padding: 24px;
-  margin-bottom: 24px;
-  border: 2px dashed ${CAMEROON_COLORS.green}40;
-  background: #F0FDF9;
+  padding: 28px;
+  margin-bottom: 28px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.surface};
+
+  h3 {
+    margin: 0 0 18px;
+    font-family: ${({ theme }) => theme.typography.fontFamilySerif};
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: ${({ theme }) => theme.colors.text};
+  }
+`;
+
+const CommentInput = styled.input`
+  flex: 1;
+  padding: 10px 0 8px;
+  border: none;
+  border-bottom: 1.5px solid ${({ theme }) => theme.colors.border};
+  font-size: 0.86rem;
+  font-family: inherit;
+  color: ${({ theme }) => theme.colors.text};
+  background: transparent;
+  outline: none;
+  &:focus { border-bottom-color: ${({ theme }) => theme.colors.deep}; }
+`;
+
+const PublishTextarea = styled.textarea`
+  width: 100%;
+  padding: 12px 0;
+  margin-top: 12px;
+  border: none;
+  border-bottom: 1.5px solid ${({ theme }) => theme.colors.border};
+  font-size: 0.88rem;
+  font-family: inherit;
+  color: ${({ theme }) => theme.colors.text};
+  background: transparent;
+  resize: vertical;
+  outline: none;
+  &:focus { border-bottom-color: ${({ theme }) => theme.colors.deep}; }
 `;
 
 function CommentSection({ publicationId, open, onToggle }) {
@@ -301,7 +342,7 @@ function CommentSection({ publicationId, open, onToggle }) {
   return (
     <CommentsPanel>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-        <span style={{ fontSize: '0.82rem', fontWeight: 700, color: CAMEROON_COLORS.greenDark }}>
+        <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'inherit' }}>
           Commentaires {comments?.length ? `(${comments.length})` : ''}
         </span>
         <button type="button" onClick={onToggle} style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', fontSize: '0.78rem' }}>
@@ -329,13 +370,12 @@ function CommentSection({ publicationId, open, onToggle }) {
       })}
 
       {isAuthenticated ? (
-        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-          <input
+        <div style={{ display: 'flex', gap: 12, marginTop: 12, alignItems: 'flex-end' }}>
+          <CommentInput
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Écrire un commentaire…"
             onKeyDown={(e) => e.key === 'Enter' && submit()}
-            style={{ flex: 1, padding: '10px 12px', borderRadius: 10, border: '1px solid #E2E8F0', fontSize: '0.85rem' }}
           />
           <Button size="sm" onClick={submit} disabled={addComment.isPending}>
             <Send size={14} />
@@ -449,9 +489,10 @@ export default function ActualitesPage() {
       </TopBar>
 
       <Hero>
-        <h1><Newspaper size={26} /> Actualités & Réalisations</h1>
+        <p className="kicker">Fil santé · Cameroun</p>
+        <h1><Newspaper size={28} strokeWidth={1.5} /> Actualités & Réalisations</h1>
         <p>
-          Le fil santé du Cameroun — initiatives des médecins, hôpitaux, cliniques et pharmacies.
+          Initiatives des médecins, hôpitaux, cliniques et pharmacies.
           Partagez vos réussites et informez la communauté.
         </p>
       </Hero>
@@ -467,7 +508,7 @@ export default function ActualitesPage() {
 
       {showForm && (
         <PublishCard>
-          <h3 style={{ margin: '0 0 16px', fontSize: '1rem', color: CAMEROON_COLORS.greenDark }}>Nouvelle publication</h3>
+          <h3>Nouvelle publication</h3>
           <form onSubmit={handlePublish}>
             <div style={{ display: 'flex', gap: 16, marginBottom: 14 }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: '0.88rem' }}>
@@ -478,7 +519,7 @@ export default function ActualitesPage() {
               </label>
             </div>
             <Input label="Titre" value={form.titre} onChange={(e) => setForm({ ...form, titre: e.target.value })} required />
-            <textarea value={form.contenu} onChange={(e) => setForm({ ...form, contenu: e.target.value })} rows={4} placeholder="Partagez votre actualité ou réalisation…" style={{ width: '100%', padding: 12, borderRadius: 10, border: '1px solid #E2E8F0', marginTop: 12, fontSize: '0.88rem', fontFamily: 'inherit', resize: 'vertical' }} required />
+            <PublishTextarea value={form.contenu} onChange={(e) => setForm({ ...form, contenu: e.target.value })} rows={4} placeholder="Partagez votre actualité ou réalisation…" required />
             <label style={{ display: 'block', marginTop: 12, fontSize: '0.85rem', color: '#64748B' }}>
               <ImageIcon size={14} style={{ verticalAlign: 'middle' }} /> Photo (optionnel)
               <input type="file" accept="image/*" onChange={(e) => setImage(e.target.files[0])} style={{ display: 'block', marginTop: 6 }} />

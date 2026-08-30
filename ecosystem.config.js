@@ -5,7 +5,6 @@ module.exports = {
     name: 'djamsante-api',
     script: path.join(__dirname, 'index.js'),
     cwd: __dirname,
-    node_args: '--use-system-ca',
     exec_mode: 'fork',
     instances: 1,
     autorestart: true,

@@ -4,8 +4,9 @@
   "description": "API REST - Application de santé pour l'amélioration de l'observance thérapeutique",
   "main": "index.js",
   "scripts": {
-    "start": "node --use-system-ca index.js",
-    "dev": "nodemon --exec \"node --use-system-ca\" index.js",
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "dev:win": "nodemon --exec \"node --use-system-ca\" index.js",
     "ensure-admin": "node scripts/ensure-admin.js",
     "test": "jest --runInBand --forceExit",
     "test:watch": "jest --watch",

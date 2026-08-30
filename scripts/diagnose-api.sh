@@ -30,7 +30,7 @@ s.authenticate().then(() => { console.log('MySQL OK'); process.exit(0); })
 
 echo ""
 echo "=== Démarrage direct (10s) ==="
-timeout 10 node --use-system-ca index.js 2>&1 || true
+timeout 10 node index.js 2>&1 || true
 
 echo ""
 echo "=== Dernières lignes PM2 ==="

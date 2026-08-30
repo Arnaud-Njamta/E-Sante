@@ -36,6 +36,11 @@ const PORT = process.env.PORT || 3000;
 
 const IS_PROD = process.env.NODE_ENV === 'production';
 
+// Derrière Nginx / reverse proxy (rate-limit, IP client, HTTPS)
+if (IS_PROD || process.env.TRUST_PROXY === 'true') {
+  app.set('trust proxy', parseInt(process.env.TRUST_PROXY_HOPS || '1', 10));
+}
+
 
 
 // ==================== MIDDLEWARES GLOBAUX ====================

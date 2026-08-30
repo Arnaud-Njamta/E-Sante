@@ -6,446 +6,334 @@ import { useAuth } from '../context/AuthContext';
 import { getBranding, getHomeRoute } from '../config/branding';
 import { CAMEROON_COLORS, FEMINICIDE_BANNER } from '../config/cameroonHealth';
 import toast from 'react-hot-toast';
-import {
-  Mail, Lock, Heart, Calendar, Newspaper, ScanLine,
-  Shield, Phone,
-} from 'lucide-react';
+import { Phone } from 'lucide-react';
 
-const FONT = "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+const SANS = "'DM Sans', system-ui, -apple-system, sans-serif";
+const SERIF = "'Fraunces', Georgia, 'Times New Roman', serif";
 
 const HERO_IMAGE = '/images/login-feminicide.jpg';
 
-const PageWrapper = styled.div`
+const INK = '#1C1917';
+const PAPER = '#F5F2ED';
+const MUTED = '#6B6560';
+const LINE = '#DDD6CE';
+const DEEP = '#0B3D30';
+
+const Page = styled.div`
   min-height: 100vh;
-  display: flex;
-  font-family: ${FONT};
-  background: #fafafa;
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  font-family: ${SANS};
+  background: ${PAPER};
   -webkit-font-smoothing: antialiased;
+
+  @media (max-width: 960px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
-const LeftPanel = styled.div`
-  flex: 1.15;
+const Visual = styled.aside`
   position: relative;
-  display: flex;
-  flex-direction: column;
-  color: white;
+  min-height: 100vh;
+  color: #fff;
   overflow: hidden;
-  @media (max-width: 960px) { display: none; }
+
+  @media (max-width: 960px) {
+    min-height: 280px;
+  }
 
   &::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: url('${HERO_IMAGE}') center center / cover no-repeat;
+    background: url('${HERO_IMAGE}') center 30% / cover no-repeat;
   }
 `;
 
-const ImageOverlay = styled.div`
+const VisualShade = styled.div`
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    165deg,
-    rgba(0, 0, 0, 0.2) 0%,
-    rgba(0, 0, 0, 0.45) 45%,
-    rgba(0, 50, 38, 0.88) 100%
-  );
-  z-index: 0;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.55) 62%, rgba(11,61,48,0.94) 100%);
 `;
 
-const FlagStripe = styled.div`
+const FlagBar = styled.div`
   position: relative;
   z-index: 2;
-  height: 4px;
+  height: 3px;
   background: linear-gradient(90deg,
     ${CAMEROON_COLORS.green} 33.3%,
     ${CAMEROON_COLORS.red} 33.3% 66.6%,
     ${CAMEROON_COLORS.yellow} 66.6%
   );
-  flex-shrink: 0;
 `;
 
-const LeftInner = styled.div`
+const VisualBody = styled.div`
   position: relative;
   z-index: 1;
-  flex: 1;
+  height: 100%;
+  min-height: inherit;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  padding: 48px 52px 44px;
-  gap: 40px;
+  justify-content: flex-end;
+  padding: 48px 56px 52px;
+  gap: 28px;
+
+  @media (max-width: 960px) {
+    padding: 28px 24px 32px;
+    gap: 16px;
+  }
 `;
 
-const AwarenessBlock = styled.div`
-  background: rgba(120, 10, 24, 0.82);
-  backdrop-filter: blur(16px);
-  border-radius: 16px;
-  padding: 28px 30px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-`;
-
-const JournalKicker = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.68rem;
-  font-weight: 700;
+const VisualBrand = styled.p`
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: ${CAMEROON_COLORS.yellow};
-  margin-bottom: 12px;
+  color: rgba(255,255,255,0.72);
 `;
 
-const JournalHeadline = styled.h2`
-  margin: 0 0 10px;
-  font-size: clamp(1.75rem, 3vw, 2.6rem);
-  font-weight: 800;
-  line-height: 1.1;
-  letter-spacing: -0.03em;
-  color: #fff;
-`;
-
-const JournalSubhead = styled.p`
-  margin: 0 0 18px;
-  font-size: 0.95rem;
+const VisualTitle = styled.h1`
+  margin: 0;
+  max-width: 11ch;
+  font-family: ${SERIF};
+  font-size: clamp(2.4rem, 4.2vw, 3.6rem);
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.88);
-  line-height: 1.5;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
 `;
 
-const HelplineRow = styled.div`
+const VisualLead = styled.p`
+  margin: 0;
+  max-width: 36ch;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: rgba(255,255,255,0.86);
+`;
+
+const EmergencyStrip = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-`;
-
-const HelplinePill = styled.span`
-  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 13px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 100px;
+  gap: 10px 18px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255,255,255,0.18);
   font-size: 0.82rem;
-  font-weight: 700;
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255,255,255,0.9);
+
+  strong {
+    font-weight: 700;
+    color: ${CAMEROON_COLORS.yellow};
+  }
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+  }
 `;
 
-const BrandBlock = styled.div`
-  padding-top: 4px;
+const Auth = styled.main`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 40px;
+
+  @media (max-width: 960px) {
+    padding: 36px 20px 48px;
+  }
 `;
 
-const BrandTitle = styled.h1`
-  margin: 0 0 6px;
-  font-size: 2rem;
-  font-weight: 800;
-  letter-spacing: -0.04em;
-`;
-
-const BrandDesc = styled.p`
-  margin: 0 0 22px;
-  font-size: 0.92rem;
-  font-weight: 500;
-  opacity: 0.88;
-  line-height: 1.6;
+const AuthInner = styled.div`
+  width: 100%;
   max-width: 400px;
 `;
 
-const FeatureList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-`;
-
-const FeatureItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  font-size: 0.88rem;
-  font-weight: 500;
-  opacity: 0.95;
-
-  span.icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.14);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-`;
-
-const RightPanel = styled.div`
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 32px 24px;
-  background: #fafafa;
+const Wordmark = styled.div`
+  margin-bottom: 44px;
 
   @media (max-width: 960px) {
-    padding: 24px 16px;
+    margin-bottom: 32px;
   }
-`;
 
-const FormShell = styled.div`
-  width: 100%;
-  max-width: 380px;
-`;
-
-const LogoMark = styled.div`
-  text-align: center;
-  margin-bottom: 32px;
-
-  h1 {
+  h2 {
     margin: 0;
-    font-size: 2.1rem;
-    font-weight: 800;
-    letter-spacing: -0.05em;
-    color: #111;
+    font-family: ${SERIF};
+    font-size: 2.35rem;
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    color: ${INK};
     line-height: 1;
   }
 
   p {
-    margin: 8px 0 0;
+    margin: 10px 0 0;
+    font-size: 0.95rem;
+    color: ${MUTED};
+    line-height: 1.5;
+  }
+`;
+
+const FormBlock = styled.div`
+  margin-bottom: 32px;
+
+  h3 {
+    margin: 0 0 6px;
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    color: ${INK};
+  }
+
+  .hint {
+    margin: 0 0 28px;
     font-size: 0.9rem;
-    font-weight: 500;
-    color: #737373;
-    letter-spacing: -0.01em;
+    color: ${MUTED};
+    line-height: 1.5;
   }
-`;
-
-const FormCard = styled.div`
-  background: #fff;
-  border: 1px solid #dbdbdb;
-  border-radius: 12px;
-  padding: 36px 32px 28px;
-
-  @media (max-width: 480px) {
-    padding: 28px 20px 22px;
-    border: none;
-    background: transparent;
-  }
-`;
-
-const FormTitle = styled.h2`
-  margin: 0 0 6px;
-  font-size: 1.35rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  color: #111;
-  text-align: center;
-`;
-
-const FormSubtitle = styled.p`
-  margin: 0 0 28px;
-  font-size: 0.88rem;
-  font-weight: 500;
-  color: #737373;
-  text-align: center;
-  line-height: 1.45;
 `;
 
 const Form = styled.form`
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 18px;
 `;
 
-const FieldGroup = styled.div`
+const Field = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
 `;
 
-const FieldLabel = styled.label`
-  font-size: 0.78rem;
+const Label = styled.label`
+  font-size: 0.8rem;
   font-weight: 600;
-  color: #525252;
-  letter-spacing: 0.01em;
+  color: ${INK};
 `;
 
-const FieldWrap = styled.div`
-  position: relative;
-  display: flex;
-  align-items: center;
-`;
-
-const FieldIcon = styled.span`
-  position: absolute;
-  left: 14px;
-  display: flex;
-  color: #a3a3a3;
-  pointer-events: none;
-
-  svg { width: 17px; height: 17px; }
-`;
-
-const FieldInput = styled.input`
+const Input = styled.input`
   width: 100%;
-  padding: 13px 14px 13px 42px;
-  font-family: ${FONT};
-  font-size: 0.92rem;
+  padding: 14px 0 12px;
+  font-family: ${SANS};
+  font-size: 1rem;
   font-weight: 500;
-  color: #111;
-  background: #fafafa;
-  border: 1px solid #dbdbdb;
-  border-radius: 10px;
-  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  color: ${INK};
+  background: transparent;
+  border: none;
+  border-bottom: 1.5px solid ${LINE};
+  border-radius: 0;
+  transition: border-color 0.2s ease;
 
   &::placeholder {
-    color: #a3a3a3;
+    color: #A8A29E;
     font-weight: 400;
   }
 
   &:focus {
     outline: none;
-    background: #fff;
-    border-color: #a3a3a3;
-    box-shadow: 0 0 0 3px rgba(0, 122, 94, 0.08);
+    border-bottom-color: ${DEEP};
   }
 
-  ${({ $error }) => $error && `
-    border-color: #ed4956;
-    &:focus { box-shadow: 0 0 0 3px rgba(237, 73, 86, 0.1); }
-  `}
+  ${({ $error }) => $error && `border-bottom-color: ${CAMEROON_COLORS.red};`}
 `;
 
-const FieldError = styled.span`
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #ed4956;
+const ErrorText = styled.span`
+  font-size: 0.76rem;
+  color: ${CAMEROON_COLORS.red};
 `;
 
-const ForgotLink = styled(Link)`
-  align-self: flex-end;
-  font-size: 0.8rem;
+const Row = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -6px;
+`;
+
+const TextLink = styled(Link)`
+  font-size: 0.84rem;
   font-weight: 600;
-  color: ${CAMEROON_COLORS.green};
+  color: ${DEEP};
   text-decoration: none;
-  margin: 2px 0 6px;
 
-  &:hover { text-decoration: underline; }
+  &:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
 `;
 
-const SubmitBtn = styled.button`
+const Submit = styled.button`
+  margin-top: 10px;
   width: 100%;
-  margin-top: 8px;
-  padding: 13px 20px;
-  font-family: ${FONT};
+  padding: 15px 20px;
+  font-family: ${SANS};
   font-size: 0.95rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   color: #fff;
-  background: ${CAMEROON_COLORS.green};
+  background: ${INK};
   border: none;
-  border-radius: 10px;
+  border-radius: 2px;
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.1s ease;
+  transition: background 0.2s ease, transform 0.15s ease;
 
   &:hover:not(:disabled) {
-    background: ${CAMEROON_COLORS.greenDark};
+    background: ${DEEP};
   }
 
   &:active:not(:disabled) {
-    transform: scale(0.99);
+    transform: translateY(1px);
   }
 
   &:disabled {
-    opacity: 0.65;
+    opacity: 0.55;
     cursor: not-allowed;
   }
 `;
 
-const Divider = styled.div`
+const Footnotes = styled.div`
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 14px;
-  margin: 22px 0 18px;
-  color: #a3a3a3;
-  font-size: 0.78rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-
-  &::before, &::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: #dbdbdb;
-  }
-`;
-
-const FooterCard = styled.div`
-  margin-top: 12px;
-  padding: 22px;
-  background: #fff;
-  border: 1px solid #dbdbdb;
-  border-radius: 12px;
-  text-align: center;
+  padding-top: 28px;
+  border-top: 1px solid ${LINE};
   font-size: 0.88rem;
-  font-weight: 500;
-  color: #525252;
-
-  @media (max-width: 480px) {
-    border: none;
-    background: transparent;
-    padding: 16px 0;
-  }
+  color: ${MUTED};
+  line-height: 1.5;
 
   a {
-    color: ${CAMEROON_COLORS.green};
-    font-weight: 700;
+    color: ${INK};
+    font-weight: 600;
     text-decoration: none;
 
-    &:hover { text-decoration: underline; }
+    &:hover {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
   }
 `;
 
-const CountryBadge = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 20px;
-  padding: 6px 12px;
-  border-radius: 100px;
-  background: #f0fdf9;
-  border: 1px solid #bbf7d0;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: ${CAMEROON_COLORS.greenDark};
-  letter-spacing: 0.02em;
-`;
-
-const MobileAwareness = styled.div`
+const MobileAlert = styled.div`
   display: none;
+
   @media (max-width: 960px) {
     display: block;
-    margin-bottom: 24px;
-    padding: 18px 20px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, ${CAMEROON_COLORS.red}, ${CAMEROON_COLORS.redDark});
-    color: white;
+    margin-bottom: 28px;
+    padding: 16px 18px;
+    background: ${CAMEROON_COLORS.redDark};
+    color: #fff;
+    font-size: 0.84rem;
+    line-height: 1.5;
 
-    h2 {
-      margin: 0 0 6px;
-      font-size: 1.1rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
+    strong {
+      display: block;
+      margin-bottom: 4px;
+      font-family: ${SERIF};
+      font-size: 1.05rem;
+      font-weight: 500;
     }
-    p { margin: 0; font-size: 0.85rem; font-weight: 500; }
-    strong { color: ${CAMEROON_COLORS.yellow}; }
   }
 `;
-
-const FEATURES = [
-  { icon: Heart, text: 'Suivi de vos médicaments' },
-  { icon: Calendar, text: 'Prendre rendez-vous en ligne' },
-  { icon: Newspaper, text: 'Fil actualités santé' },
-  { icon: ScanLine, text: 'Scanner vos ordonnances' },
-];
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -468,117 +356,94 @@ export default function LoginPage() {
   };
 
   return (
-    <PageWrapper>
-      <LeftPanel>
-        <FlagStripe />
-        <ImageOverlay />
-        <LeftInner>
-          <AwarenessBlock>
-            <JournalKicker>
-              <Shield size={13} />
-              Cameroun — {FEMINICIDE_BANNER.subtitle}
-            </JournalKicker>
-            <JournalHeadline>{FEMINICIDE_BANNER.title}</JournalHeadline>
-            <JournalSubhead>Vous n&apos;êtes pas seule — de l&apos;aide est disponible, 24h/24.</JournalSubhead>
-            <HelplineRow>
-              <HelplinePill><Phone size={13} /> 117</HelplinePill>
-              <HelplinePill><Phone size={13} /> 112</HelplinePill>
-              <HelplinePill><Phone size={13} /> 1515</HelplinePill>
-            </HelplineRow>
-          </AwarenessBlock>
+    <Page>
+      <Visual>
+        <FlagBar />
+        <VisualShade />
+        <VisualBody>
+          <VisualBrand>{FEMINICIDE_BANNER.subtitle} · Cameroun</VisualBrand>
+          <VisualTitle>{FEMINICIDE_BANNER.title}</VisualTitle>
+          <VisualLead>
+            Vous n&apos;êtes pas seule. Une aide est disponible à tout moment.
+          </VisualLead>
+          <EmergencyStrip>
+            <span><Phone size={14} /> <strong>117</strong></span>
+            <span><Phone size={14} /> <strong>112</strong></span>
+            <span><Phone size={14} /> <strong>1515</strong></span>
+          </EmergencyStrip>
+        </VisualBody>
+      </Visual>
 
-          <BrandBlock>
-            <BrandTitle>{branding.appName}</BrandTitle>
-            <BrandDesc>
-              Plateforme santé numérique camerounaise — patients, médecins, pharmacies, hôpitaux et cliniques.
-            </BrandDesc>
-            <FeatureList>
-              {FEATURES.map((f) => (
-                <FeatureItem key={f.text}>
-                  <span className="icon"><f.icon size={16} /></span>
-                  {f.text}
-                </FeatureItem>
-              ))}
-            </FeatureList>
-          </BrandBlock>
-        </LeftInner>
-      </LeftPanel>
+      <Auth>
+        <AuthInner>
+          <MobileAlert>
+            <strong>{FEMINICIDE_BANNER.title}</strong>
+            Urgence : 117 · 112 · 1515
+          </MobileAlert>
 
-      <RightPanel>
-        <FormShell>
-          <MobileAwareness>
-            <h2>{FEMINICIDE_BANNER.title}</h2>
-            <p>En danger : <strong>117</strong> · <strong>112</strong> · <strong>1515</strong></p>
-          </MobileAwareness>
-
-          <LogoMark>
-            <h1>{branding.appName}</h1>
+          <Wordmark>
+            <h2>{branding.appName}</h2>
             <p>{branding.tagline}</p>
-          </LogoMark>
+          </Wordmark>
 
-          <FormCard>
-            <CountryBadge>🇨🇲 République du Cameroun</CountryBadge>
-            <FormTitle>Connexion</FormTitle>
-            <FormSubtitle>
-              Accédez à votre espace personnel ou professionnel.
-            </FormSubtitle>
+          <FormBlock>
+            <h3>Connexion</h3>
+            <p className="hint">
+              Patient, professionnel ou administrateur — un seul accès pour tous les espaces.
+            </p>
 
             <Form onSubmit={handleSubmit(onSubmit)}>
-              <FieldGroup>
-                <FieldLabel htmlFor="login-email">Adresse e-mail</FieldLabel>
-                <FieldWrap>
-                  <FieldIcon><Mail /></FieldIcon>
-                  <FieldInput
-                    id="login-email"
-                    type="email"
-                    placeholder="nom@exemple.com"
-                    autoComplete="email"
-                    $error={!!errors.email}
-                    {...register('email', { required: 'Email requis' })}
-                  />
-                </FieldWrap>
-                {errors.email && <FieldError>{errors.email.message}</FieldError>}
-              </FieldGroup>
+              <Field>
+                <Label htmlFor="email">E-mail</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="vous@exemple.com"
+                  autoComplete="email"
+                  $error={!!errors.email}
+                  {...register('email', { required: 'Email requis' })}
+                />
+                {errors.email && <ErrorText>{errors.email.message}</ErrorText>}
+              </Field>
 
-              <FieldGroup>
-                <FieldLabel htmlFor="login-password">Mot de passe</FieldLabel>
-                <FieldWrap>
-                  <FieldIcon><Lock /></FieldIcon>
-                  <FieldInput
-                    id="login-password"
-                    type="password"
-                    placeholder="••••••••"
-                    autoComplete="current-password"
-                    $error={!!errors.password}
-                    {...register('password', {
-                      required: 'Mot de passe requis',
-                      minLength: { value: 8, message: 'Min. 8 caractères' },
-                    })}
-                  />
-                </FieldWrap>
-                {errors.password && <FieldError>{errors.password.message}</FieldError>}
-              </FieldGroup>
+              <Field>
+                <Label htmlFor="password">Mot de passe</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="8 caractères minimum"
+                  autoComplete="current-password"
+                  $error={!!errors.password}
+                  {...register('password', {
+                    required: 'Mot de passe requis',
+                    minLength: { value: 8, message: 'Min. 8 caractères' },
+                  })}
+                />
+                {errors.password && <ErrorText>{errors.password.message}</ErrorText>}
+              </Field>
 
-              <ForgotLink to="/mot-de-passe-oublie">Mot de passe oublié ?</ForgotLink>
+              <Row>
+                <TextLink to="/mot-de-passe-oublie">Mot de passe oublié</TextLink>
+              </Row>
 
-              <SubmitBtn type="submit" disabled={submitting}>
-                {submitting ? 'Connexion…' : 'Se connecter'}
-              </SubmitBtn>
+              <Submit type="submit" disabled={submitting}>
+                {submitting ? 'Connexion en cours…' : 'Entrer'}
+              </Submit>
             </Form>
+          </FormBlock>
 
-            <Divider>ou</Divider>
-
-            <FooterCard style={{ marginTop: 0, padding: '16px 0 0', border: 'none', background: 'transparent' }}>
-              Pas de compte ? <Link to="/register">Créer un compte</Link>
-            </FooterCard>
-          </FormCard>
-
-          <FooterCard>
-            Professionnel de santé ?{' '}
-            <Link to="/register/professionnel">Inscription pro</Link>
-          </FooterCard>
-        </FormShell>
-      </RightPanel>
-    </PageWrapper>
+          <Footnotes>
+            <p>
+              Nouveau sur la plateforme ?{' '}
+              <Link to="/register">Créer un compte patient</Link>
+            </p>
+            <p>
+              Médecin, pharmacie ou établissement ?{' '}
+              <Link to="/register/professionnel">Demander un accès pro</Link>
+            </p>
+          </Footnotes>
+        </AuthInner>
+      </Auth>
+    </Page>
   );
 }

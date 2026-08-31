@@ -131,7 +131,7 @@ function InscriptionAuditTimeline({ inscriptionId }) {
         <li key={log.id}>
           <strong>{ACTION_LABELS[log.action] || log.action}</strong>
           {' — '}{log.acteur_label}
-          {' · '}{formatDate(log.createdAt)}
+          {' · '}{formatDate(log.created_at || log.createdAt)}
           {log.details?.nom_original && ` · ${log.details.nom_original}`}
         </li>
       ))}

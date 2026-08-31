@@ -73,6 +73,44 @@ const USER_ROLES = {
   ADMIN: 'admin',
 };
 
+/** Professions de santé (compte type médecin / soignant) */
+const PROFESSION_SANTE = {
+  MEDECIN: 'medecin',
+  INFIRMIER: 'infirmier',
+  AIDE_SOIGNANT: 'aide_soignant',
+  SAGE_FEMME: 'sage_femme',
+  KINESITHERAPEUTE: 'kinesitherapeute',
+};
+
+const PROFESSION_SANTE_LABELS = {
+  medecin: 'Médecin',
+  infirmier: 'Infirmier / Infirmière',
+  aide_soignant: 'Aide-soignant(e)',
+  sage_femme: 'Sage-femme',
+  kinesitherapeute: 'Kinésithérapeute',
+};
+
+/** Types d'inscription pro (structures + soignants) */
+const TYPE_INSCRIPTION_PRO = [
+  'medecin',
+  'infirmier',
+  'aide_soignant',
+  'sage_femme',
+  'kinesitherapeute',
+  'pharmacie',
+  'hopital',
+  'clinique',
+];
+
+const SOIGNANT_TYPES = [
+  'medecin',
+  'infirmier',
+  'aide_soignant',
+  'sage_femme',
+  'kinesitherapeute',
+];
+
+
 // Statuts validation comptes professionnels
 const STATUT_VALIDATION = {
   EN_ATTENTE: 'en_attente',
@@ -145,6 +183,10 @@ module.exports = {
   TYPE_CIBLE_AVIS,
   STATUT_CONVERSATION,
   USER_ROLES,
+  PROFESSION_SANTE,
+  PROFESSION_SANTE_LABELS,
+  TYPE_INSCRIPTION_PRO,
+  SOIGNANT_TYPES,
   STATUT_VALIDATION,
   STATUT_RDV,
   STATUT_ORDONNANCE_ELEC,

@@ -54,23 +54,30 @@ const FAB = styled.button`
 
 const Panel = styled.div`
   position: fixed;
-  bottom: ${({ $lifted }) => ($lifted
-    ? 'calc(168px + env(safe-area-inset-bottom, 0px))'
-    : '96px')};
-  right: 24px;
-  width: 400px;
-  max-width: calc(100vw - 24px);
-  height: 580px;
-  max-height: calc(100vh - 110px);
+  bottom: ${({ $lifted, $fullscreen }) => {
+    if ($fullscreen) return '0';
+    return $lifted
+      ? 'calc(168px + env(safe-area-inset-bottom, 0px))'
+      : '96px';
+  }};
+  right: ${({ $fullscreen }) => ($fullscreen ? '0' : '24px')};
+  left: ${({ $fullscreen }) => ($fullscreen ? '0' : 'auto')};
+  top: ${({ $fullscreen }) => ($fullscreen ? '0' : 'auto')};
+  width: ${({ $fullscreen }) => ($fullscreen ? '100%' : '400px')};
+  max-width: ${({ $fullscreen }) => ($fullscreen ? '100%' : 'calc(100vw - 24px)')};
+  height: ${({ $fullscreen }) => ($fullscreen ? '100dvh' : '580px')};
+  max-height: ${({ $fullscreen }) => ($fullscreen ? '100dvh' : 'calc(100dvh - 110px)')};
   background: ${({ theme }) => theme.colors.background};
-  border-radius: ${({ theme }) => theme.radii.lg};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  box-shadow: ${({ theme }) => theme.shadows.xl};
+  border-radius: ${({ theme, $fullscreen }) => ($fullscreen ? '0' : theme.radii.lg)};
+  border: ${({ theme, $fullscreen }) => ($fullscreen ? 'none' : `1px solid ${theme.colors.border}`)};
+  box-shadow: ${({ theme, $fullscreen }) => ($fullscreen ? 'none' : theme.shadows.xl)};
   display: flex;
   flex-direction: column;
   z-index: 1000;
   overflow: hidden;
   font-family: ${({ theme }) => theme.typography.fontFamily};
+  padding-top: ${({ $fullscreen }) => ($fullscreen ? 'env(safe-area-inset-top, 0px)' : '0')};
+  padding-bottom: ${({ $fullscreen }) => ($fullscreen ? 'env(safe-area-inset-bottom, 0px)' : '0')};
 `;
 
 const Header = styled.div`
@@ -553,7 +560,7 @@ export default function AiAssistantWidget() {
   return (
     <>
       {open && (
-        <Panel $lifted={liftFab}>
+        <Panel $lifted={liftFab} $fullscreen={isMobile}>
           <Header>
             <div className="info">
               <div className="avatar"><Bot size={22} /></div>

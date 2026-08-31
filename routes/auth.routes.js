@@ -63,6 +63,7 @@ const {
  */
 router.post('/register', authRegisterLimiter, validate(registerSchema), authController.register);
 
+router.get('/sms-config', authController.getSmsConfig);
 router.post('/otp/envoyer', authOtpLimiter, validate(otpSendSchema), authController.sendOtp);
 router.post('/otp/verifier', authOtpLimiter, validate(otpVerifySchema), authController.verifyOtp);
 router.post('/reset-password-sms', authOtpLimiter, validate(resetPasswordSmsSchema), authController.resetPasswordBySms);

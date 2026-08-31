@@ -98,11 +98,13 @@ const ACTION_META = {
   inscription_validee: { label: 'Inscription validée', variant: 'ok' },
   inscription_rejetee: { label: 'Inscription rejetée', variant: 'warn' },
   document_consulte: { label: 'Document consulté', variant: 'info' },
+  connexion: { label: 'Connexion', variant: 'ok' },
 };
 
 const CATEGORIE_LABELS = {
   inscription: 'Inscription',
   document: 'Document',
+  auth: 'Authentification',
 };
 
 function formatDate(iso) {
@@ -117,6 +119,7 @@ function formatDetails(log) {
   const parts = [];
   if (d.type_profil) parts.push(`Profil : ${d.type_profil}`);
   if (d.email) parts.push(d.email);
+  if (d.role) parts.push(`Rôle : ${d.role}`);
   if (d.motif_rejet) parts.push(`Motif : ${d.motif_rejet}`);
   if (d.nom_original) parts.push(`Fichier : ${d.nom_original}`);
   if (d.type_fichier) parts.push(`Type : ${d.type_fichier}`);
@@ -149,6 +152,7 @@ export default function AdminAuditPage() {
         <Filter size={16} />
         <Select value={categorie} onChange={(e) => { setCategorie(e.target.value); setOffset(0); }}>
           <option value="">Toutes les catégories</option>
+          <option value="auth">Connexions</option>
           <option value="inscription">Inscriptions</option>
           <option value="document">Documents</option>
         </Select>
@@ -177,7 +181,7 @@ export default function AdminAuditPage() {
               const meta = ACTION_META[log.action] || { label: log.action, variant: 'default' };
               return (
                 <tr key={log.id}>
-                  <td style={{ whiteSpace: 'nowrap' }}>{formatDate(log.createdAt)}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>{formatDate(log.created_at || log.createdAt)}</td>
                   <td>
                     <ActionBadge $variant={meta.variant}>{meta.label}</ActionBadge>
                     <Details>{formatDetails(log)}</Details>

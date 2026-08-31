@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { Outlet } from 'react-router-dom';
-import { useTheme } from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
-import useMediaQuery from '../../hooks/useMediaQuery';
+import useBreakpoint from '../../hooks/useBreakpoint';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import PatientBottomNav, { BOTTOM_NAV_HEIGHT } from './PatientBottomNav';
@@ -13,7 +12,11 @@ import { HERO_IMAGE } from '../auth/authTheme';
 const LayoutWrapper = styled.div`
   display: flex;
   min-height: 100vh;
+  min-height: 100dvh;
   position: relative;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
   background: ${({ $patient, theme }) => ($patient ? 'transparent' : theme.colors.background)};
 `;
 
@@ -53,8 +56,11 @@ const MainArea = styled.main`
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh;
   position: relative;
   z-index: 1;
+  width: 100%;
+  min-width: 0;
   transition: margin-left ${({ theme }) => theme.transitions.normal};
 
   @media (max-width: ${({ theme }) => theme.breakpoints.md}) {
@@ -68,18 +74,33 @@ const PageContent = styled.div`
   max-width: 1400px;
   width: 100%;
   margin: 0 auto;
-  padding-bottom: ${({ $patientMobile, theme }) => (
-    $patientMobile
-      ? `calc(${BOTTOM_NAV_HEIGHT}px + 28px + env(safe-area-inset-bottom, 0px))`
-      : theme.spacing[6]
-  )};
+  min-width: 0;
+  padding-bottom: ${({ $patientMobile, $compact, theme }) => {
+    if ($patientMobile) {
+      return `calc(${BOTTOM_NAV_HEIGHT}px + 28px + env(safe-area-inset-bottom, 0px))`;
+    }
+    if ($compact) {
+      return `calc(${theme.spacing[6]} + env(safe-area-inset-bottom, 0px))`;
+    }
+    return theme.spacing[6];
+  }};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.md}) {
+    padding: ${({ theme, $patientMobile, $compact }) => {
+      const side = theme.spacing[4];
+      if ($patientMobile) {
+        return `${theme.spacing[3]} ${side} calc(${BOTTOM_NAV_HEIGHT}px + 28px + env(safe-area-inset-bottom, 0px))`;
+      }
+      if ($compact) {
+        return `${theme.spacing[4]} ${side} calc(${theme.spacing[4]} + env(safe-area-inset-bottom, 0px))`;
+      }
+      return theme.spacing[4];
+    }};
+  }
 
   @media (max-width: ${({ theme }) => theme.breakpoints.sm}) {
-    padding: ${({ theme, $patientMobile }) => (
-      $patientMobile
-        ? `${theme.spacing[3]} ${theme.spacing[4]} calc(${BOTTOM_NAV_HEIGHT}px + 28px + env(safe-area-inset-bottom, 0px))`
-        : theme.spacing[4]
-    )};
+    padding-left: ${({ theme }) => theme.spacing[3]};
+    padding-right: ${({ theme }) => theme.spacing[3]};
   }
 `;
 
@@ -96,9 +117,8 @@ const MobileOverlay = styled.div`
 `;
 
 export default function AppLayout() {
-  const theme = useTheme();
   const { role } = useAuth();
-  const isMobile = useMediaQuery(`(max-width: ${theme.breakpoints.md})`);
+  const { isMobile, isCompact } = useBreakpoint();
   const isPatient = role === 'patient';
   const isPatientMobile = isPatient && isMobile;
 
@@ -125,7 +145,7 @@ export default function AppLayout() {
           patientMobile={isPatientMobile}
           onMenuToggle={() => setMobileOpen((o) => !o)}
         />
-        <PageContent $patientMobile={isPatientMobile}>
+        <PageContent $patientMobile={isPatientMobile} $compact={isCompact && !isPatientMobile}>
           <Outlet />
         </PageContent>
       </MainArea>

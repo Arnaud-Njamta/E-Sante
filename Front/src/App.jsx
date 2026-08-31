@@ -11,7 +11,8 @@ import { ROLES } from './config/branding';
 
 const LoginPage = React.lazy(() => import('./pages/LoginPage'));
 const RegisterPage = React.lazy(() => import('./pages/RegisterPage'));
-const ForgotPasswordSmsPage = React.lazy(() => import('./pages/ForgotPasswordSmsPage'));
+const ForgotPasswordPage = React.lazy(() => import('./pages/ForgotPasswordPage'));
+const ResetPasswordPage = React.lazy(() => import('./pages/ResetPasswordPage'));
 const RegisterProfessionnelPage = React.lazy(() => import('./pages/RegisterProfessionnelPage'));
 const PrivacyPolicyPage = React.lazy(() => import('./pages/PrivacyPolicyPage'));
 const TermsOfServicePage = React.lazy(() => import('./pages/TermsOfServicePage'));
@@ -48,6 +49,7 @@ const StructureServicesPage = React.lazy(() => import('./pages/StructureServices
 const StructureRendezVousPage = React.lazy(() => import('./pages/StructureRendezVousPage'));
 const ActualitesPage = React.lazy(() => import('./pages/ActualitesPage'));
 const TeleconsultationPage = React.lazy(() => import('./pages/TeleconsultationPage'));
+const AdminDashboardPage = React.lazy(() => import('./pages/AdminDashboardPage'));
 const AdminInscriptionsPage = React.lazy(() => import('./pages/AdminInscriptionsPage'));
 const AdminAuditPage = React.lazy(() => import('./pages/AdminAuditPage'));
 const AdminCommissionsPage = React.lazy(() => import('./pages/AdminCommissionsPage'));
@@ -79,7 +81,8 @@ export default function App() {
                             <Routes>
                                 <Route path="/login" element={<LoginPage />} />
                                 <Route path="/register" element={<RegisterPage />} />
-                                <Route path="/mot-de-passe-oublie" element={<ForgotPasswordSmsPage />} />
+                                <Route path="/mot-de-passe-oublie" element={<ForgotPasswordPage />} />
+                                <Route path="/reset-password" element={<ResetPasswordPage />} />
                                 <Route path="/register/professionnel" element={<RegisterProfessionnelPage />} />
                                 <Route path="/confidentialite" element={<PrivacyPolicyPage />} />
                                 <Route path="/cgu" element={<TermsOfServicePage />} />
@@ -178,6 +181,8 @@ export default function App() {
 
                                 <Route element={<RoleRoute allowedRoles={[ROLES.ADMIN]} />}>
                                     <Route element={<AppLayout />}>
+                                    <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+                                    <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
                                     <Route path="/admin/inscriptions" element={<AdminInscriptionsPage />} />
                                     <Route path="/admin/audit" element={<AdminAuditPage />} />
                                     <Route path="/admin/commissions" element={<AdminCommissionsPage />} />

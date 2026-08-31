@@ -10,6 +10,7 @@ const ENDPOINTS = {
         changePassword: '/auth/change-password',
         otpSend: '/auth/otp/envoyer',
         otpVerify: '/auth/otp/verifier',
+        smsConfig: '/auth/sms-config',
         resetPasswordSms: '/auth/reset-password-sms',
     },
     inscriptions: {
@@ -178,6 +179,9 @@ const ENDPOINTS = {
     },
     admin: {
         auditLogs: '/admin/audit-logs',
+        overview: '/admin/overview',
+        comptes: '/admin/comptes',
+        etablissements: '/admin/etablissements',
     },
 };
 

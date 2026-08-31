@@ -18,6 +18,11 @@ const createTransporter = () => {
         };
     }
 
+    // Windows / Node : magasin CA parfois incomplet en dev
+    if (process.env.NODE_ENV !== 'production' || process.env.SMTP_TLS_INSECURE === 'true') {
+        config.tls = { rejectUnauthorized: false };
+    }
+
     return nodemailer.createTransport(config);
 };
 
@@ -25,7 +30,7 @@ const createTransporter = () => {
  * Envoyer un email de réinitialisation de mot de passe
  */
 const sendResetPasswordEmail = async (email, token) => {
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${token}`;
 
     const htmlContent = `
     <!DOCTYPE html>
@@ -122,28 +127,139 @@ const sendAffiliationInviteEmail = async ({
     </div>
   `;
 
-  const mailOptions = {
-    from: process.env.SMTP_FROM || '"DjamSanté" <noreply@djamsante.cm>',
+  await sendMailSafe({
     to: medecinEmail,
     subject: `Invitation — ${etablissementNom} souhaite vous affilier`,
     html: htmlContent,
-  };
+    mockLabel: `Invitation affiliation → ${medecinEmail}`,
+  });
+};
 
+const brandWrap = (title, bodyHtml) => `
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;font-family:'Segoe UI',Tahoma,sans-serif;background:#f4f7fa;">
+  <div style="max-width:600px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.08);">
+    <div style="background:linear-gradient(135deg,#0B3D30 0%,#2F6B4F 100%);padding:32px 28px;text-align:center;">
+      <h1 style="color:#fff;margin:0;font-size:24px;">DjamSanté</h1>
+      <p style="color:rgba(255,255,255,.85);margin:8px 0 0;font-size:13px;">Votre santé, notre priorité — Cameroun</p>
+    </div>
+    <div style="padding:32px 28px;">
+      <h2 style="color:#1C1917;margin:0 0 12px;font-size:20px;">${title}</h2>
+      ${bodyHtml}
+    </div>
+    <div style="background:#f8f9fa;padding:16px 28px;text-align:center;border-top:1px solid #eee;">
+      <p style="color:#aaa;font-size:12px;margin:0;">© ${new Date().getFullYear()} DjamSanté</p>
+    </div>
+  </div>
+</body></html>`;
+
+const sendMailSafe = async ({ to, subject, html, mockLabel }) => {
+  if (!to) return { sent: false, reason: 'no_recipient' };
+  if (!process.env.SMTP_HOST) {
+    console.log(`[EMAIL MOCK] ${mockLabel || subject} → ${to}`);
+    return { sent: false, mode: 'mock' };
+  }
   try {
-    if (!process.env.SMTP_HOST) {
-      console.log(`[EMAIL MOCK] Invitation affiliation → ${medecinEmail} (${etablissementNom})`);
-      console.log(`  Lien: ${carriereUrl}`);
-      return;
-    }
     const transporter = createTransporter();
-    await transporter.sendMail(mailOptions);
-    console.log(`Email invitation affiliation envoyé à ${medecinEmail}`);
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || '"DjamSanté" <noreply@djamsante.cm>',
+      to,
+      subject,
+      html,
+    });
+    console.log(`[EMAIL] ${subject} → ${to}`);
+    return { sent: true };
   } catch (error) {
-    console.error('Erreur email invitation:', error.message);
+    console.error(`[EMAIL] Échec ${subject}:`, error.message);
+    return { sent: false, error: error.message };
   }
 };
 
+const sendWelcomeEmail = async ({ email, prenom, nom }) => {
+  const frontUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const name = [prenom, nom].filter(Boolean).join(' ') || 'à vous';
+  const html = brandWrap(
+    `Bienvenue ${prenom || ''} !`,
+    `
+      <p style="color:#555;font-size:15px;line-height:1.6;">
+        Votre compte DjamSanté est prêt. Vous pouvez dès maintenant :
+      </p>
+      <ul style="color:#555;font-size:15px;line-height:1.7;">
+        <li>Suivre vos traitements et rappels de prise</li>
+        <li>Trouver pharmacies, hôpitaux et soignants à proximité</li>
+        <li>Prendre rendez-vous et discuter avec une pharmacie</li>
+        <li>Utiliser l'assistant Dr. DjamSanté pour préparer votre consultation</li>
+      </ul>
+      <div style="text-align:center;margin:28px 0;">
+        <a href="${frontUrl}/login" style="display:inline-block;background:#0B3D30;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;">
+          Ouvrir DjamSanté
+        </a>
+      </div>
+      <p style="color:#888;font-size:13px;">Compte : ${email} — ${name}</p>
+    `,
+  );
+  return sendMailSafe({
+    to: email,
+    subject: 'Bienvenue sur DjamSanté 🇨🇲',
+    html,
+    mockLabel: `Bienvenue → ${email}`,
+  });
+};
+
+const sendRdvReminderEmail = async ({
+  email, prenom, dateLabel, heure, medecinLabel,
+}) => {
+  const frontUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const html = brandWrap(
+    'Rappel de rendez-vous',
+    `
+      <p style="color:#555;font-size:15px;line-height:1.6;">Bonjour ${prenom || ''},</p>
+      <p style="color:#555;font-size:15px;line-height:1.6;">
+        Rappel : demain <strong>${dateLabel}</strong> à <strong>${heure}</strong>
+        ${medecinLabel ? ` avec <strong>${medecinLabel}</strong>` : ''}.
+      </p>
+      <div style="text-align:center;margin:24px 0;">
+        <a href="${frontUrl}/rendez-vous" style="display:inline-block;background:#0B3D30;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;">
+          Voir mon rendez-vous
+        </a>
+      </div>
+    `,
+  );
+  return sendMailSafe({
+    to: email,
+    subject: `Rappel RDV demain à ${heure} — DjamSanté`,
+    html,
+    mockLabel: `Rappel RDV → ${email}`,
+  });
+};
+
+const sendPriseReminderEmail = async ({
+  email, prenom, medicament, dosage, heure,
+}) => {
+  const html = brandWrap(
+    'Rappel de prise',
+    `
+      <p style="color:#555;font-size:15px;line-height:1.6;">Bonjour ${prenom || ''},</p>
+      <p style="color:#555;font-size:15px;line-height:1.6;">
+        Il est bientôt l'heure de prendre <strong>${medicament}</strong>
+        ${dosage ? `(${dosage})` : ''} — prévu à <strong>${heure}</strong>.
+      </p>
+      <p style="color:#888;font-size:13px;">Confirmez la prise dans l'application DjamSanté.</p>
+    `,
+  );
+  return sendMailSafe({
+    to: email,
+    subject: `Rappel médicament ${heure} — ${medicament}`,
+    html,
+    mockLabel: `Rappel prise → ${email}`,
+  });
+};
+
 module.exports = {
-    sendResetPasswordEmail,
-    sendAffiliationInviteEmail,
+  sendResetPasswordEmail,
+  sendAffiliationInviteEmail,
+  sendWelcomeEmail,
+  sendRdvReminderEmail,
+  sendPriseReminderEmail,
 };

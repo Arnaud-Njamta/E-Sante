@@ -100,7 +100,7 @@ export const BRANDING = {
     subtitle: 'Gestion des inscriptions professionnelles et conformité CSU',
     loginTitle: 'Espace Administrateur',
     loginSubtitle: 'Validez les dossiers professionnels et supervisez la plateforme.',
-    defaultRoute: '/admin/commissions',
+    defaultRoute: '/admin/dashboard',
     primary: {
       50: '#F0FDFA', 100: '#CCFBF1', 200: '#99F6E4', 300: '#5EEAD4',
       400: '#2DD4BF', 500: '#14B8A6', 600: '#0D9488', 700: '#0F766E',

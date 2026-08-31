@@ -6,10 +6,20 @@ const OTP_USAGES = {
   RDV_REMINDER: 'rdv_reminder',
 };
 
-const SMS_MODE = (process.env.SMS_MODE || 'mock').toLowerCase();
+const rawMode = (process.env.SMS_MODE || 'mock').toLowerCase();
+const atUsername = (process.env.AFRICAS_TALKING_USERNAME || '').trim();
+const isSandboxUser = atUsername.toLowerCase() === 'sandbox';
+
+/** mock | sandbox | live */
+let mode = 'mock';
+if (rawMode === 'sandbox' || (rawMode === 'live' && isSandboxUser)) {
+  mode = 'sandbox';
+} else if (rawMode === 'live') {
+  mode = 'live';
+}
 
 const smsConfig = {
-  mode: SMS_MODE === 'live' ? 'live' : 'mock',
+  mode,
   mockCode: process.env.SMS_MOCK_CODE || '123456',
   otpRequired: process.env.SMS_OTP_REQUIRED !== 'false',
   otpLength: parseInt(process.env.SMS_OTP_LENGTH || '6', 10),
@@ -20,8 +30,12 @@ const smsConfig = {
   provider: process.env.SMS_PROVIDER || 'africas_talking',
   africasTalking: {
     apiKey: process.env.AFRICAS_TALKING_API_KEY || '',
-    username: process.env.AFRICAS_TALKING_USERNAME || '',
-    senderId: process.env.AFRICAS_TALKING_SENDER_ID || 'DjamSante',
+    username: atUsername,
+    senderId: process.env.AFRICAS_TALKING_SENDER_ID || '',
+    isSandbox: mode === 'sandbox',
+    baseUrl: mode === 'sandbox'
+      ? 'https://api.sandbox.africastalking.com'
+      : 'https://api.africastalking.com',
   },
 };
 

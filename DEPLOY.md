@@ -114,17 +114,42 @@ Voir `.env.production.example`. Minimum :
 - `CINETPAY_*` — paiements réels
 - `SEED_DEMO=false` — **obligatoire en prod**
 
-## 7. Rappels SMS RDV
+## 7. Rappels (RDV + médicaments) et e-mails
 
-Le cron interne s'exécute chaque jour à `RDV_REMINDER_HOUR` (défaut 8h).
+### E-mail (SMTP — **pas** Africa's Talking)
+Configurer `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`.
+- Bienvenue automatique à l'inscription
+- Rappel RDV e-mail si `RDV_REMINDER_EMAIL=true`
 
-Test manuel :
+### SMS (Africa's Talking)
+Sur [africastalking.com](https://africastalking.com) prendre :
+1. Compte **SMS** (Messaging API)
+2. **API Key** + **Username** (sandbox puis live)
+3. **Sender ID / Alphanumeric** (ex. `DjamSante`) — demander l'activation Cameroun/opérateur
+4. Crédit SMS (wallet)
+
+Puis dans `.env` :
+```
+SMS_MODE=live
+SMS_PROVIDER=africas_talking
+AFRICAS_TALKING_USERNAME=...
+AFRICAS_TALKING_API_KEY=...
+AFRICAS_TALKING_SENDER_ID=DjamSante
+SMS_OTP_REQUIRED=true   # seulement quand SMS live OK
+RDV_REMINDER_SMS=true
+PRISE_REMINDER_ENABLED=true
+```
+
+Cron RDV : chaque jour à `RDV_REMINDER_HOUR` (défaut 8h) — SMS + e-mail.
+Cron prises : toutes les `PRISE_REMINDER_INTERVAL_MIN` minutes.
+
+Test manuel RDV :
 
 ```bash
 node scripts/test-rdv-reminder.js
 ```
 
-En dev (`SMS_MODE=mock`), les SMS s'affichent dans les logs `[SMS MOCK]`.
+En `SMS_MODE=mock`, les SMS s'affichent dans les logs `[SMS MOCK]`.
 
 ## 8. Checklist avant mise en ligne
 

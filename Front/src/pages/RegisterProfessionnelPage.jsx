@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Link, useNavigate } from 'react-router-dom';
-import { Stethoscope, Pill, Building2, Hospital, CheckCircle, AlertCircle } from 'lucide-react';
+import { Stethoscope, Pill, Building2, Hospital, HeartPulse, UserRound, Baby, Activity, CheckCircle, AlertCircle } from 'lucide-react';
 import { useInscriptionProfessionnel, fetchDocumentsRequis } from '../hooks/useInscription';
 import { getBranding } from '../config/branding';
 import toast from 'react-hot-toast';
@@ -11,6 +11,7 @@ import AuthShell, {
   TypeGrid, TypeCard, FormGrid, DocZone, OperateurGrid, OperateurOption,
 } from '../components/auth/AuthShell';
 import BrandLogo from '../components/brand/BrandLogo';
+import PasswordStrengthMeter, { scorePassword } from '../components/ui/PasswordStrengthMeter';
 
 const SuccessWrap = styled.div`
   text-align: center;
@@ -38,11 +39,17 @@ const SuccessWrap = styled.div`
 `;
 
 const TYPES = [
-  { id: 'medecin', label: 'Médecin', icon: Stethoscope, desc: 'Ordre des médecins, diplôme' },
-  { id: 'pharmacie', label: 'Pharmacie', icon: Pill, desc: 'Agrément officine' },
-  { id: 'clinique', label: 'Clinique', icon: Building2, desc: 'Structure privée agréée' },
-  { id: 'hopital', label: 'Hôpital', icon: Hospital, desc: 'Autorisation MINSANTE' },
+  { id: 'medecin', label: 'Médecin', icon: Stethoscope, desc: 'Ordre des médecins', soignant: true },
+  { id: 'infirmier', label: 'Infirmier(ère)', icon: HeartPulse, desc: 'Diplôme + inscription', soignant: true },
+  { id: 'aide_soignant', label: 'Aide-soignant(e)', icon: UserRound, desc: 'Attestation / diplôme', soignant: true },
+  { id: 'sage_femme', label: 'Sage-femme', icon: Baby, desc: 'Ordre des sages-femmes', soignant: true },
+  { id: 'kinesitherapeute', label: 'Kinésithérapeute', icon: Activity, desc: 'Diplôme + ordre', soignant: true },
+  { id: 'pharmacie', label: 'Pharmacie', icon: Pill, desc: 'Agrément officine', soignant: false },
+  { id: 'clinique', label: 'Clinique', icon: Building2, desc: 'Structure privée', soignant: false },
+  { id: 'hopital', label: 'Hôpital', icon: Hospital, desc: 'Autorisation MINSANTE', soignant: false },
 ];
+
+const isSoignantType = (t) => TYPES.find((x) => x.id === t)?.soignant;
 
 const REGIONS = [
   'Centre', 'Littoral', 'Ouest', 'Nord', 'Extrême-Nord', 'Adamaoua',
@@ -74,6 +81,11 @@ export default function RegisterProfessionnelPage() {
     e.preventDefault();
     if (!acceptCgu) {
       toast.error('Veuillez accepter les Conditions Générales d\'Utilisation');
+      return;
+    }
+    const pwdScore = scorePassword(form.password);
+    if (!pwdScore.isAcceptable) {
+      toast.error('Mot de passe trop faible — renforcez-le avant de continuer');
       return;
     }
     if (!form.numero_mobile_money?.trim() || !form.titulaire_compte?.trim()) {
@@ -163,7 +175,7 @@ export default function RegisterProfessionnelPage() {
       <AuthForm onSubmit={handleSubmit}>
         <SubSection>Identité</SubSection>
         <FormGrid>
-          {type === 'medecin' ? (
+          {isSoignantType(type) ? (
             <>
               <Field>
                 <FieldLabel>Prénom</FieldLabel>
@@ -174,12 +186,22 @@ export default function RegisterProfessionnelPage() {
                 <FieldInput value={form.nom} onChange={set('nom')} required />
               </Field>
               <Field>
-                <FieldLabel>Spécialité</FieldLabel>
-                <FieldInput value={form.specialite} onChange={set('specialite')} placeholder="Ex. Cardiologie" />
+                <FieldLabel>{type === 'medecin' ? 'Spécialité' : 'Domaine / service'}</FieldLabel>
+                <FieldInput
+                  value={form.specialite}
+                  onChange={set('specialite')}
+                  placeholder={type === 'medecin' ? 'Ex. Cardiologie' : 'Ex. Urgences, maternité…'}
+                />
               </Field>
               <Field>
-                <FieldLabel>N° Ordre des médecins</FieldLabel>
-                <FieldInput value={form.numero_ordre} onChange={set('numero_ordre')} required />
+                <FieldLabel>
+                  {type === 'aide_soignant' ? 'N° attestation (si disponible)' : 'N° Ordre / inscription'}
+                </FieldLabel>
+                <FieldInput
+                  value={form.numero_ordre}
+                  onChange={set('numero_ordre')}
+                  required={type !== 'aide_soignant'}
+                />
               </Field>
             </>
           ) : (
@@ -200,7 +222,14 @@ export default function RegisterProfessionnelPage() {
           </Field>
           <Field>
             <FieldLabel>Mot de passe</FieldLabel>
-            <FieldInput type="password" value={form.password} onChange={set('password')} required />
+            <FieldInput
+              type="password"
+              value={form.password}
+              onChange={set('password')}
+              required
+              minLength={8}
+            />
+            <PasswordStrengthMeter password={form.password} />
           </Field>
           <Field>
             <FieldLabel>Téléphone</FieldLabel>
@@ -249,16 +278,16 @@ export default function RegisterProfessionnelPage() {
               required
             />
           </Field>
-          <Field className={type === 'medecin' ? '' : 'full'}>
+          <Field className={isSoignantType(type) ? '' : 'full'}>
             <FieldLabel>Titulaire du compte</FieldLabel>
             <FieldInput
               value={form.titulaire_compte}
               onChange={set('titulaire_compte')}
-              placeholder={type === 'medecin' ? 'Dr. Prénom Nom' : 'Nom de la structure'}
+              placeholder={isSoignantType(type) ? 'Prénom Nom' : 'Nom de la structure'}
               required
             />
           </Field>
-          {type !== 'medecin' && (
+          {!isSoignantType(type) && (
             <Field>
               <FieldLabel>N° marchand (optionnel)</FieldLabel>
               <FieldInput
@@ -303,7 +332,11 @@ export default function RegisterProfessionnelPage() {
         </Field>
 
         <AuthSubmit type="submit" disabled={mutation.isPending || !acceptCgu}>
-          {mutation.isPending ? 'Création du compte…' : 'Créer mon compte'}
+          {mutation.isPending
+            ? 'Création du compte…'
+            : acceptCgu
+              ? 'Créer mon compte'
+              : 'Acceptez d’abord les CGU'}
         </AuthSubmit>
       </AuthForm>
 

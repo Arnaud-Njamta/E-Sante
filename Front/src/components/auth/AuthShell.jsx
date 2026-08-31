@@ -12,6 +12,7 @@ export {
 
 const Shell = styled.div`
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   grid-template-columns: 1.05fr 0.95fr;
   font-family: ${SANS};
@@ -20,6 +21,7 @@ const Shell = styled.div`
 
   @media (max-width: 960px) {
     grid-template-columns: 1fr;
+    min-height: 100dvh;
   }
 `;
 
@@ -131,14 +133,21 @@ const Auth = styled.main`
   display: flex;
   justify-content: center;
   padding: 48px 40px;
+  padding-top: calc(48px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
   overflow-y: auto;
-  max-height: 100vh;
+  max-height: 100dvh;
+  min-height: 100dvh;
 
   @media (max-width: 960px) {
-    padding: 28px 20px 40px;
-    align-items: center;
-    min-height: 100vh;
+    padding: calc(20px + env(safe-area-inset-top, 0px)) 16px calc(28px + env(safe-area-inset-bottom, 0px));
+    align-items: flex-start;
     justify-content: center;
+  }
+
+  @media (max-width: 400px) {
+    padding-left: 12px;
+    padding-right: 12px;
   }
 `;
 

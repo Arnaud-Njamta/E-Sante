@@ -8,7 +8,7 @@ const InscriptionProfessionnel = sequelize.define('InscriptionProfessionnel', {
     primaryKey: true,
   },
   type_profil: {
-    type: DataTypes.ENUM('medecin', 'pharmacie', 'hopital', 'clinique'),
+    type: DataTypes.STRING(40),
     allowNull: false,
   },
   email: {

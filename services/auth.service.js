@@ -54,6 +54,11 @@ const register = async ({
     telephone_verifie: phoneVerified,
   });
 
+  // Bienvenue e-mail (ne bloque pas l'inscription)
+  setImmediate(() => {
+    emailService.sendWelcomeEmail({ email, prenom, nom }).catch(() => {});
+  });
+
   const token = generateToken(patient.id, USER_ROLES.PATIENT);
   const refreshToken = generateRefreshToken(patient.id, USER_ROLES.PATIENT);
 

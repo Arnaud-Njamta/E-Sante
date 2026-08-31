@@ -41,13 +41,15 @@ const registerSchema = Joi.object({
       'any.required': 'Le téléphone est requis',
       'string.min': 'Numéro de téléphone invalide',
     })
-    : Joi.string().optional(),
+    : Joi.string().min(9).allow('', null).optional().messages({
+      'string.min': 'Numéro de téléphone invalide',
+    }),
   otp_verification_token: smsConfig.otpRequired
     ? Joi.string().length(64).required().messages({
       'any.required': 'Vérification SMS requise',
       'string.length': 'Jeton de vérification invalide',
     })
-    : Joi.string().optional(),
+    : Joi.string().allow('', null).optional(),
 });
 
 const loginSchema = Joi.object({

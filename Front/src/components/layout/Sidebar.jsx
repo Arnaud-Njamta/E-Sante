@@ -251,6 +251,7 @@ const ROLE_NAV = {
     { to: '/clinique/localisation', icon: Building2, label: 'Localisation', section: 'compte' },
   ],
   admin: [
+    { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Tableau de bord', section: 'principal' },
     { to: '/admin/inscriptions', icon: Shield, label: 'Validations MINSANTE', section: 'principal' },
     { to: '/admin/audit', icon: ScrollText, label: 'Journal de contrôle', section: 'principal' },
     { to: '/admin/commissions', icon: BarChart3, label: 'Finances & commissions', section: 'principal' },

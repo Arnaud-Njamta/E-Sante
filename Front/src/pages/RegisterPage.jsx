@@ -2,106 +2,67 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getBranding } from '../config/branding';
-import client from '../api/client';
-import ENDPOINTS from '../api/endpoints';
 import toast from 'react-hot-toast';
 import AuthShell, {
   Wordmark, SectionTitle, SectionHint, AuthForm, Field, FieldLabel,
-  FieldInput, FieldError, AuthSubmit, AuthSecondary, Footnotes, Notice,
-  VerifiedBadge, FormGrid,
+  FieldInput, FieldError, AuthSubmit, Footnotes, FormGrid,
 } from '../components/auth/AuthShell';
 import BrandLogo from '../components/brand/BrandLogo';
+import PasswordStrengthMeter, { scorePassword } from '../components/ui/PasswordStrengthMeter';
 
-const OtpActions = styled.div`
+const Steps = styled.div`
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: flex-end;
+  gap: 8px;
+  margin: 0 0 20px;
 `;
 
-const OtpRow = styled.div`
-  display: flex;
-  gap: 10px;
-  align-items: flex-end;
-  flex-wrap: wrap;
-
-  > div:first-child { flex: 1; min-width: 140px; }
+const StepDot = styled.span`
+  flex: 1;
+  height: 4px;
+  border-radius: 99px;
+  background: ${({ $active }) => ($active ? '#2F6B4F' : '#E4DED4')};
 `;
 
+const StepHint = styled.p`
+  margin: 0 0 16px;
+  font-size: 0.82rem;
+  color: #6B6560;
+`;
+
+/**
+ * Inscription patient allégée :
+ * Étape 1 — compte (email, mdp, CGU)
+ * Étape 2 — identité (nom, prénom, téléphone)
+ */
 export default function RegisterPage() {
   const navigate = useNavigate();
   const { register: registerUser } = useAuth();
   const branding = getBranding('patient');
+  const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
-  const [sendingOtp, setSendingOtp] = useState(false);
-  const [verifyingOtp, setVerifyingOtp] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
-  const [phoneVerified, setPhoneVerified] = useState(false);
-  const [verificationToken, setVerificationToken] = useState(null);
-  const [mockHint, setMockHint] = useState(null);
-  const [otpCode, setOtpCode] = useState('');
 
   const {
-    register, handleSubmit, formState: { errors }, watch, getValues,
-  } = useForm();
+    register, handleSubmit, formState: { errors }, watch, trigger,
+  } = useForm({
+    defaultValues: { acceptCgu: false },
+  });
 
-  const handleSendOtp = async () => {
-    const telephone = getValues('telephone');
-    if (!telephone || telephone.replace(/\D/g, '').length < 9) {
-      toast.error('Saisissez un numéro de téléphone valide');
+  const acceptCgu = watch('acceptCgu');
+  const passwordValue = watch('password') || '';
+
+  const goNext = async () => {
+    const ok = await trigger(['email', 'password', 'confirmPassword', 'acceptCgu']);
+    if (!ok) return;
+    if (!acceptCgu) {
+      toast.error('Acceptez les CGU pour continuer');
       return;
     }
-    setSendingOtp(true);
-    try {
-      const { data } = await client.post(ENDPOINTS.auth.otpSend, {
-        telephone,
-        usage: 'register',
-      });
-      const result = data.data || data;
-      setOtpSent(true);
-      setPhoneVerified(false);
-      setVerificationToken(null);
-      if (result.hint) setMockHint(result.hint);
-      toast.success(result.message || 'Code envoyé');
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Impossible d\'envoyer le code');
-    } finally {
-      setSendingOtp(false);
-    }
-  };
-
-  const handleVerifyOtp = async () => {
-    const telephone = getValues('telephone');
-    if (!otpCode || otpCode.length < 4) {
-      toast.error('Saisissez le code reçu par SMS');
-      return;
-    }
-    setVerifyingOtp(true);
-    try {
-      const { data } = await client.post(ENDPOINTS.auth.otpVerify, {
-        telephone,
-        code: otpCode,
-        usage: 'register',
-      });
-      const result = data.data || data;
-      setVerificationToken(result.verification_token);
-      setPhoneVerified(true);
-      toast.success('Téléphone vérifié');
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Code incorrect');
-    } finally {
-      setVerifyingOtp(false);
-    }
+    setStep(2);
   };
 
   const onSubmit = async (formData) => {
-    if (!phoneVerified || !verificationToken) {
-      toast.error('Vérifiez votre numéro de téléphone par SMS avant de continuer');
-      return;
-    }
     setSubmitting(true);
     try {
       await registerUser({
@@ -110,10 +71,8 @@ export default function RegisterPage() {
         email: formData.email,
         password: formData.password,
         telephone: formData.telephone,
-        date_naissance: formData.dateNaissance,
-        otp_verification_token: verificationToken,
       });
-      toast.success('Compte créé avec succès !');
+      toast.success('Bienvenue sur DjamSanté !');
       navigate('/dashboard', { replace: true });
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur lors de la création du compte');
@@ -129,172 +88,147 @@ export default function RegisterPage() {
       </Wordmark>
 
       <SectionTitle>Créer un compte</SectionTitle>
-      <SectionHint>
-        Rejoignez DjamSanté pour le suivi de vos traitements et la prise de rendez-vous.
-      </SectionHint>
+      <SectionHint>Deux étapes rapides — vous êtes soigné ensuite dans l&apos;app.</SectionHint>
+
+      <Steps aria-hidden>
+        <StepDot $active={step >= 1} />
+        <StepDot $active={step >= 2} />
+      </Steps>
+      <StepHint>{step === 1 ? 'Étape 1/2 — Identifiants' : 'Étape 2/2 — Qui êtes-vous ?'}</StepHint>
 
       <AuthForm onSubmit={handleSubmit(onSubmit)}>
-        <Field>
-          <FieldLabel htmlFor="telephone">Téléphone (vérification SMS)</FieldLabel>
-          <FieldInput
-            id="telephone"
-            type="tel"
-            placeholder="+237 6XX XX XX XX"
-            disabled={phoneVerified}
-            $error={!!errors.telephone}
-            {...register('telephone', {
-              required: 'Le téléphone est requis',
-              minLength: { value: 9, message: 'Numéro invalide' },
-              onChange: () => {
-                setOtpSent(false);
-                setPhoneVerified(false);
-                setVerificationToken(null);
-                setMockHint(null);
-              },
-            })}
-          />
-          {errors.telephone && <FieldError>{errors.telephone.message}</FieldError>}
-        </Field>
-
-        {phoneVerified ? (
-          <VerifiedBadge>
-            <CheckCircle size={18} />
-            Numéro vérifié
-          </VerifiedBadge>
-        ) : (
+        {step === 1 && (
           <>
-            <OtpActions>
-              <AuthSecondary type="button" onClick={handleSendOtp} disabled={sendingOtp}>
-                {sendingOtp ? 'Envoi…' : otpSent ? 'Renvoyer le code' : 'Envoyer le code SMS'}
-              </AuthSecondary>
-            </OtpActions>
+            <Field>
+              <FieldLabel htmlFor="email">E-mail</FieldLabel>
+              <FieldInput
+                id="email"
+                type="email"
+                autoComplete="email"
+                placeholder="vous@exemple.com"
+                $error={!!errors.email}
+                {...register('email', {
+                  required: 'L\'email est requis',
+                  pattern: { value: /^\S+@\S+$/i, message: 'Email invalide' },
+                })}
+              />
+              {errors.email && <FieldError>{errors.email.message}</FieldError>}
+            </Field>
 
-            {otpSent && (
-              <OtpRow>
-                <Field>
-                  <FieldLabel htmlFor="otp">Code SMS</FieldLabel>
-                  <FieldInput
-                    id="otp"
-                    placeholder="123456"
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value)}
-                  />
-                </Field>
-                <AuthSecondary type="button" onClick={handleVerifyOtp} disabled={verifyingOtp}>
-                  {verifyingOtp ? 'Vérification…' : 'Vérifier'}
-                </AuthSecondary>
-              </OtpRow>
-            )}
+            <Field>
+              <FieldLabel htmlFor="password">Mot de passe</FieldLabel>
+              <FieldInput
+                id="password"
+                type="password"
+                autoComplete="new-password"
+                placeholder="8 caractères minimum"
+                $error={!!errors.password}
+                {...register('password', {
+                  required: 'Le mot de passe est requis',
+                  minLength: { value: 8, message: 'Minimum 8 caractères' },
+                  validate: (val) => {
+                    const s = scorePassword(val);
+                    return s.isAcceptable || 'Mot de passe trop faible (ajoutez majuscules, chiffres…)';
+                  },
+                })}
+              />
+              <PasswordStrengthMeter password={passwordValue} />
+              {errors.password && <FieldError>{errors.password.message}</FieldError>}
+            </Field>
 
-            {mockHint && (
-              <Notice style={{ marginBottom: 0 }}>{mockHint}</Notice>
-            )}
+            <Field>
+              <FieldLabel htmlFor="confirmPassword">Confirmer</FieldLabel>
+              <FieldInput
+                id="confirmPassword"
+                type="password"
+                autoComplete="new-password"
+                placeholder="Retapez le mot de passe"
+                $error={!!errors.confirmPassword}
+                {...register('confirmPassword', {
+                  required: 'Confirmez le mot de passe',
+                  validate: (val) => val === watch('password') || 'Les mots de passe ne correspondent pas',
+                })}
+              />
+              {errors.confirmPassword && <FieldError>{errors.confirmPassword.message}</FieldError>}
+            </Field>
+
+            <Field>
+              <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: '0.84rem', color: '#6B6560', lineHeight: 1.45 }}>
+                <input type="checkbox" {...register('acceptCgu', { required: 'Acceptation des CGU obligatoire' })} style={{ marginTop: 3 }} />
+                <span>
+                  J&apos;accepte les{' '}
+                  <Link to="/cgu" target="_blank">CGU</Link>
+                  {' '}et la{' '}
+                  <Link to="/confidentialite" target="_blank">confidentialité</Link>.
+                </span>
+              </label>
+              {errors.acceptCgu && <FieldError>{errors.acceptCgu.message}</FieldError>}
+            </Field>
+
+            <AuthSubmit type="button" onClick={goNext}>
+              Continuer
+            </AuthSubmit>
           </>
         )}
 
-        <FormGrid>
-          <Field>
-            <FieldLabel htmlFor="prenom">Prénom</FieldLabel>
-            <FieldInput
-              id="prenom"
-              placeholder="Jean"
-              $error={!!errors.prenom}
-              {...register('prenom', { required: 'Le prénom est requis' })}
-            />
-            {errors.prenom && <FieldError>{errors.prenom.message}</FieldError>}
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="nom">Nom</FieldLabel>
-            <FieldInput
-              id="nom"
-              placeholder="Dupont"
-              $error={!!errors.nom}
-              {...register('nom', { required: 'Le nom est requis' })}
-            />
-            {errors.nom && <FieldError>{errors.nom.message}</FieldError>}
-          </Field>
-        </FormGrid>
+        {step === 2 && (
+          <>
+            <FormGrid>
+              <Field>
+                <FieldLabel htmlFor="prenom">Prénom</FieldLabel>
+                <FieldInput
+                  id="prenom"
+                  autoComplete="given-name"
+                  $error={!!errors.prenom}
+                  {...register('prenom', { required: 'Le prénom est requis' })}
+                />
+                {errors.prenom && <FieldError>{errors.prenom.message}</FieldError>}
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="nom">Nom</FieldLabel>
+                <FieldInput
+                  id="nom"
+                  autoComplete="family-name"
+                  $error={!!errors.nom}
+                  {...register('nom', { required: 'Le nom est requis' })}
+                />
+                {errors.nom && <FieldError>{errors.nom.message}</FieldError>}
+              </Field>
+            </FormGrid>
 
-        <Field>
-          <FieldLabel htmlFor="email">E-mail</FieldLabel>
-          <FieldInput
-            id="email"
-            type="email"
-            placeholder="vous@exemple.com"
-            $error={!!errors.email}
-            {...register('email', {
-              required: 'L\'email est requis',
-              pattern: { value: /^\S+@\S+$/i, message: 'Email invalide' },
-            })}
-          />
-          {errors.email && <FieldError>{errors.email.message}</FieldError>}
-        </Field>
+            <Field>
+              <FieldLabel htmlFor="telephone">Téléphone (optionnel)</FieldLabel>
+              <FieldInput
+                id="telephone"
+                type="tel"
+                autoComplete="tel"
+                placeholder="+237 6XX XX XX XX"
+                $error={!!errors.telephone}
+                {...register('telephone', {
+                  minLength: { value: 9, message: 'Numéro invalide' },
+                })}
+              />
+              {errors.telephone && <FieldError>{errors.telephone.message}</FieldError>}
+            </Field>
 
-        <Field>
-          <FieldLabel htmlFor="dateNaissance">Date de naissance</FieldLabel>
-          <FieldInput
-            id="dateNaissance"
-            type="date"
-            $error={!!errors.dateNaissance}
-            {...register('dateNaissance', { required: 'La date de naissance est requise' })}
-          />
-          {errors.dateNaissance && <FieldError>{errors.dateNaissance.message}</FieldError>}
-        </Field>
-
-        <Field>
-          <FieldLabel htmlFor="password">Mot de passe</FieldLabel>
-          <FieldInput
-            id="password"
-            type="password"
-            placeholder="8 caractères minimum"
-            $error={!!errors.password}
-            {...register('password', {
-              required: 'Le mot de passe est requis',
-              minLength: { value: 8, message: 'Minimum 8 caractères' },
-            })}
-          />
-          {errors.password && <FieldError>{errors.password.message}</FieldError>}
-        </Field>
-
-        <Field>
-          <FieldLabel htmlFor="confirmPassword">Confirmer le mot de passe</FieldLabel>
-          <FieldInput
-            id="confirmPassword"
-            type="password"
-            placeholder="8 caractères minimum"
-            $error={!!errors.confirmPassword}
-            {...register('confirmPassword', {
-              required: 'Confirmez le mot de passe',
-              validate: (val) => val === watch('password') || 'Les mots de passe ne correspondent pas',
-            })}
-          />
-          {errors.confirmPassword && <FieldError>{errors.confirmPassword.message}</FieldError>}
-        </Field>
-
-        <Field>
-          <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: '0.84rem', color: '#6B6560', lineHeight: 1.45 }}>
-            <input type="checkbox" {...register('acceptCgu', { required: 'Acceptation des CGU obligatoire' })} style={{ marginTop: 3 }} />
-            <span>
-              J&apos;accepte les{' '}
-              <Link to="/cgu" target="_blank">Conditions Générales d&apos;Utilisation</Link>
-              {' '}et la{' '}
-              <Link to="/confidentialite" target="_blank">Politique de confidentialité</Link>.
-            </span>
-          </label>
-          {errors.acceptCgu && <FieldError>{errors.acceptCgu.message}</FieldError>}
-        </Field>
-
-        <AuthSubmit type="submit" disabled={submitting || !phoneVerified}>
-          {submitting ? 'Création…' : 'Créer mon compte'}
-        </AuthSubmit>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <AuthSubmit type="button" onClick={() => setStep(1)} style={{ flex: 1, background: '#E8E4DC', color: '#1C1917' }}>
+                Retour
+              </AuthSubmit>
+              <AuthSubmit type="submit" disabled={submitting} style={{ flex: 1.4 }}>
+                {submitting ? 'Création…' : 'Créer mon compte'}
+              </AuthSubmit>
+            </div>
+          </>
+        )}
       </AuthForm>
 
       <Footnotes>
         <p>Déjà un compte ? <Link to="/login">Se connecter</Link></p>
         <p>
-          <Link to="/cgu">CGU</Link>
+          <Link to="/register-professionnel">Compte professionnel</Link>
           {' · '}
-          <Link to="/confidentialite">Confidentialité</Link>
+          <Link to="/cgu">CGU</Link>
         </p>
       </Footnotes>
     </AuthShell>

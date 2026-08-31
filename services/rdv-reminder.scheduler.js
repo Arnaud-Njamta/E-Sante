@@ -21,7 +21,9 @@ const startRdvReminderScheduler = () => {
     try {
       const result = await sendReminders();
       if (result.total > 0) {
-        console.log(`[RDV Reminder] ${result.sent}/${result.total} SMS pour le ${result.date}`);
+        console.log(
+          `[RDV Reminder] ${result.sentSms || 0} SMS / ${result.sentEmail || 0} e-mails pour le ${result.date}`,
+        );
       }
     } catch (err) {
       console.error('[RDV Reminder] Erreur:', err.message);

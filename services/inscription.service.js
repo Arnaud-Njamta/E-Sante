@@ -4,24 +4,29 @@ const {
   InscriptionProfessionnel, Medecin, Etablissement, Patient, Fichier,
 } = require('../models');
 const {
-  USER_ROLES, TYPE_ETABLISSEMENT, STATUT_VALIDATION,
+  USER_ROLES, TYPE_ETABLISSEMENT, STATUT_VALIDATION, SOIGNANT_TYPES, PROFESSION_SANTE_LABELS,
 } = require('../utils/constants');
 const { saveFichier, mapTypeFichier } = require('./fichier.service');
 const { validerCoordonneesPaiement, OPERATEURS_MOBILE_MONEY } = require('../config/paiement');
 const adminAudit = require('./admin-audit.service');
+const emailService = require('./email.service');
 
 const SALT_ROUNDS = 12;
 
 const DOCUMENTS_REQUIS = {
   medecin: ['diplome', 'carte_ordre'],
+  infirmier: ['diplome', 'carte_ordre'],
+  aide_soignant: ['diplome'],
+  sage_femme: ['diplome', 'carte_ordre'],
+  kinesitherapeute: ['diplome', 'carte_ordre'],
   pharmacie: ['agrement', 'autorisation'],
   hopital: ['agrement', 'autorisation'],
   clinique: ['agrement', 'autorisation'],
 };
 
 const DOC_LABELS = {
-  diplome: 'Diplôme',
-  carte_ordre: 'Carte ordre des médecins',
+  diplome: 'Diplôme / attestation',
+  carte_ordre: 'Carte d\'ordre / inscription professionnelle',
   agrement: 'Agrément',
   autorisation: 'Autorisation MINSANTE',
   document: 'Document',
@@ -29,10 +34,16 @@ const DOC_LABELS = {
 
 const ROLE_BY_TYPE = {
   medecin: USER_ROLES.MEDECIN,
+  infirmier: USER_ROLES.MEDECIN,
+  aide_soignant: USER_ROLES.MEDECIN,
+  sage_femme: USER_ROLES.MEDECIN,
+  kinesitherapeute: USER_ROLES.MEDECIN,
   pharmacie: USER_ROLES.PHARMACIE,
   hopital: USER_ROLES.HOPITAL,
   clinique: USER_ROLES.CLINIQUE,
 };
+
+const isSoignant = (type) => SOIGNANT_TYPES.includes(type);
 
 const generateToken = (id, role) => jwt.sign(
   { id, role },
@@ -107,18 +118,25 @@ const creerInscription = async (payload, files = []) => {
     throw error;
   }
 
+  if (!ROLE_BY_TYPE[type_profil]) {
+    const error = new Error('Type de profil professionnel invalide');
+    error.statusCode = 400;
+    throw error;
+  }
+
   const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
   let compte;
   let role;
 
-  if (type_profil === 'medecin') {
+  if (isSoignant(type_profil)) {
     role = USER_ROLES.MEDECIN;
     compte = await Medecin.create({
       nom: rest.nom,
       prenom: rest.prenom,
       email,
       telephone: rest.telephone,
-      specialite: rest.specialite,
+      specialite: rest.specialite || PROFESSION_SANTE_LABELS[type_profil] || type_profil,
+      profession: type_profil,
       numero_ordre: rest.numero_ordre,
       password_hash,
       coordonnees_paiement: coordonneesPaiement,
@@ -211,6 +229,14 @@ const creerInscription = async (payload, files = []) => {
   delete profile.password_hash;
   profile.role = role;
 
+  setImmediate(() => {
+    emailService.sendWelcomeEmail({
+      email,
+      prenom: rest.prenom || rest.nom_structure || '',
+      nom: rest.nom || '',
+    }).catch(() => {});
+  });
+
   return {
     id: inscription.id,
     statut: inscription.statut,
@@ -244,7 +270,7 @@ const validerInscription = async (inscriptionId, { valide_par = 'admin', admin =
   let compteId = inscription.compte_cree_id;
 
   if (compteId) {
-    if (inscription.type_profil === 'medecin') {
+    if (isSoignant(inscription.type_profil)) {
       const medecin = await Medecin.findByPk(compteId);
       if (medecin) {
         medecin.statut_validation = STATUT_VALIDATION.VALIDE;
@@ -269,13 +295,14 @@ const validerInscription = async (inscriptionId, { valide_par = 'admin', admin =
       throw error;
     }
     const paiement = inscription.donnees?.paiement || null;
-    if (inscription.type_profil === 'medecin') {
+    if (isSoignant(inscription.type_profil)) {
       const medecin = await Medecin.create({
         nom: inscription.nom,
         prenom: inscription.prenom,
         email: inscription.email,
         telephone: inscription.telephone,
         specialite: inscription.specialite,
+        profession: inscription.type_profil,
         numero_ordre: inscription.numero_ordre,
         password_hash,
         coordonnees_paiement: paiement,
@@ -344,7 +371,7 @@ const rejeterInscription = async (inscriptionId, motif_rejet, { admin = null, ip
   await inscription.save();
 
   if (inscription.compte_cree_id) {
-    if (inscription.type_profil === 'medecin') {
+    if (isSoignant(inscription.type_profil)) {
       await Medecin.update(
         { statut_validation: STATUT_VALIDATION.REJETE, actif: false },
         { where: { id: inscription.compte_cree_id } },

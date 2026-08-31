@@ -1,5 +1,6 @@
 const authService = require('../services/auth.service');
 const otpService = require('../services/otp.service');
+const adminAudit = require('../services/admin-audit.service');
 
 const register = async (req, res, next) => {
   try {
@@ -13,6 +14,16 @@ const register = async (req, res, next) => {
 const login = async (req, res, next) => {
   try {
     const result = await authService.login(req.body);
+    adminAudit.log({
+      categorie: adminAudit.CATEGORIES.AUTH,
+      action: adminAudit.ACTIONS.CONNEXION,
+      acteur: { id: result.user?.id, role: result.role, profile: result.user },
+      details: {
+        email: (req.body.email || '').trim().toLowerCase(),
+        role: result.role,
+      },
+      ip: req.ip || req.headers['x-forwarded-for'] || null,
+    });
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);
@@ -82,6 +93,18 @@ const sendOtp = async (req, res, next) => {
   }
 };
 
+const getSmsConfig = async (_req, res) => {
+  const { smsConfig } = require('../config/sms');
+  res.json({
+    success: true,
+    data: {
+      otp_required: !!smsConfig.otpRequired,
+      mode: smsConfig.mode,
+      verification_channel: smsConfig.otpRequired ? 'sms' : 'email',
+    },
+  });
+};
+
 const verifyOtp = async (req, res, next) => {
   try {
     const result = await otpService.verifyOtp(req.body);
@@ -102,5 +125,5 @@ const resetPasswordBySms = async (req, res, next) => {
 
 module.exports = {
   register, login, refresh, me, forgotPassword, resetPassword, changePassword,
-  sendOtp, verifyOtp, resetPasswordBySms,
+  sendOtp, verifyOtp, resetPasswordBySms, getSmsConfig,
 };

@@ -248,6 +248,41 @@ const runPendingMigrations = async () => {
     await sequelize.query('ALTER TABLE `fichiers` MODIFY COLUMN `data` LONGBLOB NULL');
     console.log('Migration: fichiers.data nullable (stockage disque).');
   }
+
+  await addColumnIfMissing(
+    'medecins',
+    'profession',
+    "`profession` ENUM('medecin','infirmier','aide_soignant','sage_femme','kinesitherapeute') NOT NULL DEFAULT 'medecin' AFTER `specialite`",
+  );
+
+  try {
+    await sequelize.query(
+      "ALTER TABLE `inscriptions_professionnels` MODIFY COLUMN `type_profil` VARCHAR(40) NOT NULL",
+    );
+  } catch (err) {
+    console.warn('Migration type_profil inscription:', err.message);
+  }
+
+  const [priseRappelTables] = await sequelize.query(
+    "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'prise_rappels_envoyes'",
+  );
+  if (priseRappelTables.length === 0) {
+    await sequelize.query(`
+      CREATE TABLE \`prise_rappels_envoyes\` (
+        \`id\` CHAR(36) NOT NULL,
+        \`prise_programmee_id\` CHAR(36) NOT NULL,
+        \`patient_id\` CHAR(36) NOT NULL,
+        \`date_rappel\` DATE NOT NULL,
+        \`heure_prise\` VARCHAR(5) NOT NULL,
+        \`canal\` VARCHAR(20) NULL,
+        \`created_at\` DATETIME NOT NULL,
+        PRIMARY KEY (\`id\`),
+        UNIQUE KEY \`prise_rappel_unique\` (\`prise_programmee_id\`, \`patient_id\`, \`date_rappel\`, \`heure_prise\`),
+        INDEX \`prise_rappel_patient\` (\`patient_id\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+    console.log('Migration: table prise_rappels_envoyes créée.');
+  }
 };
 
 

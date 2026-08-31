@@ -10,8 +10,45 @@ import ErrorState from '../components/ui/ErrorState';
 import { useEtablissements } from '../hooks/useEtablissements';
 import { useMedecins } from '../hooks/useMedecins';
 import { useRechercheProduits } from '../hooks/useProduits';
+import useGeolocation from '../hooks/useGeolocation';
 import { parseJsonArray } from '../utils/helpers';
 import { resolveFileUrl } from '../components/ui/PhotoUploadCard';
+
+const NearbyBar = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: ${({ theme }) => theme.spacing[4]};
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: ${({ theme }) => theme.colors.primary[50] || '#ECFDF5'};
+  border: 1px solid ${({ theme }) => theme.colors.primary[100] || '#A7F3D0'};
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  button {
+    border: none;
+    background: ${({ theme }) => theme.colors.primary[600] || '#059669'};
+    color: #fff;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+`;
+
+const DistBadge = styled.span`
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: #DCFCE7;
+  color: #166534;
+`;
+
 
 const PageHeader = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing[6]};
@@ -179,6 +216,10 @@ export default function SantePage() {
   const [dispoOnly, setDispoOnly] = useState(false);
   const [competenceFilter, setCompetenceFilter] = useState('');
   const [etablissementFilter, setEtablissementFilter] = useState('');
+  const [nearbyOn, setNearbyOn] = useState(true);
+  const { coords, error: geoError, loading: geoLoading, refresh: refreshGeo } = useGeolocation({
+    enabled: nearbyOn && tab === 'etablissements',
+  });
 
   const { data: etabListData } = useEtablissements({
     type: undefined,
@@ -191,6 +232,15 @@ export default function SantePage() {
   const { data: etabData, isLoading: etabLoading, error: etabError, refetch: refetchEtab } = useEtablissements({
     type: typeFilter || undefined,
     recherche: search || undefined,
+    ...(nearbyOn && coords
+      ? {
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        nearby: true,
+        radius_km: 30,
+        limit: 50,
+      }
+      : {}),
   });
 
   const { data: medData, isLoading: medLoading, error: medError, refetch: refetchMed } = useMedecins({
@@ -216,8 +266,33 @@ export default function SantePage() {
     <div>
       <PageHeader>
         <h1>Annuaire Santé</h1>
-        <p>Pharmacies, hôpitaux, cliniques, médecins et médicaments — Cameroun</p>
+        <p>Pharmacies, hôpitaux, cliniques, soignants et médicaments — près de vous</p>
       </PageHeader>
+
+      {tab === 'etablissements' && (
+        <NearbyBar>
+          <MapPin size={16} />
+          {nearbyOn && coords
+            ? `Tri par proximité (±30 km) — précision ~${Math.round(coords.accuracy || 0)} m`
+            : geoLoading
+              ? 'Localisation en cours…'
+              : geoError
+                ? `Localisation : ${geoError}`
+                : 'Activez la localisation pour voir les établissements les plus proches'}
+          <button type="button" onClick={() => { setNearbyOn(true); refreshGeo(); }}>
+            Me localiser
+          </button>
+          {nearbyOn && (
+            <button
+              type="button"
+              style={{ background: '#64748B' }}
+              onClick={() => setNearbyOn(false)}
+            >
+              Voir tout
+            </button>
+          )}
+        </NearbyBar>
+      )}
 
       <Tabs>
         <Tab $active={tab === 'etablissements'} onClick={() => setTab('etablissements')}>
@@ -309,7 +384,12 @@ export default function SantePage() {
               <ItemCard key={e.id} onClick={() => navigate(`/sante/etablissement/${e.id}`)}>
                 <TypeBadge $type={e.type}><Icon size={12} /> {TYPE_LABELS[e.type]}</TypeBadge>
                 <CardTitle>{e.nom}</CardTitle>
-                <Location><MapPin /> {e.ville}{e.adresse ? ` — ${e.adresse}` : ''}</Location>
+                <Location>
+                  <MapPin /> {e.ville}{e.adresse ? ` — ${e.adresse}` : ''}
+                  {e.distance_km != null && (
+                    <DistBadge>{e.distance_km < 1 ? `${Math.round(e.distance_km * 1000)} m` : `${e.distance_km} km`}</DistBadge>
+                  )}
+                </Location>
                 <CardDesc>{e.description}</CardDesc>
                 <StarRating rating={e.note_moyenne} count={e.nombre_avis} />
                 {e.services?.length > 0 && (

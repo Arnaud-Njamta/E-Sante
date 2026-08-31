@@ -23,6 +23,17 @@ const Medecin = sequelize.define('Medecin', {
     type: DataTypes.STRING(150),
     allowNull: true,
   },
+  profession: {
+    type: DataTypes.ENUM(
+      'medecin',
+      'infirmier',
+      'aide_soignant',
+      'sage_femme',
+      'kinesitherapeute',
+    ),
+    allowNull: false,
+    defaultValue: 'medecin',
+  },
   numero_ordre: {
     type: DataTypes.STRING(50),
     allowNull: true,

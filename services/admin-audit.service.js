@@ -5,11 +5,13 @@ const ACTIONS = {
   INSCRIPTION_VALIDEE: 'inscription_validee',
   INSCRIPTION_REJETEE: 'inscription_rejetee',
   DOCUMENT_CONSULTE: 'document_consulte',
+  CONNEXION: 'connexion',
 };
 
 const CATEGORIES = {
   INSCRIPTION: 'inscription',
   DOCUMENT: 'document',
+  AUTH: 'auth',
 };
 
 const getActeurLabel = (user) => {
@@ -57,7 +59,7 @@ const lister = async ({
 
   const { rows, count } = await AdminAuditLog.findAndCountAll({
     where,
-    order: [['createdAt', 'DESC']],
+    order: [['created_at', 'DESC']],
     limit: Math.min(parseInt(limit, 10) || 100, 500),
     offset: parseInt(offset, 10) || 0,
   });

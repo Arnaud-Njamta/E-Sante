@@ -6,7 +6,10 @@ const structureMgmt = require('./structure-management.service');
 const { formatMedecin } = require('./medecin.service');
 const membreEquipeService = require('./membre-equipe.service');
 
-const lister = async ({ type, ville, recherche, page = 1, limit = 20 }) => {
+const lister = async ({
+  type, ville, recherche, page = 1, limit = 20,
+  latitude, longitude, radius_km = 25, nearby,
+}) => {
   const where = { actif: true, statut_validation: STATUT_VALIDATION.VALIDE };
 
   if (type) where.type = type;
@@ -18,7 +21,14 @@ const lister = async ({ type, ville, recherche, page = 1, limit = 20 }) => {
     ];
   }
 
+  const lat = latitude != null && latitude !== '' ? Number(latitude) : null;
+  const lng = longitude != null && longitude !== '' ? Number(longitude) : null;
+  const useGeo = Number.isFinite(lat) && Number.isFinite(lng)
+    && (nearby === true || nearby === 'true' || nearby === '1'
+      || latitude != null);
+
   const offset = (page - 1) * limit;
+  const fetchLimit = useGeo ? Math.min(500, Math.max(limit * 10, 100)) : limit;
 
   const { rows, count } = await Etablissement.findAndCountAll({
     where,
@@ -30,13 +40,55 @@ const lister = async ({ type, ville, recherche, page = 1, limit = 20 }) => {
         required: false,
       },
     ],
-    order: [['note_moyenne', 'DESC'], ['nom', 'ASC']],
-    limit,
-    offset,
+    order: useGeo
+      ? [['nom', 'ASC']]
+      : [['note_moyenne', 'DESC'], ['nom', 'ASC']],
+    limit: fetchLimit,
+    offset: useGeo ? 0 : offset,
   });
 
+  const haversineKm = (lat1, lon1, lat2, lon2) => {
+    const toRad = (d) => (d * Math.PI) / 180;
+    const R = 6371;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) ** 2
+      + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  };
+
+  let etablissements = rows.map((r) => {
+    const plain = r.toJSON ? r.toJSON() : { ...r };
+    if (useGeo && plain.latitude != null && plain.longitude != null) {
+      plain.distance_km = Math.round(
+        haversineKm(lat, lng, Number(plain.latitude), Number(plain.longitude)) * 10,
+      ) / 10;
+    } else if (useGeo) {
+      plain.distance_km = null;
+    }
+    return plain;
+  });
+
+  if (useGeo) {
+    const radius = Number(radius_km) || 25;
+    etablissements = etablissements
+      .filter((e) => e.distance_km == null || e.distance_km <= radius)
+      .sort((a, b) => {
+        if (a.distance_km == null) return 1;
+        if (b.distance_km == null) return 1;
+        return a.distance_km - b.distance_km;
+      });
+    const total = etablissements.length;
+    etablissements = etablissements.slice(offset, offset + limit);
+    return {
+      etablissements,
+      geo: { latitude: lat, longitude: lng, radius_km: radius },
+      pagination: { total, page, limit, pages: Math.ceil(total / limit) || 1 },
+    };
+  }
+
   return {
-    etablissements: rows,
+    etablissements,
     pagination: { total: count, page, limit, pages: Math.ceil(count / limit) },
   };
 };

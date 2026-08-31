@@ -8,9 +8,10 @@ const GlobalStyles = createGlobalStyle`
   }
 
   html {
-    font-size: 16px;
+    font-size: clamp(14px, 2.8vw, 16px);
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   body {
@@ -23,12 +24,33 @@ const GlobalStyles = createGlobalStyle`
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
   }
 
   #root {
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  /* Tables / grilles : scroll horizontal sur petit écran */
+  @media (max-width: ${({ theme }) => theme.breakpoints.md}) {
+    table {
+      display: block;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    input, textarea, select {
+      font-size: 16px; /* évite le zoom iOS sur focus */
+    }
   }
 
   a {

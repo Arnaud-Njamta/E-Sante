@@ -42,6 +42,7 @@ const AdminAuditLog = sequelize.define('AdminAuditLog', {
 }, {
   tableName: 'admin_audit_logs',
   updatedAt: false,
+  createdAt: 'created_at',
 });
 
 module.exports = AdminAuditLog;

@@ -238,6 +238,8 @@ const start = async () => {
 
       const { startRdvReminderScheduler } = require('./services/rdv-reminder.scheduler');
       startRdvReminderScheduler();
+      const { startPriseReminderScheduler } = require('./services/prise-reminder.scheduler');
+      startPriseReminderScheduler();
 
     });
 

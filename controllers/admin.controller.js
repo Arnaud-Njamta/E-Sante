@@ -5,6 +5,7 @@ const getOverview = async (req, res, next) => {
     const data = await adminService.getOverview();
     res.json({ success: true, data });
   } catch (error) {
+    console.error('[admin/overview]', error);
     next(error);
   }
 };

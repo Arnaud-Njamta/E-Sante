@@ -47,14 +47,16 @@ const Description = styled.p`
 
 export default function ErrorState({
   title = 'Une erreur est survenue',
-  description = 'Impossible de charger les données. Veuillez réessayer.',
+  description,
+  message,
   onRetry,
 }) {
+  const text = description || message || 'Impossible de charger les données. Veuillez réessayer.';
   return (
     <Wrapper role="alert">
       <IconCircle><AlertTriangle /></IconCircle>
       <Title>{title}</Title>
-      <Description>{description}</Description>
+      <Description>{text}</Description>
       {onRetry && (
         <Button variant="outline" onClick={onRetry}>
           Réessayer

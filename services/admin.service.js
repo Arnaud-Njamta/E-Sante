@@ -2,7 +2,16 @@ const { Op } = require('sequelize');
 const {
   Patient, Medecin, Etablissement, Admin, InscriptionProfessionnel, AdminAuditLog,
 } = require('../models');
-const { TYPE_ETABLISSEMENT, STATUT_VALIDATION } = require('../utils/constants');
+const { TYPE_ETABLISSEMENT } = require('../utils/constants');
+
+const safe = async (label, fn, fallback) => {
+  try {
+    return await fn();
+  } catch (err) {
+    console.warn(`[admin/overview] ${label}:`, err.message);
+    return fallback;
+  }
+};
 
 const pickPatient = (p) => ({
   id: p.id,
@@ -37,8 +46,8 @@ const pickEtab = (e) => ({
   region: e.region,
   statut_validation: e.statut_validation,
   actif: e.actif,
-  latitude: e.latitude,
-  longitude: e.longitude,
+  latitude: e.latitude ?? null,
+  longitude: e.longitude ?? null,
   created_at: e.createdAt,
 });
 
@@ -69,45 +78,53 @@ const getOverview = async () => {
     recentInscriptionsPro,
     recentActivite,
   ] = await Promise.all([
-    Patient.count(),
-    Medecin.count({ where: { actif: true } }),
-    Etablissement.count({ where: { type: TYPE_ETABLISSEMENT.PHARMACIE, actif: true } }),
-    Etablissement.count({ where: { type: TYPE_ETABLISSEMENT.HOPITAL, actif: true } }),
-    Etablissement.count({ where: { type: TYPE_ETABLISSEMENT.CLINIQUE, actif: true } }),
-    Admin.count({ where: { actif: true } }),
-    InscriptionProfessionnel.count({
-      where: { statut: ['en_attente', 'en_revision', 'documents_manquants'] },
-    }),
-    Patient.findAll({
+    safe('patients.count', () => Patient.count(), 0),
+    safe('medecins.count', () => Medecin.count({ where: { actif: true } }), 0),
+    safe('pharmacies.count', () => Etablissement.count({
+      where: { type: TYPE_ETABLISSEMENT.PHARMACIE, actif: true },
+    }), 0),
+    safe('hopitaux.count', () => Etablissement.count({
+      where: { type: TYPE_ETABLISSEMENT.HOPITAL, actif: true },
+    }), 0),
+    safe('cliniques.count', () => Etablissement.count({
+      where: { type: TYPE_ETABLISSEMENT.CLINIQUE, actif: true },
+    }), 0),
+    safe('admins.count', () => Admin.count({ where: { actif: true } }), 0),
+    safe('inscriptions.count', () => InscriptionProfessionnel.count({
+      where: {
+        statut: { [Op.in]: ['en_attente', 'en_revision', 'documents_manquants'] },
+      },
+    }), 0),
+    safe('patients.recent', () => Patient.findAll({
       attributes: ['id', 'nom', 'prenom', 'email', 'telephone', 'createdAt'],
       order: [['createdAt', 'DESC']],
       limit: 12,
-    }),
-    Medecin.findAll({
+    }), []),
+    safe('medecins.recent', () => Medecin.findAll({
       attributes: [
-        'id', 'nom', 'prenom', 'email', 'telephone', 'specialite', 'profession',
+        'id', 'nom', 'prenom', 'email', 'telephone', 'specialite',
         'statut_validation', 'createdAt',
       ],
       order: [['createdAt', 'DESC']],
       limit: 12,
-    }),
-    Etablissement.findAll({
+    }), []),
+    safe('etablissements.recent', () => Etablissement.findAll({
       attributes: [
         'id', 'type', 'nom', 'email', 'telephone', 'ville', 'region',
-        'statut_validation', 'actif', 'latitude', 'longitude', 'createdAt',
+        'statut_validation', 'actif', 'createdAt',
       ],
       order: [['createdAt', 'DESC']],
       limit: 12,
-    }),
-    InscriptionProfessionnel.findAll({
+    }), []),
+    safe('inscriptions.recent', () => InscriptionProfessionnel.findAll({
       attributes: [
         'id', 'type_profil', 'email', 'nom', 'prenom', 'nom_structure',
         'telephone', 'ville', 'statut', 'createdAt',
       ],
       order: [['createdAt', 'DESC']],
       limit: 15,
-    }),
-    AdminAuditLog.findAll({
+    }), []),
+    safe('activite.recent', () => AdminAuditLog.findAll({
       where: {
         [Op.or]: [
           { categorie: 'auth', action: 'connexion' },
@@ -116,7 +133,7 @@ const getOverview = async () => {
       },
       order: [['createdAt', 'DESC']],
       limit: 30,
-    }),
+    }), []),
   ]);
 
   return {
@@ -169,7 +186,7 @@ const listComptes = async ({ type = 'all', page = 1, limit = 30 } = {}) => {
   if (type === 'medecin') {
     const { rows, count } = await Medecin.findAndCountAll({
       attributes: [
-        'id', 'nom', 'prenom', 'email', 'telephone', 'specialite', 'profession',
+        'id', 'nom', 'prenom', 'email', 'telephone', 'specialite',
         'statut_validation', 'actif', 'createdAt',
       ],
       order: [['createdAt', 'DESC']],
@@ -187,7 +204,7 @@ const listComptes = async ({ type = 'all', page = 1, limit = 30 } = {}) => {
     }),
     Medecin.findAll({
       attributes: [
-        'id', 'nom', 'prenom', 'email', 'telephone', 'specialite', 'profession',
+        'id', 'nom', 'prenom', 'email', 'telephone', 'specialite',
         'statut_validation', 'createdAt',
       ],
       order: [['createdAt', 'DESC']],
@@ -218,7 +235,7 @@ const listEtablissements = async ({ type, page = 1, limit = 30 } = {}) => {
     where,
     attributes: [
       'id', 'type', 'nom', 'email', 'telephone', 'ville', 'region',
-      'statut_validation', 'actif', 'latitude', 'longitude', 'createdAt',
+      'statut_validation', 'actif', 'createdAt',
     ],
     order: [['nom', 'ASC']],
     limit: cap,

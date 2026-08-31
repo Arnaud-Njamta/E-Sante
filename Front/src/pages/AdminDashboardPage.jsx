@@ -160,7 +160,16 @@ export default function AdminDashboardPage() {
   const [tab, setTab] = useState('comptes');
 
   if (isLoading && !data) return <Spinner />;
-  if (error && !data) return <ErrorState message="Impossible de charger le tableau de bord admin" onRetry={refetch} />;
+  if (error && !data) {
+    const detail = error.response?.data?.message
+      || (error.response ? `Erreur serveur (${error.response.status})` : 'Serveur injoignable — vérifiez que l\'API tourne.');
+    return (
+      <ErrorState
+        message={`Impossible de charger le tableau de bord admin. ${detail}`}
+        onRetry={refetch}
+      />
+    );
+  }
 
   const { stats, recent, fetched_at: fetchedAt } = data || { stats: {}, recent: {} };
   const comptes = [...(recent.patients || []), ...(recent.medecins || [])]

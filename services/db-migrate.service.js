@@ -255,6 +255,9 @@ const runPendingMigrations = async () => {
     "`profession` ENUM('medecin','infirmier','aide_soignant','sage_femme','kinesitherapeute') NOT NULL DEFAULT 'medecin' AFTER `specialite`",
   );
 
+  await addColumnIfMissing('etablissements', 'latitude', '`latitude` DECIMAL(10, 8) NULL');
+  await addColumnIfMissing('etablissements', 'longitude', '`longitude` DECIMAL(11, 8) NULL');
+
   try {
     await sequelize.query(
       "ALTER TABLE `inscriptions_professionnels` MODIFY COLUMN `type_profil` VARCHAR(40) NOT NULL",

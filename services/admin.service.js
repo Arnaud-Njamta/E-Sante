@@ -131,7 +131,7 @@ const getOverview = async () => {
           { categorie: 'inscription' },
         ],
       },
-      order: [['createdAt', 'DESC']],
+      order: [['created_at', 'DESC']],
       limit: 30,
     }), []),
   ]);

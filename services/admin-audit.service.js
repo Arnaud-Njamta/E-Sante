@@ -16,9 +16,9 @@ const CATEGORIES = {
 };
 
 const getActeurLabel = (user) => {
-  if (!user?.profile) return user?.role || 'system';
-  const p = user.profile;
-  return p.email || [p.prenom, p.nom].filter(Boolean).join(' ') || p.nom || user.role;
+  const p = user?.profile || user;
+  if (!p || typeof p !== 'object') return user?.role || 'system';
+  return p.email || [p.prenom, p.nom].filter(Boolean).join(' ') || p.nom || user?.role || 'system';
 };
 
 const log = async ({
@@ -82,7 +82,7 @@ const lister = async ({
       AdminAuditLog.count({ where }),
       AdminAuditLog.findAll({
         where,
-        order: [['createdAt', 'DESC']],
+        order: [['created_at', 'DESC']],
         limit: cap,
         offset: skip,
       }),

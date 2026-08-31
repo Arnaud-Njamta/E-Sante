@@ -5,7 +5,7 @@ const adminAudit = require('../services/admin-audit.service');
 const register = async (req, res, next) => {
   try {
     const result = await authService.register(req.body);
-    adminAudit.log({
+    await adminAudit.log({
       categorie: adminAudit.CATEGORIES.INSCRIPTION,
       action: adminAudit.ACTIONS.INSCRIPTION_PATIENT,
       acteur: { id: result.user?.id, role: result.role, profile: result.user },
@@ -26,7 +26,7 @@ const register = async (req, res, next) => {
 const login = async (req, res, next) => {
   try {
     const result = await authService.login(req.body);
-    adminAudit.log({
+    await adminAudit.log({
       categorie: adminAudit.CATEGORIES.AUTH,
       action: adminAudit.ACTIONS.CONNEXION,
       acteur: { id: result.user?.id, role: result.role, profile: result.user },

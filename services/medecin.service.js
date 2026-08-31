@@ -2,6 +2,8 @@ const { Op } = require('sequelize');
 const { Medecin, Etablissement, Avis } = require('../models');
 const { TYPE_CIBLE_AVIS, STATUT_VALIDATION } = require('../utils/constants');
 const { parseJsonField } = require('../utils/helpers');
+const affiliationService = require('./medecin-affiliation.service');
+const parcoursService = require('./parcours-professionnel.service');
 
 const formatMedecin = (medecin) => {
   const data = medecin.toJSON ? medecin.toJSON() : { ...medecin };
@@ -22,17 +24,34 @@ const formatMedecin = (medecin) => {
   };
 };
 
-const lister = async ({ specialite, recherche, etablissement_id, page = 1, limit = 20 }) => {
+const enrichMedecinPublic = async (medecin) => {
+  const formatted = formatMedecin(medecin);
+  const [affiliations, parcours] = await Promise.all([
+    affiliationService.listerActivesPourMedecin(formatted.id),
+    parcoursService.listerPourMedecin(formatted.id),
+  ]);
+  return { ...formatted, affiliations, parcours };
+};
+
+const lister = async ({
+  specialite, recherche, etablissement_id, competence, disponible_maintenant, page = 1, limit = 20,
+}) => {
   const where = { actif: true, statut_validation: STATUT_VALIDATION.VALIDE };
 
   if (specialite) where.specialite = { [Op.like]: `%${specialite}%` };
   if (etablissement_id) where.etablissement_id = etablissement_id;
+  if (disponible_maintenant === 'true' || disponible_maintenant === true) {
+    where.disponible_maintenant = true;
+  }
   if (recherche) {
     where[Op.or] = [
       { nom: { [Op.like]: `%${recherche}%` } },
       { prenom: { [Op.like]: `%${recherche}%` } },
       { specialite: { [Op.like]: `%${recherche}%` } },
     ];
+  }
+  if (competence) {
+    where.competences = { [Op.like]: `%${competence}%` };
   }
 
   const offset = (page - 1) * limit;
@@ -78,7 +97,7 @@ const getById = async (id) => {
     throw error;
   }
 
-  return formatMedecin(medecin);
+  return enrichMedecinPublic(medecin);
 };
 
 const getProfile = async (medecinId) => getById(medecinId);
@@ -122,7 +141,8 @@ const updateProfil = async (medecinId, data) => {
     throw error;
   }
   const allowed = ['bio', 'competences', 'langues', 'telephone', 'specialite',
-    'accepte_teleconsultation', 'tarif_consultation_fcfa', 'annees_experience'];
+    'accepte_teleconsultation', 'tarif_consultation_fcfa', 'annees_experience',
+    'disponible_maintenant', 'joignable_urgence'];
   allowed.forEach((k) => { if (data[k] !== undefined) medecin[k] = data[k]; });
   await medecin.save();
   return formatMedecin(medecin);

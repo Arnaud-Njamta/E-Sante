@@ -8,6 +8,7 @@ import { resolveFileUrl } from '../components/ui/PhotoUploadCard';
 import {
   useStructureMedecins, useAddStructureMedecin, useUpdateStructureMedecin,
 } from '../hooks/useStructureManagement';
+import { useInviterMedecin, useStructureAffiliations } from '../hooks/useProfilPro';
 import toast from 'react-hot-toast';
 
 const EMPTY = {
@@ -23,10 +24,15 @@ const SPECIALITES_CM = [
 
 export default function StructureMedecinsPage() {
   const { data: medecins, isLoading } = useStructureMedecins();
+  const { data: affiliations } = useStructureAffiliations();
   const addMedecin = useAddStructureMedecin();
   const updateMedecin = useUpdateStructureMedecin();
+  const inviter = useInviterMedecin();
+  const [mode, setMode] = useState('liste');
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteMessage, setInviteMessage] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -52,6 +58,19 @@ export default function StructureMedecinsPage() {
     }
   };
 
+  const handleInvite = async (e) => {
+    e.preventDefault();
+    try {
+      await inviter.mutateAsync({ email: inviteEmail, message: inviteMessage });
+      toast.success('Invitation envoyée — le médecin doit l\'accepter depuis son espace');
+      setInviteEmail('');
+      setInviteMessage('');
+      setMode('liste');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Erreur');
+    }
+  };
+
   if (isLoading) return <Spinner />;
 
   return (
@@ -60,13 +79,47 @@ export default function StructureMedecinsPage() {
         <div>
           <h1 style={{ margin: 0 }}><Users size={24} style={{ verticalAlign: 'middle' }} /> Médecins affiliés</h1>
           <p style={{ color: '#64748B', margin: '4px 0 0' }}>
-            Inscrivez votre équipe — visible dans l'annuaire national et disponible pour les rendez-vous en ligne.
+            Invitez des médecins déjà inscrits sur DjamSanté — affiliation vérifiée, pas de faux profils.
           </p>
         </div>
-        <Button onClick={() => setShowForm(!showForm)}><Plus size={16} /> Inscrire un médecin</Button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Button variant="secondary" onClick={() => { setMode('inviter'); setShowForm(false); }}>Inviter par email</Button>
+          <Button onClick={() => { setShowForm(!showForm); setMode('creer'); }}><Plus size={16} /> Créer un compte</Button>
+        </div>
       </div>
 
-      {showForm && (
+      {mode === 'inviter' && (
+        <Card style={{ padding: 24, marginBottom: 24 }}>
+          <h3 style={{ margin: '0 0 12px' }}>Inviter un médecin inscrit</h3>
+          <p style={{ fontSize: '0.85rem', color: '#64748B', marginBottom: 16 }}>
+            Le praticien doit déjà avoir un compte DjamSanté. Il recevra l&apos;invitation dans Carrière & affiliations.
+          </p>
+          <form onSubmit={handleInvite}>
+            <Input label="Email du médecin *" type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} required />
+            <textarea
+              placeholder="Message d'invitation (optionnel)"
+              value={inviteMessage}
+              onChange={(e) => setInviteMessage(e.target.value)}
+              rows={2}
+              style={{ width: '100%', marginTop: 12, padding: 8, borderRadius: 8, border: '1px solid #E2E8F0' }}
+            />
+            <Button type="submit" style={{ marginTop: 12 }} disabled={inviter.isPending}>Envoyer l&apos;invitation</Button>
+          </form>
+        </Card>
+      )}
+
+      {(affiliations || []).filter((a) => a.statut === 'en_attente').length > 0 && (
+        <Card style={{ padding: 16, marginBottom: 16, background: '#FFFBEB', border: '1px solid #FDE68A' }}>
+          <strong>Invitations en attente :</strong>
+          {(affiliations || []).filter((a) => a.statut === 'en_attente').map((a) => (
+            <p key={a.id} style={{ margin: '6px 0 0', fontSize: '0.85rem' }}>
+              Dr. {a.medecin?.prenom} {a.medecin?.nom} — {a.medecin?.email}
+            </p>
+          ))}
+        </Card>
+      )}
+
+      {showForm && mode === 'creer' && (
         <Card style={{ padding: 24, marginBottom: 24 }}>
           <h3 style={{ margin: '0 0 16px' }}>Nouveau praticien</h3>
           <form onSubmit={handleSubmit}>

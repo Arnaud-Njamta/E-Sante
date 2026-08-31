@@ -151,6 +151,92 @@ const runPendingMigrations = async () => {
     `);
     console.log('Migration: table admin_audit_logs créée.');
   }
+
+  await addColumnIfMissing('medecins', 'disponible_maintenant', '`disponible_maintenant` TINYINT(1) NOT NULL DEFAULT 0');
+  await addColumnIfMissing('medecins', 'joignable_urgence', '`joignable_urgence` TINYINT(1) NOT NULL DEFAULT 0');
+
+  const [affTables] = await sequelize.query(
+    "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'medecin_affiliations'",
+  );
+  if (affTables.length === 0) {
+    await sequelize.query(`
+      CREATE TABLE \`medecin_affiliations\` (
+        \`id\` CHAR(36) NOT NULL,
+        \`medecin_id\` CHAR(36) NOT NULL,
+        \`etablissement_id\` CHAR(36) NULL,
+        \`type_lieu\` ENUM('hopital','clinique','cabinet_prive') NOT NULL DEFAULT 'clinique',
+        \`role\` ENUM('titulaire','associe','remplacant','consultant','employe') NOT NULL DEFAULT 'employe',
+        \`statut\` ENUM('en_attente','actif','refuse','termine') NOT NULL DEFAULT 'en_attente',
+        \`nom_lieu\` VARCHAR(200) NULL,
+        \`adresse\` VARCHAR(255) NULL,
+        \`ville\` VARCHAR(100) NULL,
+        \`horaires\` JSON NULL,
+        \`date_debut\` DATE NULL,
+        \`date_fin\` DATE NULL,
+        \`message_invitation\` TEXT NULL,
+        \`actuel\` TINYINT(1) NOT NULL DEFAULT 1,
+        \`created_at\` DATETIME NOT NULL,
+        \`updated_at\` DATETIME NOT NULL,
+        PRIMARY KEY (\`id\`),
+        INDEX \`medecin_affiliations_medecin\` (\`medecin_id\`),
+        INDEX \`medecin_affiliations_etab\` (\`etablissement_id\`),
+        INDEX \`medecin_affiliations_statut\` (\`statut\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+    console.log('Migration: table medecin_affiliations créée.');
+  }
+
+  const [parcoursTables] = await sequelize.query(
+    "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'parcours_professionnels'",
+  );
+  if (parcoursTables.length === 0) {
+    await sequelize.query(`
+      CREATE TABLE \`parcours_professionnels\` (
+        \`id\` CHAR(36) NOT NULL,
+        \`medecin_id\` CHAR(36) NOT NULL,
+        \`type\` ENUM('experience','formation','certification') NOT NULL DEFAULT 'experience',
+        \`titre\` VARCHAR(200) NOT NULL,
+        \`organisme\` VARCHAR(200) NULL,
+        \`lieu\` VARCHAR(150) NULL,
+        \`date_debut\` DATE NULL,
+        \`date_fin\` DATE NULL,
+        \`description\` TEXT NULL,
+        \`actuel\` TINYINT(1) NOT NULL DEFAULT 0,
+        \`ordre\` INT NOT NULL DEFAULT 0,
+        \`created_at\` DATETIME NOT NULL,
+        \`updated_at\` DATETIME NOT NULL,
+        PRIMARY KEY (\`id\`),
+        INDEX \`parcours_professionnels_medecin\` (\`medecin_id\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+    console.log('Migration: table parcours_professionnels créée.');
+  }
+
+  const [membreTables] = await sequelize.query(
+    "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'membres_equipe_etablissement'",
+  );
+  if (membreTables.length === 0) {
+    await sequelize.query(`
+      CREATE TABLE \`membres_equipe_etablissement\` (
+        \`id\` CHAR(36) NOT NULL,
+        \`etablissement_id\` CHAR(36) NOT NULL,
+        \`nom\` VARCHAR(100) NOT NULL,
+        \`prenom\` VARCHAR(100) NOT NULL,
+        \`role\` VARCHAR(100) NOT NULL DEFAULT 'Pharmacien',
+        \`email\` VARCHAR(255) NULL,
+        \`telephone\` VARCHAR(20) NULL,
+        \`bio\` TEXT NULL,
+        \`competences\` JSON NULL,
+        \`actif\` TINYINT(1) NOT NULL DEFAULT 1,
+        \`ordre\` INT NOT NULL DEFAULT 0,
+        \`created_at\` DATETIME NOT NULL,
+        \`updated_at\` DATETIME NOT NULL,
+        PRIMARY KEY (\`id\`),
+        INDEX \`membres_equipe_etab\` (\`etablissement_id\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+    console.log('Migration: table membres_equipe_etablissement créée.');
+  }
 };
 
 

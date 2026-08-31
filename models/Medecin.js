@@ -113,6 +113,16 @@ const Medecin = sequelize.define('Medecin', {
     allowNull: false,
     defaultValue: true,
   },
+  disponible_maintenant: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  },
+  joignable_urgence: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  },
   coordonnees_paiement: {
     type: DataTypes.JSON,
     allowNull: true,

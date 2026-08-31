@@ -6,7 +6,7 @@ import { getBranding, getDisplayName } from '../../config/branding';
 import { getInitials } from '../../utils/helpers';
 import {
   LayoutDashboard, Heart, Clock, FileText, BarChart3, User, LogOut,
-  ChevronLeft, Building2, MessageCircle, Stethoscope, Star, Pill, Newspaper, Camera, Package, Shield, Wallet, ScrollText,
+  ChevronLeft, Building2, MessageCircle, Stethoscope, Star, Pill, Newspaper, Camera, Package, Shield, Wallet, ScrollText, Briefcase, Users,
 } from 'lucide-react';
 
 const SidebarContainer = styled.aside`
@@ -200,6 +200,7 @@ const ROLE_NAV = {
     { to: '/medecin/dashboard', icon: LayoutDashboard, label: 'Tableau de bord', section: 'principal' },
     { to: '/medecin/rendez-vous', icon: Clock, label: 'Rendez-vous', section: 'principal' },
     { to: '/medecin/ordonnances', icon: FileText, label: 'Ordonnances élec.', section: 'principal' },
+    { to: '/medecin/carriere', icon: Briefcase, label: 'Carrière & affiliations', section: 'principal' },
     { to: '/medecin/actualites', icon: Newspaper, label: 'Actualités', section: 'principal' },
     { to: '/medecin/profil', icon: User, label: 'Mon profil public', section: 'principal' },
     { to: '/medecin/parametres', icon: Camera, label: 'Photo & cachet', section: 'compte' },
@@ -212,6 +213,7 @@ const ROLE_NAV = {
     { to: '/pharmacie/reservations', icon: Package, label: 'Réservations', section: 'principal' },
     { to: '/pharmacie/ordonnances', icon: FileText, label: 'Vérifier ordonnance', section: 'principal' },
     { to: '/pharmacie/actualites', icon: Newspaper, label: 'Actualités', section: 'principal' },
+    { to: '/pharmacie/equipe', icon: Users, label: 'Équipe', section: 'principal' },
     { to: '/pharmacie/profil', icon: Camera, label: 'Photo & profil', section: 'compte' },
     { to: '/pharmacie/horaires', icon: Clock, label: 'Horaires', section: 'principal' },
     { to: '/pharmacie/localisation', icon: Building2, label: 'Localisation', section: 'compte' },
@@ -219,6 +221,7 @@ const ROLE_NAV = {
   hopital: [
     { to: '/hopital/dashboard', icon: LayoutDashboard, label: 'Tableau de bord', section: 'principal' },
     { to: '/hopital/medecins', icon: Stethoscope, label: 'Médecins affiliés', section: 'principal' },
+    { to: '/hopital/equipe', icon: Users, label: 'Équipe', section: 'principal' },
     { to: '/hopital/services', icon: Heart, label: 'Services & tarifs', section: 'principal' },
     { to: '/hopital/rendez-vous', icon: Clock, label: 'Rendez-vous', section: 'principal' },
     { to: '/hopital/dispensaire', icon: Pill, label: 'Dispensaire', section: 'principal' },
@@ -233,6 +236,7 @@ const ROLE_NAV = {
   clinique: [
     { to: '/clinique/dashboard', icon: LayoutDashboard, label: 'Tableau de bord', section: 'principal' },
     { to: '/clinique/medecins', icon: Stethoscope, label: 'Médecins affiliés', section: 'principal' },
+    { to: '/clinique/equipe', icon: Users, label: 'Équipe', section: 'principal' },
     { to: '/clinique/services', icon: Heart, label: 'Services & tarifs', section: 'principal' },
     { to: '/clinique/rendez-vous', icon: Clock, label: 'Rendez-vous', section: 'principal' },
     { to: '/clinique/dispensaire', icon: Pill, label: 'Dispensaire', section: 'principal' },

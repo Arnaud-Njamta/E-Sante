@@ -177,6 +177,8 @@ export default function SantePage() {
   const [search, setSearch] = useState(initialQ);
   const [villeMed, setVilleMed] = useState('');
   const [typeMed, setTypeMed] = useState('');
+  const [dispoOnly, setDispoOnly] = useState(false);
+  const [competenceFilter, setCompetenceFilter] = useState('');
 
   const { data: etabData, isLoading: etabLoading, error: etabError, refetch: refetchEtab } = useEtablissements({
     type: typeFilter || undefined,
@@ -185,6 +187,8 @@ export default function SantePage() {
 
   const { data: medData, isLoading: medLoading, error: medError, refetch: refetchMed } = useMedecins({
     recherche: search || undefined,
+    disponible_maintenant: dispoOnly || undefined,
+    competence: competenceFilter || undefined,
   });
 
   const { data: produitsData, isLoading: prodLoading, error: prodError, refetch: refetchProd } = useRechercheProduits(
@@ -236,6 +240,13 @@ export default function SantePage() {
         </Tabs>
       )}
 
+      {tab === 'medecins' && (
+        <Tabs>
+          <Tab $active={!dispoOnly} onClick={() => setDispoOnly(false)}>Tous</Tab>
+          <Tab $active={dispoOnly} onClick={() => setDispoOnly(true)}>Disponibles maintenant</Tab>
+        </Tabs>
+      )}
+
       <SearchBar>
         <SearchWrap>
           <Search />
@@ -255,6 +266,14 @@ export default function SantePage() {
             value={villeMed}
             onChange={(e) => setVilleMed(e.target.value)}
             style={{ width: 160, padding: '10px 14px', border: '1px solid #E2E8F0', borderRadius: 8 }}
+          />
+        )}
+        {tab === 'medecins' && (
+          <input
+            placeholder="Compétence (ex. Cardiologie)"
+            value={competenceFilter}
+            onChange={(e) => setCompetenceFilter(e.target.value)}
+            style={{ width: 200, padding: '10px 14px', border: '1px solid #E2E8F0', borderRadius: 8 }}
           />
         )}
       </SearchBar>
@@ -337,6 +356,11 @@ export default function SantePage() {
             <ItemCard key={m.id} onClick={() => navigate(`/sante/medecin/${m.id}`)}>
               <TypeBadge $type="clinique"><Stethoscope size={12} /> {m.specialite}</TypeBadge>
               <CardTitle>Dr. {m.prenom} {m.nom}</CardTitle>
+              {m.disponible_maintenant && (
+                <span style={{ display: 'inline-block', marginBottom: 6, padding: '2px 8px', borderRadius: 12, background: '#DCFCE7', color: '#166534', fontSize: '0.7rem', fontWeight: 600 }}>
+                  Disponible
+                </span>
+              )}
               {m.etablissement && (
                 <Location><MapPin /> {m.etablissement.nom} — {m.etablissement.ville}</Location>
               )}

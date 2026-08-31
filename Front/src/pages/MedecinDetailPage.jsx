@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, MapPin, Phone, Award, Languages, Video, Shield } from 'lucide-react';
+import { ArrowLeft, MapPin, Phone, Award, Languages, Video, Shield, Building2, Briefcase, Radio } from 'lucide-react';
 import Card from '../components/ui/Card';
 import StarRating from '../components/ui/StarRating';
 import Button from '../components/ui/Button';
@@ -195,6 +195,20 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
           <StarRating rating={medecin.note_moyenne} count={medecin.nombre_avis} size={18} />
           <h1 style={{ margin: '8px 0 4px', fontSize: '1.75rem' }}>Dr. {medecin.prenom} {medecin.nom}</h1>
           <p style={{ color: '#3B82F6', fontWeight: 600, margin: '0 0 8px' }}>{medecin.specialite}</p>
+          {(medecin.disponible_maintenant || medecin.joignable_urgence) && (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+              {medecin.disponible_maintenant && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 20, background: '#DCFCE7', color: '#166534', fontSize: '0.75rem', fontWeight: 600 }}>
+                  <Radio size={12} /> Disponible maintenant
+                </span>
+              )}
+              {medecin.joignable_urgence && (
+                <span style={{ padding: '4px 10px', borderRadius: 20, background: '#FEE2E2', color: '#991B1B', fontSize: '0.75rem', fontWeight: 600 }}>
+                  Joignable en urgence
+                </span>
+              )}
+            </div>
+          )}
           {medecin.statut_validation === 'valide' && medecin.numero_ordre && (
             <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', color: '#047857', margin: '0 0 8px' }}>
               <Shield size={14} /> Validé MINSANTE — N° ordre {medecin.numero_ordre}
@@ -226,6 +240,20 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
               <MapPin size={16} /> {medecin.etablissement.nom} — {medecin.etablissement.ville}
             </p>
           )}
+          {medecin.affiliations?.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <h4 style={{ margin: '0 0 8px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Building2 size={16} /> Lieux d&apos;exercice
+              </h4>
+              {medecin.affiliations.map((a) => (
+                <p key={a.id} style={{ margin: '4px 0', fontSize: '0.85rem', color: '#64748B' }}>
+                  {a.type_lieu === 'cabinet_prive' ? a.nom_lieu : a.etablissement?.nom}
+                  {' — '}{a.ville || a.etablissement?.ville}
+                  {a.type_lieu === 'cabinet_prive' && ' (Cabinet privé)'}
+                </p>
+              ))}
+            </div>
+          )}
         </Card>
 
         <Card style={{ padding: 24 }}>
@@ -245,6 +273,26 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
           )}
         </Card>
       </div>
+
+      {medecin.parcours?.length > 0 && (
+        <Card style={{ padding: 24, marginTop: 24 }}>
+          <h3 style={{ margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Briefcase size={18} /> Parcours professionnel
+          </h3>
+          {medecin.parcours.map((p) => (
+            <div key={p.id} style={{ padding: '12px 0', borderBottom: '1px solid #F1F5F9' }}>
+              <strong>{p.titre}</strong>
+              {p.actuel && <span style={{ marginLeft: 8, fontSize: '0.75rem', color: '#059669' }}>Actuel</span>}
+              {p.organisme && <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#64748B' }}>{p.organisme}{p.lieu ? ` — ${p.lieu}` : ''}</p>}
+              {(p.date_debut || p.date_fin) && (
+                <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: '#94A3B8' }}>
+                  {p.date_debut || '?'} → {p.actuel ? 'Présent' : (p.date_fin || '?')}
+                </p>
+              )}
+            </div>
+          ))}
+        </Card>
+      )}
 
       {!isPreview && isPatient && (
         <Card style={{ padding: 24, marginTop: 24 }}>

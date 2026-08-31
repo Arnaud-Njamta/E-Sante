@@ -27,7 +27,16 @@ router.delete('/me/services/:id', authMiddleware, requireRole(...hopitalClinique
 
 router.get('/me/rendez-vous', authMiddleware, requireRole(...hopitalCliniqueRoles), structureController.listRendezVous);
 
+const profilProController = require('../controllers/profil-pro.controller');
+router.post('/me/affiliations/inviter', authMiddleware, requireRole(...hopitalCliniqueRoles), profilProController.inviterMedecinStructure);
+router.get('/me/affiliations', authMiddleware, requireRole(...hopitalCliniqueRoles), profilProController.listerAffiliationsStructure);
+router.get('/me/equipe', authMiddleware, requireRole(...structureRoles), profilProController.listerMembresEquipe);
+router.post('/me/equipe', authMiddleware, requireRole(...structureRoles), profilProController.creerMembreEquipe);
+router.put('/me/equipe/:id', authMiddleware, requireRole(...structureRoles), profilProController.mettreAJourMembreEquipe);
+router.delete('/me/equipe/:id', authMiddleware, requireRole(...structureRoles), profilProController.supprimerMembreEquipe);
+
 router.get('/', authMiddleware, requireRole('patient'), etablissementController.lister);
+router.get('/:id/equipe', authMiddleware, requireRole('patient', 'medecin', ...structureRoles), profilProController.listerMembresEquipePublic);
 router.get('/:id', authMiddleware, requireRole('patient'), etablissementController.getById);
 router.get('/:id/publications', authMiddleware, requireRole('patient'), etablissementController.getPublications);
 router.get('/:id/horaires', authMiddleware, requireRole('patient'), etablissementController.getHoraires);

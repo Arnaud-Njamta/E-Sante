@@ -50,7 +50,8 @@ const AdminAuditPage = React.lazy(() => import('./pages/AdminAuditPage'));
 const AdminCommissionsPage = React.lazy(() => import('./pages/AdminCommissionsPage'));
 const PatientPaiementsPage = React.lazy(() => import('./pages/PatientPaiementsPage'));
 const PharmacieOrdonnanceVerifyPage = React.lazy(() => import('./pages/PharmacieOrdonnanceVerifyPage'));
-const PatientRendezVousPage = React.lazy(() => import('./pages/PatientRendezVousPage'));
+const MedecinProfilProPage = React.lazy(() => import('./pages/MedecinProfilProPage'));
+const StructureEquipePage = React.lazy(() => import('./pages/StructureEquipePage'));
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -105,6 +106,7 @@ export default function App() {
                                     <Route path="/medecin/rendez-vous" element={<MedecinRendezVousPage />} />
                                     <Route path="/medecin/rendez-vous/:id/video" element={<TeleconsultationPage />} />
                                     <Route path="/medecin/parametres" element={<MedecinParametresPage />} />
+                                    <Route path="/medecin/carriere" element={<MedecinProfilProPage />} />
                                     <Route path="/medecin/ordonnances" element={<MedecinOrdonnancesPage />} />
                                     <Route path="/medecin/avis" element={<MedecinDashboardPage />} />
                                     <Route path="/medecin/actualites" element={<ActualitesPage />} />
@@ -120,6 +122,7 @@ export default function App() {
                                     <Route path="/pharmacie/horaires" element={<PharmacieHorairesPage />} />
                                     <Route path="/pharmacie/localisation" element={<PharmacieLocalisationPage />} />
                                     <Route path="/pharmacie/profil" element={<StructureProfilPage />} />
+                                    <Route path="/pharmacie/equipe" element={<StructureEquipePage />} />
                                     <Route path="/pharmacie/ordonnances" element={<PharmacieOrdonnanceVerifyPage />} />
                                     <Route path="/pharmacie/actualites" element={<ActualitesPage />} />
                                 </Route>
@@ -136,6 +139,7 @@ export default function App() {
                                     <Route path="/hopital/horaires" element={<PharmacieHorairesPage />} />
                                     <Route path="/hopital/localisation" element={<PharmacieLocalisationPage />} />
                                     <Route path="/hopital/profil" element={<StructureProfilPage />} />
+                                    <Route path="/hopital/equipe" element={<StructureEquipePage />} />
                                     <Route path="/hopital/ordonnances" element={<PharmacieOrdonnanceVerifyPage />} />
                                     <Route path="/hopital/actualites" element={<ActualitesPage />} />
                                 </Route>
@@ -152,6 +156,7 @@ export default function App() {
                                     <Route path="/clinique/horaires" element={<PharmacieHorairesPage />} />
                                     <Route path="/clinique/localisation" element={<PharmacieLocalisationPage />} />
                                     <Route path="/clinique/profil" element={<StructureProfilPage />} />
+                                    <Route path="/clinique/equipe" element={<StructureEquipePage />} />
                                     <Route path="/clinique/ordonnances" element={<PharmacieOrdonnanceVerifyPage />} />
                                     <Route path="/clinique/actualites" element={<ActualitesPage />} />
                                 </Route>

@@ -24,6 +24,9 @@ const AdminAuditLog = require('./AdminAuditLog');
 const Admin = require('./Admin');
 const Transaction = require('./Transaction');
 const OtpCode = require('./OtpCode');
+const MedecinAffiliation = require('./MedecinAffiliation');
+const ParcoursProfessionnel = require('./ParcoursProfessionnel');
+const MembreEquipeEtablissement = require('./MembreEquipeEtablissement');
 
 // ==================== ASSOCIATIONS ====================
 
@@ -98,6 +101,17 @@ OrdonnanceAuditLog.belongsTo(OrdonnanceElectronique, { foreignKey: 'ordonnance_i
 Patient.hasMany(Transaction, { foreignKey: 'patient_id', as: 'transactions' });
 Transaction.belongsTo(Patient, { foreignKey: 'patient_id', as: 'patient' });
 
+Medecin.hasMany(MedecinAffiliation, { foreignKey: 'medecin_id', as: 'affiliations' });
+MedecinAffiliation.belongsTo(Medecin, { foreignKey: 'medecin_id', as: 'medecin' });
+Etablissement.hasMany(MedecinAffiliation, { foreignKey: 'etablissement_id', as: 'affiliations_medecins' });
+MedecinAffiliation.belongsTo(Etablissement, { foreignKey: 'etablissement_id', as: 'etablissement' });
+
+Medecin.hasMany(ParcoursProfessionnel, { foreignKey: 'medecin_id', as: 'parcours' });
+ParcoursProfessionnel.belongsTo(Medecin, { foreignKey: 'medecin_id', as: 'medecin' });
+
+Etablissement.hasMany(MembreEquipeEtablissement, { foreignKey: 'etablissement_id', as: 'membres_equipe' });
+MembreEquipeEtablissement.belongsTo(Etablissement, { foreignKey: 'etablissement_id', as: 'etablissement' });
+
 module.exports = {
   sequelize,
   Patient,
@@ -125,4 +139,7 @@ module.exports = {
   Admin,
   Transaction,
   OtpCode,
+  MedecinAffiliation,
+  ParcoursProfessionnel,
+  MembreEquipeEtablissement,
 };

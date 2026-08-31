@@ -2,13 +2,15 @@ import { useQuery } from '@tanstack/react-query';
 import client from '../api/client';
 import ENDPOINTS from '../api/endpoints';
 
-export function useEtablissements(filters = {}) {
+export function useEtablissements(filters = {}, options = {}) {
     return useQuery({
         queryKey: ['etablissements', filters],
         queryFn: async () => {
             const { data } = await client.get(ENDPOINTS.etablissements.base, { params: filters });
             return data.data;
         },
+        enabled: options.enabled !== false,
+        retry: 1,
     });
 }
 

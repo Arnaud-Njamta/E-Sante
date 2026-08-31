@@ -35,10 +35,12 @@ router.post('/me/equipe', authMiddleware, requireRole(...structureRoles), profil
 router.put('/me/equipe/:id', authMiddleware, requireRole(...structureRoles), profilProController.mettreAJourMembreEquipe);
 router.delete('/me/equipe/:id', authMiddleware, requireRole(...structureRoles), profilProController.supprimerMembreEquipe);
 
-router.get('/', authMiddleware, requireRole('patient'), etablissementController.lister);
-router.get('/:id/equipe', authMiddleware, requireRole('patient', 'medecin', ...structureRoles), profilProController.listerMembresEquipePublic);
-router.get('/:id', authMiddleware, requireRole('patient'), etablissementController.getById);
-router.get('/:id/publications', authMiddleware, requireRole('patient'), etablissementController.getPublications);
-router.get('/:id/horaires', authMiddleware, requireRole('patient'), etablissementController.getHoraires);
+const annuaireRoles = ['patient', 'medecin', 'admin', 'pharmacie', 'hopital', 'clinique'];
+
+router.get('/', authMiddleware, requireRole(...annuaireRoles), etablissementController.lister);
+router.get('/:id/equipe', authMiddleware, requireRole(...annuaireRoles), profilProController.listerMembresEquipePublic);
+router.get('/:id', authMiddleware, requireRole(...annuaireRoles), etablissementController.getById);
+router.get('/:id/publications', authMiddleware, requireRole(...annuaireRoles), etablissementController.getPublications);
+router.get('/:id/horaires', authMiddleware, requireRole(...annuaireRoles), etablissementController.getHoraires);
 
 module.exports = router;

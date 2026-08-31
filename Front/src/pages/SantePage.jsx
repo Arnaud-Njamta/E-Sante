@@ -217,15 +217,7 @@ export default function SantePage() {
     }
   }, [cityLabel, tab, villeMed]);
 
-  const { data: etabListData } = useEtablissements({
-    type: undefined,
-    limit: 100,
-  });
-  const etabOptions = (etabListData?.etablissements || []).filter(
-    (e) => e.type === 'hopital' || e.type === 'clinique',
-  );
-
-  const { data: etabData, isLoading: etabLoading, error: etabError, refetch: refetchEtab } = useEtablissements({
+  const etabFilters = {
     type: typeFilter || undefined,
     recherche: search || undefined,
     limit: 50,
@@ -240,7 +232,13 @@ export default function SantePage() {
       : cityLabel
         ? { ville: cityLabel }
         : {}),
-  });
+  };
+
+  const { data: etabData, isLoading: etabLoading, error: etabError, refetch: refetchEtab } = useEtablissements(etabFilters);
+
+  const etabOptions = (etabData?.etablissements || []).filter(
+    (e) => e.type === 'hopital' || e.type === 'clinique',
+  );
 
   const { data: medData, isLoading: medLoading, error: medError, refetch: refetchMed } = useMedecins({
     recherche: search || undefined,
@@ -360,8 +358,13 @@ export default function SantePage() {
       </SearchBar>
 
       {tab === 'etablissements' && (
-        etabLoading ? <Spinner /> :
-        etabError ? <ErrorState message="Impossible de charger les établissements" onRetry={refetchEtab} /> :
+        (etabLoading && !etabData) ? <Spinner /> :
+        etabError ? (
+          <ErrorState
+            message={`Impossible de charger les établissements. ${etabError.response?.data?.message || 'Vérifiez votre connexion.'}`}
+            onRetry={refetchEtab}
+          />
+        ) :
         <Grid>
           {etablissements.length === 0 && !etabLoading && (
             <Card style={{ padding: 32, gridColumn: '1 / -1', textAlign: 'center', color: '#94A3B8' }}>

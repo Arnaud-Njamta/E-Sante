@@ -77,7 +77,7 @@ const lister = async ({
     }
 
     const radius = Number(radius_km) || 25;
-    const rows = await fetchRows(where, defaultOrder, 500, 0);
+    const rows = await fetchRows(where, defaultOrder, 150, 0);
 
     let etablissements = rows.map((r) => {
       const plain = r.toJSON ? r.toJSON() : { ...r };

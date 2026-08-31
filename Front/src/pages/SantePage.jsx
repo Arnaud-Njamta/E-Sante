@@ -234,7 +234,10 @@ export default function SantePage() {
         : {}),
   };
 
-  const { data: etabData, isLoading: etabLoading, error: etabError, refetch: refetchEtab } = useEtablissements(etabFilters);
+  const { data: etabData, isLoading: etabLoading, error: etabError, refetch: refetchEtab } = useEtablissements(
+    etabFilters,
+    { enabled: tab === 'etablissements' || tab === 'medecins' },
+  );
 
   const etabOptions = (etabData?.etablissements || []).filter(
     (e) => e.type === 'hopital' || e.type === 'clinique',
@@ -245,7 +248,7 @@ export default function SantePage() {
     disponible_maintenant: dispoOnly || undefined,
     competence: competenceFilter || undefined,
     etablissement_id: etablissementFilter || undefined,
-  });
+  }, { enabled: tab === 'medecins' });
 
   const { data: produitsData, isLoading: prodLoading, error: prodError, refetch: refetchProd } = useRechercheProduits(
     {

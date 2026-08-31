@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import client from '../api/client';
 import ENDPOINTS from '../api/endpoints';
+import { paiementPollOptions } from '../config/queryDefaults';
 
 export function usePaiementConfig() {
   return useQuery({
@@ -45,7 +46,8 @@ export function usePaiementStatut(id, enabled = false) {
       return data.data;
     },
     enabled: !!id && enabled,
-    refetchInterval: enabled ? 3000 : false,
+    ...paiementPollOptions,
+    refetchInterval: enabled ? paiementPollOptions.refetchInterval : false,
   });
 }
 

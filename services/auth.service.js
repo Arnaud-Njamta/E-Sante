@@ -6,6 +6,7 @@ const {
 } = require('../models');
 const { USER_ROLES, TYPE_ETABLISSEMENT, STATUT_VALIDATION } = require('../utils/constants');
 const emailService = require('./email.service');
+const { invalidateProfile } = require('../middlewares/auth.middleware');
 const { smsConfig } = require('../config/sms');
 const otpService = require('./otp.service');
 const { OTP_USAGES } = require('../config/sms');
@@ -79,49 +80,37 @@ const login = async ({ email, password }) => {
     throw error;
   }
 
-  const admin = await Admin.findOne({ where: { email: normalizedEmail, actif: true } });
-  if (admin) {
-    return loginEntity(admin, password, USER_ROLES.ADMIN);
-  }
+  const [
+    admin,
+    patient,
+    medecin,
+    pharmacie,
+    hopital,
+    clinique,
+    pendingInscription,
+  ] = await Promise.all([
+    Admin.findOne({ where: { email: normalizedEmail, actif: true } }),
+    Patient.findOne({ where: { email: normalizedEmail } }),
+    Medecin.findOne({ where: { email: normalizedEmail } }),
+    Etablissement.findOne({ where: { email: normalizedEmail, type: TYPE_ETABLISSEMENT.PHARMACIE } }),
+    Etablissement.findOne({ where: { email: normalizedEmail, type: TYPE_ETABLISSEMENT.HOPITAL } }),
+    Etablissement.findOne({ where: { email: normalizedEmail, type: TYPE_ETABLISSEMENT.CLINIQUE } }),
+    InscriptionProfessionnel.findOne({
+      where: {
+        email: normalizedEmail,
+        statut: ['en_attente', 'en_revision', 'documents_manquants'],
+      },
+      order: [['createdAt', 'DESC']],
+    }),
+  ]);
 
-  const patient = await Patient.findOne({ where: { email: normalizedEmail } });
-  if (patient) {
-    return loginEntity(patient, password, USER_ROLES.PATIENT);
-  }
+  if (admin) return loginEntity(admin, password, USER_ROLES.ADMIN);
+  if (patient) return loginEntity(patient, password, USER_ROLES.PATIENT);
+  if (medecin) return loginEntity(medecin, password, USER_ROLES.MEDECIN);
+  if (pharmacie) return loginEntity(pharmacie, password, USER_ROLES.PHARMACIE);
+  if (hopital) return loginEntity(hopital, password, USER_ROLES.HOPITAL);
+  if (clinique) return loginEntity(clinique, password, USER_ROLES.CLINIQUE);
 
-  const medecin = await Medecin.findOne({ where: { email: normalizedEmail } });
-  if (medecin) {
-    return loginEntity(medecin, password, USER_ROLES.MEDECIN);
-  }
-
-  const pharmacie = await Etablissement.findOne({
-    where: { email: normalizedEmail, type: TYPE_ETABLISSEMENT.PHARMACIE },
-  });
-  if (pharmacie) {
-    return loginEntity(pharmacie, password, USER_ROLES.PHARMACIE);
-  }
-
-  const hopital = await Etablissement.findOne({
-    where: { email: normalizedEmail, type: TYPE_ETABLISSEMENT.HOPITAL },
-  });
-  if (hopital) {
-    return loginEntity(hopital, password, USER_ROLES.HOPITAL);
-  }
-
-  const clinique = await Etablissement.findOne({
-    where: { email: normalizedEmail, type: TYPE_ETABLISSEMENT.CLINIQUE },
-  });
-  if (clinique) {
-    return loginEntity(clinique, password, USER_ROLES.CLINIQUE);
-  }
-
-  const pendingInscription = await InscriptionProfessionnel.findOne({
-    where: {
-      email: normalizedEmail,
-      statut: ['en_attente', 'en_revision', 'documents_manquants'],
-    },
-    order: [['createdAt', 'DESC']],
-  });
   if (pendingInscription && !pendingInscription.compte_cree_id) {
     const error = new Error(
       'Votre demande est encore en cours de création. Réessayez dans un instant, '
@@ -397,6 +386,7 @@ const changePassword = async (userId, role, currentPassword, newPassword) => {
   entity.reset_password_token = null;
   entity.reset_password_expires = null;
   await entity.save();
+  invalidateProfile(userId, role);
 
   return { message: 'Mot de passe modifié avec succès.' };
 };

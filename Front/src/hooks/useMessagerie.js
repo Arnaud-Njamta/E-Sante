@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import client from '../api/client';
 import ENDPOINTS from '../api/endpoints';
+import { messageriePollOptions } from '../config/queryDefaults';
 
 export function usePharmaciesChat() {
     return useQuery({
@@ -30,7 +31,7 @@ export function useConversation(id) {
             return data.data;
         },
         enabled: !!id,
-        refetchInterval: 5000,
+        ...messageriePollOptions,
     });
 }
 

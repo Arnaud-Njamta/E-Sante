@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import client from '../api/client';
 import ENDPOINTS from '../api/endpoints';
+import { adminQueryOptions } from '../config/queryDefaults';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -33,16 +34,10 @@ export function useInscriptionsEnAttente() {
     return useQuery({
         queryKey: ['inscriptions', 'admin', 'en-attente'],
         queryFn: async () => {
-            const { data } = await client.get(ENDPOINTS.inscriptions.adminEnAttente, {
-                params: { _t: Date.now() },
-                headers: { 'Cache-Control': 'no-cache' },
-            });
+            const { data } = await client.get(ENDPOINTS.inscriptions.adminEnAttente);
             return data.data;
         },
-        staleTime: 0,
-        refetchOnMount: 'always',
-        refetchOnWindowFocus: true,
-        refetchInterval: 15_000,
+        ...adminQueryOptions,
     });
 }
 

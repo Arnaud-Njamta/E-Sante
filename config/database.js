@@ -14,10 +14,10 @@ const sequelize = new Sequelize(
       underscored: true,
     },
     pool: {
-      max: 10,
-      min: 0,
-      acquire: 30000,
-      idle: 10000,
+      max: parseInt(process.env.DB_POOL_MAX || '30', 10),
+      min: parseInt(process.env.DB_POOL_MIN || '2', 10),
+      acquire: parseInt(process.env.DB_POOL_ACQUIRE_MS || '30000', 10),
+      idle: parseInt(process.env.DB_POOL_IDLE_MS || '10000', 10),
     },
   }
 );

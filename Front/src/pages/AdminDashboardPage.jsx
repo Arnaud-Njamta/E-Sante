@@ -348,7 +348,7 @@ export default function AdminDashboardPage() {
       {tab === 'activite' && activite.length > 0 && (
         <p style={{ marginTop: 12, fontSize: '0.8rem', color: '#64748B' }}>
           <ScrollText size={14} style={{ verticalAlign: 'middle' }} />
-          {' '}Actualisation automatique toutes les 15 s. Journal complet : <Link to="/admin/audit">audit</Link>.
+          {' '}Actualisation automatique toutes les 60 s. Journal complet : <Link to="/admin/audit">audit</Link>.
         </p>
       )}
     </div>

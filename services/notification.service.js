@@ -1,8 +1,14 @@
-const { Op } = require('sequelize');
+const { Op, Sequelize } = require('sequelize');
 const {
   ReservationDispensaire, Conversation, Message, RendezVous, Etablissement, Patient,
 } = require('../models');
 const { STATUT_RESERVATION, STATUT_RDV } = require('../utils/constants');
+const { MemoryCache } = require('../utils/memory-cache');
+
+const notifCache = new MemoryCache({
+  ttlMs: parseInt(process.env.NOTIF_CACHE_TTL_MS || '30000', 10),
+  maxSize: 8000,
+});
 
 const mapReservationNotif = (r) => {
   const labels = {
@@ -20,6 +26,24 @@ const mapReservationNotif = (r) => {
     link: '/reservations',
     createdAt: r.updatedAt,
   };
+};
+
+const countUnreadByConversation = async (conversationIds, expediteurType) => {
+  if (!conversationIds.length) return {};
+  const rows = await Message.findAll({
+    attributes: [
+      'conversation_id',
+      [Sequelize.fn('COUNT', Sequelize.col('id')), 'unread'],
+    ],
+    where: {
+      conversation_id: { [Op.in]: conversationIds },
+      expediteur_type: expediteurType,
+      lu: false,
+    },
+    group: ['conversation_id'],
+    raw: true,
+  });
+  return Object.fromEntries(rows.map((r) => [r.conversation_id, parseInt(r.unread, 10) || 0]));
 };
 
 const getPatientNotifications = async (patientId) => {
@@ -59,11 +83,14 @@ const getPatientNotifications = async (patientId) => {
   const conversations = await Conversation.findAll({
     where: { patient_id: patientId, statut: 'ouverte' },
     include: [{ model: Etablissement, as: 'pharmacie', attributes: ['nom'] }],
+    limit: 20,
   });
-  for (const c of conversations) {
-    const unread = await Message.count({
-      where: { conversation_id: c.id, expediteur_type: 'pharmacie', lu: false },
-    });
+  const unreadMap = await countUnreadByConversation(
+    conversations.map((c) => c.id),
+    'pharmacie',
+  );
+  conversations.forEach((c) => {
+    const unread = unreadMap[c.id] || 0;
     if (unread > 0) {
       items.push({
         id: `msg-${c.id}`,
@@ -74,7 +101,7 @@ const getPatientNotifications = async (patientId) => {
         createdAt: c.dernier_message_at || c.updatedAt,
       });
     }
-  }
+  });
 
   return items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 15);
 };
@@ -108,10 +135,12 @@ const getStructureNotifications = async (etablissementId, role) => {
     order: [['dernier_message_at', 'DESC']],
     limit: 10,
   });
-  for (const c of conversations) {
-    const unread = await Message.count({
-      where: { conversation_id: c.id, expediteur_type: 'patient', lu: false },
-    });
+  const unreadMap = await countUnreadByConversation(
+    conversations.map((c) => c.id),
+    'patient',
+  );
+  conversations.forEach((c) => {
+    const unread = unreadMap[c.id] || 0;
     if (unread > 0) {
       items.push({
         id: `msg-p-${c.id}`,
@@ -122,7 +151,7 @@ const getStructureNotifications = async (etablissementId, role) => {
         createdAt: c.dernier_message_at || c.updatedAt,
       });
     }
-  }
+  });
 
   const rdvCount = await RendezVous.count({
     where: { etablissement_id: etablissementId, statut: STATUT_RDV.EN_ATTENTE },
@@ -142,11 +171,18 @@ const getStructureNotifications = async (etablissementId, role) => {
 };
 
 const lister = async (userId, role) => {
-  if (role === 'patient') return getPatientNotifications(userId);
-  if (['pharmacie', 'hopital', 'clinique'].includes(role)) {
-    return getStructureNotifications(userId, role);
+  const cacheKey = `${role}:${userId}`;
+  const cached = notifCache.get(cacheKey);
+  if (cached) return cached;
+
+  let items = [];
+  if (role === 'patient') items = await getPatientNotifications(userId);
+  else if (['pharmacie', 'hopital', 'clinique'].includes(role)) {
+    items = await getStructureNotifications(userId, role);
   }
-  return [];
+
+  notifCache.set(cacheKey, items);
+  return items;
 };
 
 module.exports = { lister };

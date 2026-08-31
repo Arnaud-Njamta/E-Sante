@@ -6,6 +6,8 @@ const express = require('express');
 
 const cors = require('cors');
 
+const compression = require('compression');
+
 const helmet = require('helmet');
 
 const morgan = require('morgan');
@@ -25,6 +27,8 @@ const { sequelize } = require('./models');
 const routes = require('./routes');
 
 const errorMiddleware = require('./middlewares/error.middleware');
+
+const { isPrimaryPm2Instance } = require('./utils/pm2-primary');
 
 const { seedDemoData, seedDemoAccounts, seedPublications, seedDispensaireDemo, seedAdminAccount } = require('./services/seed.service');
 const { ensureStorageDirs } = require('./services/fichier.service');
@@ -56,6 +60,8 @@ app.use(helmet({
 
 app.use(cors(buildCorsOptions()));
 
+app.use(compression());
+
 app.use(globalApiLimiter);
 
 
@@ -72,7 +78,9 @@ if (!IS_PROD) {
 
 } else {
 
-  app.use(morgan('combined'));
+  app.use(morgan('combined', {
+    skip: (req) => req.path === '/api/health',
+  }));
 
 }
 
@@ -216,9 +224,12 @@ const start = async () => {
 
     ensureStorageDirs();
 
-    await sequelize.sync(syncOptions);
-
-    console.log('Tables synchronisées.');
+    if (!IS_PROD || process.env.DB_SYNC_ALTER === 'true') {
+      await sequelize.sync(syncOptions);
+      console.log('Tables synchronisées.');
+    } else {
+      console.log('Production : sync Sequelize ignoré (migrations uniquement).');
+    }
 
 
 
@@ -236,10 +247,14 @@ const start = async () => {
 
       console.log(`Environnement: ${process.env.NODE_ENV}\n`);
 
-      const { startRdvReminderScheduler } = require('./services/rdv-reminder.scheduler');
-      startRdvReminderScheduler();
-      const { startPriseReminderScheduler } = require('./services/prise-reminder.scheduler');
-      startPriseReminderScheduler();
+      if (isPrimaryPm2Instance()) {
+        const { startRdvReminderScheduler } = require('./services/rdv-reminder.scheduler');
+        startRdvReminderScheduler();
+        const { startPriseReminderScheduler } = require('./services/prise-reminder.scheduler');
+        startPriseReminderScheduler();
+      } else {
+        console.log(`Instance PM2 #${process.env.NODE_APP_INSTANCE} — schedulers désactivés.`);
+      }
 
     });
 

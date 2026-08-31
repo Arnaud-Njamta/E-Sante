@@ -4,6 +4,9 @@ const {
 } = require('../models');
 const { TYPE_ETABLISSEMENT } = require('../utils/constants');
 
+const OVERVIEW_CACHE_TTL = parseInt(process.env.ADMIN_OVERVIEW_CACHE_TTL_MS || '30000', 10);
+let overviewCache = { data: null, expires: 0 };
+
 const safe = async (label, fn, fallback) => {
   try {
     return await fn();
@@ -63,7 +66,7 @@ const pickInscription = (i) => ({
   created_at: i.createdAt,
 });
 
-const getOverview = async () => {
+const buildOverview = async () => {
   const [
     patients,
     medecins,
@@ -167,6 +170,16 @@ const getOverview = async () => {
     },
     fetched_at: new Date().toISOString(),
   };
+};
+
+const getOverview = async () => {
+  const now = Date.now();
+  if (overviewCache.data && overviewCache.expires > now) {
+    return { ...overviewCache.data, fetched_at: new Date().toISOString(), cached: true };
+  }
+  const data = await buildOverview();
+  overviewCache = { data, expires: now + OVERVIEW_CACHE_TTL };
+  return data;
 };
 
 const listComptes = async ({ type = 'all', page = 1, limit = 30 } = {}) => {

@@ -286,6 +286,26 @@ const runPendingMigrations = async () => {
     `);
     console.log('Migration: table prise_rappels_envoyes créée.');
   }
+
+  const addIndexIfMissing = async (table, indexName, columnsSql) => {
+    const [rows] = await sequelize.query(
+      `SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?`,
+      { replacements: [table, indexName] },
+    );
+    if (rows.length === 0) {
+      await sequelize.query(`CREATE INDEX \`${indexName}\` ON \`${table}\` (${columnsSql})`);
+      console.log(`Migration: index ${indexName} sur ${table}.`);
+    }
+  };
+
+  await addIndexIfMissing('etablissements', 'idx_etab_actif_type', '`actif`, `type`, `statut_validation`');
+  await addIndexIfMissing('etablissements', 'idx_etab_ville', '`ville`');
+  await addIndexIfMissing('medecins', 'idx_med_actif_statut', '`actif`, `statut_validation`');
+  await addIndexIfMissing('messages', 'idx_msg_conv_unread', '`conversation_id`, `expediteur_type`, `lu`');
+  await addIndexIfMissing('admin_audit_logs', 'idx_audit_created', '`created_at`');
+  await addIndexIfMissing('conversations', 'idx_conv_patient_statut', '`patient_id`, `statut`');
+  await addIndexIfMissing('conversations', 'idx_conv_etab_statut', '`pharmacie_id`, `statut`');
 };
 
 

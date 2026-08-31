@@ -22,9 +22,10 @@ const buildCorsOptions = () => {
 
 const globalApiLimiter = rateLimit({
   windowMs: WINDOW_MS,
-  max: parseInt(process.env.RATE_LIMIT_GLOBAL || '500', 10),
+  max: parseInt(process.env.RATE_LIMIT_GLOBAL || '3000', 10),
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.path === '/api/health' || req.path === '/health',
   message: { success: false, message: 'Trop de requêtes, réessayez dans quelques minutes' },
 });
 

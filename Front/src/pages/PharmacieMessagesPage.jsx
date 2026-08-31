@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Send } from 'lucide-react';
 import client from '../api/client';
 import ENDPOINTS from '../api/endpoints';
+import { messageriePollOptions } from '../config/queryDefaults';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Spinner from '../components/ui/Spinner';
@@ -69,7 +70,7 @@ export default function PharmacieMessagesPage() {
       return data.data;
     },
     enabled: !!selectedId,
-    refetchInterval: 5000,
+    ...messageriePollOptions,
   });
 
   const sendMutation = useMutation({

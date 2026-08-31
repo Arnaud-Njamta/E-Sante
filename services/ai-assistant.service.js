@@ -2,7 +2,7 @@ const {
   buildSystemPrompt, DOCTOR_KNOWLEDGE_ACK,
 } = require('../config/ai-prompts');
 const { EMERGENCY_REPLY, EMERGENCY } = require('../config/cameroon-health');
-const { FIRST_AID_VIDEOS, VIOLENCE_AWARENESS, getAccidentProtocol } = require('../config/ai-first-aid');
+const { VIOLENCE_AWARENESS } = require('../config/ai-first-aid');
 const { matchSpecialties } = require('../config/ai-specialty-map');
 const {
   extractDoctorTeaching, addDoctorKnowledge, getKnowledgeBlock,
@@ -205,20 +205,7 @@ const fallbackRecommendations = async (message) => {
   }
 };
 
-const getFirstAidVideos = (message) => {
-  const text = message.toLowerCase();
-  const videos = [];
-  if (detectAccident(message) || /route|collision|voiture|moto/.test(text)) {
-    videos.push(FIRST_AID_VIDEOS.accident_route, FIRST_AID_VIDEOS.pls);
-  }
-  if (/saign|h[eé]morrag|sang/.test(text)) videos.push(FIRST_AID_VIDEOS.hemorragie);
-  if (/br[uû]l/.test(text)) videos.push(FIRST_AID_VIDEOS.brulure);
-  if (/inconscient|arr[eê]t.*cardiaque|rcr|massage cardiaque/.test(text)) {
-    videos.push(FIRST_AID_VIDEOS.rcr, FIRST_AID_VIDEOS.pls);
-  }
-  const unique = [...new Map(videos.map((v) => [v.embedId, v])).values()];
-  return unique.slice(0, 3);
-};
+const getFirstAidVideos = () => [];
 
 const chat = async ({ message, history = [], userContext = {} }) => {
   if (!message?.trim()) {
@@ -246,23 +233,15 @@ const chat = async ({ message, history = [], userContext = {} }) => {
     }
   }
 
-  if (detectEmergency(trimmed)) {
-    const videos = getFirstAidVideos(trimmed);
-    const recs = await fallbackRecommendations(trimmed);
-    const accidentProtocol = getAccidentProtocol(trimmed);
+  if (detectEmergency(trimmed) || detectAccident(trimmed)) {
     return {
       reply: EMERGENCY_REPLY,
       model: 'emergency-rules',
       urgent: true,
-      recommandations: recs,
-      videos,
-      accidentMode: true,
-      accidentProtocol,
+      recommandations: [],
+      videos: [],
     };
   }
-
-  const isAccident = detectAccident(trimmed);
-  const accidentProtocol = isAccident ? getAccidentProtocol(trimmed) : null;
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -301,7 +280,6 @@ const chat = async ({ message, history = [], userContext = {} }) => {
       recommandations = await fallbackRecommendations(trimmed);
     }
 
-    const videos = getFirstAidVideos(trimmed);
     const violence = detectViolence(trimmed);
 
     let reply = cleanReply;
@@ -309,18 +287,12 @@ const chat = async ({ message, history = [], userContext = {} }) => {
       reply += `\n\n🛡️ **Protection & écoute**\n${VIOLENCE_AWARENESS.message}`;
     }
 
-    if (isAccident && accidentProtocol && !reply.includes(accidentProtocol.titre)) {
-      reply = `🚨 **${accidentProtocol.titre}**\nAppelez le **${accidentProtocol.urgence}** si danger immédiat.\n\n${reply}`;
-    }
-
     return {
       reply,
       model: MODEL,
       recommandations,
-      videos,
+      videos: [],
       violence: violence || undefined,
-      accidentMode: isAccident || undefined,
-      accidentProtocol: isAccident ? accidentProtocol : undefined,
     };
   } catch (err) {
     const apiMsg = err.message || '';
@@ -329,18 +301,15 @@ const chat = async ({ message, history = [], userContext = {} }) => {
     }
 
     const violence = detectViolence(trimmed);
-    const videos = getFirstAidVideos(trimmed);
     const fallbackReply = buildOfflineFallback(trimmed, violence);
 
     return {
       reply: fallbackReply,
       model: 'offline-fallback',
       recommandations: await fallbackRecommendations(trimmed),
-      videos,
+      videos: [],
       violence: violence || undefined,
       offline: true,
-      accidentMode: isAccident || undefined,
-      accidentProtocol: isAccident ? accidentProtocol : undefined,
     };
   }
 };

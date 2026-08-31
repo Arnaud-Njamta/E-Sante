@@ -1,4 +1,6 @@
 const patientService = require('../services/patient.service');
+const { saveFichier } = require('../services/fichier.service');
+const { TYPE_FICHIER } = require('../utils/constants');
 const { DPO_CONTACT, POLITIQUE_CONFIDENTIALITE_VERSION } = require('../config/privacy');
 
 const getProfile = async (req, res, next) => {
@@ -49,6 +51,26 @@ const deleteAccount = async (req, res, next) => {
   }
 };
 
+const uploadPhoto = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Fichier photo requis' });
+    }
+    const meta = await saveFichier({
+      buffer: req.file.buffer,
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      proprietaire_type: 'patient',
+      proprietaire_id: req.patient.id,
+      type_fichier: TYPE_FICHIER.PHOTO_PROFIL,
+    });
+    const patient = await patientService.uploadPhoto(req.patient.id, meta);
+    res.json({ success: true, data: { user: patient, patient } });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getPrivacyInfo = async (req, res) => {
   res.json({
     success: true,
@@ -72,5 +94,6 @@ module.exports = {
   updateParametresVie,
   exportData,
   deleteAccount,
+  uploadPhoto,
   getPrivacyInfo,
 };

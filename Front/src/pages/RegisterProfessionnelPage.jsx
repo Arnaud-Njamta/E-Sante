@@ -10,6 +10,7 @@ import AuthShell, {
   FieldInput, FieldSelect, SelectWrap, AuthSubmit, Footnotes, Notice, SubSection,
   TypeGrid, TypeCard, FormGrid, DocZone, OperateurGrid, OperateurOption,
 } from '../components/auth/AuthShell';
+import BrandLogo from '../components/brand/BrandLogo';
 
 const SuccessWrap = styled.div`
   text-align: center;
@@ -61,6 +62,7 @@ export default function RegisterProfessionnelPage() {
     operateur_mobile: 'orange_money', numero_mobile_money: '', titulaire_compte: '', numero_marchand: '',
   });
   const [success, setSuccess] = useState(null);
+  const [acceptCgu, setAcceptCgu] = useState(false);
 
   useEffect(() => {
     fetchDocumentsRequis().then(setDocsRequis).catch(() => {});
@@ -70,6 +72,10 @@ export default function RegisterProfessionnelPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!acceptCgu) {
+      toast.error('Veuillez accepter les Conditions Générales d\'Utilisation');
+      return;
+    }
     if (!form.numero_mobile_money?.trim() || !form.titulaire_compte?.trim()) {
       toast.error('Renseignez le numéro Mobile Money et le titulaire du compte');
       return;
@@ -80,6 +86,7 @@ export default function RegisterProfessionnelPage() {
         payload: {
           ...rest,
           type_profil: type,
+          accept_cgu: true,
           paiement: {
             operateur: operateur_mobile,
             numero: numero_mobile_money,
@@ -101,19 +108,19 @@ export default function RegisterProfessionnelPage() {
       <AuthShell wide>
         <SuccessWrap>
           <CheckCircle size={48} color="#0B3D30" strokeWidth={1.5} />
-          <h2>Demande enregistrée</h2>
+          <h2>Compte créé</h2>
           <p>{success.message}</p>
           {success.documents_manquants?.length > 0 && (
             <p className="warn">
               <AlertCircle size={16} />
-              Documents manquants : {success.documents_manquants.join(', ')}
+              Documents à compléter ensuite : {success.documents_manquants.join(', ')}
             </p>
           )}
           <p style={{ marginTop: 16 }}>
-            Délai de validation : 24 à 72 h ouvrées.
+            Vous pouvez vous connecter immédiatement. La validation MINSANTE finalisera votre visibilité publique.
           </p>
           <AuthSubmit type="button" onClick={() => navigate('/login')} style={{ marginTop: 28, maxWidth: 280 }}>
-            Retour à la connexion
+            Se connecter
           </AuthSubmit>
         </SuccessWrap>
       </AuthShell>
@@ -130,13 +137,12 @@ export default function RegisterProfessionnelPage() {
   return (
     <AuthShell wide>
       <Wordmark>
-        <h2>{branding.appName}</h2>
-        <p>Inscription professionnelle</p>
+        <BrandLogo variant="compact" tagline="Inscription professionnelle" emblemSize={52} />
       </Wordmark>
 
-      <SectionTitle>Demande d&apos;accès</SectionTitle>
+      <SectionTitle>Créer mon compte pro</SectionTitle>
       <SectionHint>
-        Médecins, pharmacies, cliniques et hôpitaux — documents obligatoires pour validation.
+        Compte créé tout de suite. Les documents (diplôme, carte d&apos;ordre, agréments…) se complètent ensuite pour la validation.
       </SectionHint>
 
       <Notice>
@@ -264,7 +270,10 @@ export default function RegisterProfessionnelPage() {
           )}
         </FormGrid>
 
-        <SubSection>Documents justificatifs</SubSection>
+        <SubSection>Documents justificatifs (optionnel maintenant)</SubSection>
+        <Notice style={{ marginBottom: 16 }}>
+          Vous pourrez les ajouter après connexion. Requis pour la validation finale : diplôme + carte d&apos;ordre (médecin) ou agrément + autorisation (structure).
+        </Notice>
         {requiredDocs.map((doc) => (
           <DocZone key={doc}>
             <label>{doc.replace(/_/g, ' ')}</label>
@@ -276,13 +285,31 @@ export default function RegisterProfessionnelPage() {
           </DocZone>
         ))}
 
-        <AuthSubmit type="submit" disabled={mutation.isPending}>
-          {mutation.isPending ? 'Envoi en cours…' : 'Soumettre ma demande'}
+        <Field style={{ marginTop: 20 }}>
+          <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: '0.84rem', color: '#6B6560', lineHeight: 1.45 }}>
+            <input
+              type="checkbox"
+              checked={acceptCgu}
+              onChange={(e) => setAcceptCgu(e.target.checked)}
+              style={{ marginTop: 3 }}
+            />
+            <span>
+              J&apos;accepte les{' '}
+              <Link to="/cgu" target="_blank">Conditions Générales d&apos;Utilisation</Link>
+              {' '}et la{' '}
+              <Link to="/confidentialite" target="_blank">Politique de confidentialité</Link>.
+            </span>
+          </label>
+        </Field>
+
+        <AuthSubmit type="submit" disabled={mutation.isPending || !acceptCgu}>
+          {mutation.isPending ? 'Création du compte…' : 'Créer mon compte'}
         </AuthSubmit>
       </AuthForm>
 
       <Footnotes>
         <p>Déjà inscrit ? <Link to="/login">Se connecter</Link></p>
+        <p><Link to="/cgu">CGU</Link> · <Link to="/confidentialite">Confidentialité</Link></p>
       </Footnotes>
     </AuthShell>
   );

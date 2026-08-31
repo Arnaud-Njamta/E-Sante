@@ -15,6 +15,9 @@ import {
   Shield, Bell, Sun, Sunset, Moon,
   Camera, Download, Lock, Info, Trash2,
 } from 'lucide-react';
+import PatientMobileProfileHero from '../components/patient/PatientMobileProfileHero';
+import UserAvatar from '../components/ui/UserAvatar';
+import { useUploadPatientPhoto } from '../hooks/usePatientProfile';
 
 /* ─── Styles ─── */
 const PageHeader = styled.div`
@@ -27,6 +30,10 @@ const PageHeader = styled.div`
   gap: ${({ theme }) => theme.spacing[3]};
   h1 { font-size: 1.75rem; font-weight: 700; color: ${({ theme }) => theme.colors.text}; margin: 0; }
   p  { font-size: 0.85rem; color: ${({ theme }) => theme.colors.textSecondary}; margin: 4px 0 0; }
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.md}) {
+    display: none;
+  }
 `;
 
 /* Personal Info Section */
@@ -53,20 +60,12 @@ const AvatarRow = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing[6]};
 `;
 
-const AvatarCircle = styled.div`
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.primary[300]}, ${({ theme }) => theme.colors.primary[500]});
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 1.75rem;
-  font-weight: 700;
-  flex-shrink: 0;
+const AvatarWrap = styled.div`
   position: relative;
+  flex-shrink: 0;
 `;
+
+const HiddenPhotoInput = styled.input` display: none; `;
 
 const CameraBtn = styled.button`
   position: absolute;
@@ -273,8 +272,11 @@ const ModalCard = styled(Card)`
 
 /* ─── Component ─── */
 export default function ProfilePage() {
-  const { user, updateProfile, logout } = useAuth();
+  const { user, role, updateProfile, logout } = useAuth();
   const navigate = useNavigate();
+  const uploadPhoto = useUploadPatientPhoto();
+  const photoInputRef = React.useRef(null);
+  const [photoVersion, setPhotoVersion] = useState(0);
   const [saving, setSaving] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -380,10 +382,24 @@ export default function ProfilePage() {
     }
   };
 
-  const initials = `${(user?.prenom || 'P')[0]}${(user?.nom || '')[0] || ''}`.toUpperCase();
+  const handlePhotoPick = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    try {
+      await uploadPhoto.mutateAsync(file);
+      setPhotoVersion(Date.now());
+      toast.success('Photo de profil mise à jour');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Impossible d\'envoyer la photo');
+    } finally {
+      e.target.value = '';
+    }
+  };
 
   return (
     <>
+      <PatientMobileProfileHero />
+
       <PageHeader>
         <div>
           <h1>Profil & Paramètres</h1>
@@ -399,13 +415,21 @@ export default function ProfilePage() {
         <PersonalCard delay="0.05s">
           <SectionHead><User /> <h3>Informations personnelles</h3></SectionHead>
           <AvatarRow>
-            <AvatarCircle>
-              {initials}
-              <CameraBtn><Camera /></CameraBtn>
-            </AvatarCircle>
+            <AvatarWrap>
+              <UserAvatar user={user} role={role} size={80} photoVersion={photoVersion} />
+              <CameraBtn type="button" onClick={() => photoInputRef.current?.click()} disabled={uploadPhoto.isPending}>
+                <Camera />
+              </CameraBtn>
+              <HiddenPhotoInput
+                ref={photoInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/jpg"
+                onChange={handlePhotoPick}
+              />
+            </AvatarWrap>
             <AvatarInfo>
               <h2>{user?.prenom || 'Patient'} {user?.nom || ''}</h2>
-              <p>Mettez à jour votre photo et vos détails personnels.</p>
+              <p>{uploadPhoto.isPending ? 'Envoi de la photo…' : 'Mettez à jour votre photo et vos détails personnels.'}</p>
             </AvatarInfo>
           </AvatarRow>
 

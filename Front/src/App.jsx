@@ -6,6 +6,7 @@ import { AuthProvider } from './context/AuthContext';
 import ThemeProvider from './theme/ThemeProvider';
 import RoleRoute from './utils/RoleRoute';
 import AppLayout from './components/layout/AppLayout';
+import ErrorBoundary from './components/ui/ErrorBoundary';
 import { ROLES } from './config/branding';
 
 const LoginPage = React.lazy(() => import('./pages/LoginPage'));
@@ -13,6 +14,7 @@ const RegisterPage = React.lazy(() => import('./pages/RegisterPage'));
 const ForgotPasswordSmsPage = React.lazy(() => import('./pages/ForgotPasswordSmsPage'));
 const RegisterProfessionnelPage = React.lazy(() => import('./pages/RegisterProfessionnelPage'));
 const PrivacyPolicyPage = React.lazy(() => import('./pages/PrivacyPolicyPage'));
+const TermsOfServicePage = React.lazy(() => import('./pages/TermsOfServicePage'));
 const DashboardPage = React.lazy(() => import('./pages/DashboardPage'));
 const MedicationsPage = React.lazy(() => import('./pages/MedicationsPage'));
 const PrisesPage = React.lazy(() => import('./pages/PrisesPage'));
@@ -72,6 +74,7 @@ export default function App() {
             <BrowserRouter>
                 <AuthProvider>
                     <ThemeProvider>
+                        <ErrorBoundary>
                         <Suspense fallback={<PageLoader />}>
                             <Routes>
                                 <Route path="/login" element={<LoginPage />} />
@@ -79,9 +82,11 @@ export default function App() {
                                 <Route path="/mot-de-passe-oublie" element={<ForgotPasswordSmsPage />} />
                                 <Route path="/register/professionnel" element={<RegisterProfessionnelPage />} />
                                 <Route path="/confidentialite" element={<PrivacyPolicyPage />} />
+                                <Route path="/cgu" element={<TermsOfServicePage />} />
                                 <Route path="/actualites" element={<ActualitesPage />} />
 
-                                <Route element={<RoleRoute allowedRoles={[ROLES.PATIENT]}><AppLayout /></RoleRoute>}>
+                                <Route element={<RoleRoute allowedRoles={[ROLES.PATIENT]} />}>
+                                    <Route element={<AppLayout />}>
                                     <Route path="/dashboard" element={<DashboardPage />} />
                                     <Route path="/medications" element={<MedicationsPage />} />
                                     <Route path="/prises" element={<PrisesPage />} />
@@ -99,9 +104,11 @@ export default function App() {
                                     <Route path="/pharmacie/chat" element={<PharmacieChatPage />} />
                                     <Route path="/pharmacie/chat/:conversationId" element={<PharmacieChatPage />} />
                                     <Route path="/profil" element={<ProfilePage />} />
+                                    </Route>
                                 </Route>
 
-                                <Route element={<RoleRoute allowedRoles={[ROLES.MEDECIN]}><AppLayout /></RoleRoute>}>
+                                <Route element={<RoleRoute allowedRoles={[ROLES.MEDECIN]} />}>
+                                    <Route element={<AppLayout />}>
                                     <Route path="/medecin/dashboard" element={<MedecinDashboardPage />} />
                                     <Route path="/medecin/profil" element={<MedecinProfilPage />} />
                                     <Route path="/medecin/rendez-vous" element={<MedecinRendezVousPage />} />
@@ -112,9 +119,11 @@ export default function App() {
                                     <Route path="/medecin/avis" element={<MedecinDashboardPage />} />
                                     <Route path="/medecin/actualites" element={<ActualitesPage />} />
                                     <Route path="/sante/medecin/:id" element={<MedecinDetailPage />} />
+                                    </Route>
                                 </Route>
 
-                                <Route element={<RoleRoute allowedRoles={[ROLES.PHARMACIE]}><AppLayout /></RoleRoute>}>
+                                <Route element={<RoleRoute allowedRoles={[ROLES.PHARMACIE]} />}>
+                                    <Route element={<AppLayout />}>
                                     <Route path="/pharmacie/dashboard" element={<PharmacieDashboardPage />} />
                                     <Route path="/pharmacie/messages" element={<PharmacieMessagesPage />} />
                                     <Route path="/pharmacie/messages/:conversationId" element={<PharmacieMessagesPage />} />
@@ -126,9 +135,11 @@ export default function App() {
                                     <Route path="/pharmacie/equipe" element={<StructureEquipePage />} />
                                     <Route path="/pharmacie/ordonnances" element={<PharmacieOrdonnanceVerifyPage />} />
                                     <Route path="/pharmacie/actualites" element={<ActualitesPage />} />
+                                    </Route>
                                 </Route>
 
-                                <Route element={<RoleRoute allowedRoles={[ROLES.HOPITAL]}><AppLayout /></RoleRoute>}>
+                                <Route element={<RoleRoute allowedRoles={[ROLES.HOPITAL]} />}>
+                                    <Route element={<AppLayout />}>
                                     <Route path="/hopital/dashboard" element={<StructureDashboardPage />} />
                                     <Route path="/hopital/medecins" element={<StructureMedecinsPage />} />
                                     <Route path="/hopital/services" element={<StructureServicesPage />} />
@@ -143,9 +154,11 @@ export default function App() {
                                     <Route path="/hopital/equipe" element={<StructureEquipePage />} />
                                     <Route path="/hopital/ordonnances" element={<PharmacieOrdonnanceVerifyPage />} />
                                     <Route path="/hopital/actualites" element={<ActualitesPage />} />
+                                    </Route>
                                 </Route>
 
-                                <Route element={<RoleRoute allowedRoles={[ROLES.CLINIQUE]}><AppLayout /></RoleRoute>}>
+                                <Route element={<RoleRoute allowedRoles={[ROLES.CLINIQUE]} />}>
+                                    <Route element={<AppLayout />}>
                                     <Route path="/clinique/dashboard" element={<StructureDashboardPage />} />
                                     <Route path="/clinique/medecins" element={<StructureMedecinsPage />} />
                                     <Route path="/clinique/services" element={<StructureServicesPage />} />
@@ -160,17 +173,21 @@ export default function App() {
                                     <Route path="/clinique/equipe" element={<StructureEquipePage />} />
                                     <Route path="/clinique/ordonnances" element={<PharmacieOrdonnanceVerifyPage />} />
                                     <Route path="/clinique/actualites" element={<ActualitesPage />} />
+                                    </Route>
                                 </Route>
 
-                                <Route element={<RoleRoute allowedRoles={[ROLES.ADMIN]}><AppLayout /></RoleRoute>}>
+                                <Route element={<RoleRoute allowedRoles={[ROLES.ADMIN]} />}>
+                                    <Route element={<AppLayout />}>
                                     <Route path="/admin/inscriptions" element={<AdminInscriptionsPage />} />
                                     <Route path="/admin/audit" element={<AdminAuditPage />} />
                                     <Route path="/admin/commissions" element={<AdminCommissionsPage />} />
+                                    </Route>
                                 </Route>
 
                                 <Route path="*" element={<Navigate to="/login" replace />} />
                             </Routes>
                         </Suspense>
+                        </ErrorBoundary>
                         <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
                     </ThemeProvider>
                 </AuthProvider>

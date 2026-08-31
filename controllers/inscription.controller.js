@@ -1,4 +1,5 @@
 const inscriptionService = require('../services/inscription.service');
+const documentVerificationService = require('../services/document-verification.service');
 
 const registerProfessionnel = async (req, res, next) => {
   try {
@@ -69,6 +70,8 @@ const getDocumentsRequis = async (req, res, next) => {
         documents: inscriptionService.DOCUMENTS_REQUIS,
         operateurs_mobile_money: inscriptionService.OPERATEURS_MOBILE_MONEY,
         note_paiement: 'Numéro Mobile Money obligatoire pour recevoir les paiements patients (consultations, réservations pharmacie).',
+        note_documents: 'Le compte est créé immédiatement. Les documents peuvent être ajoutés ensuite pour la validation MINSANTE.',
+        sources_verification: documentVerificationService.SOURCES_OFFICIELLES,
       },
     });
   } catch (error) {
@@ -76,6 +79,21 @@ const getDocumentsRequis = async (req, res, next) => {
   }
 };
 
+const preVerifierDocuments = async (req, res, next) => {
+  try {
+    const rapport = await documentVerificationService.preVerifierInscription(req.params.id);
+    res.json({ success: true, data: rapport });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
-  registerProfessionnel, getStatut, listerEnAttente, valider, rejeter, getDocumentsRequis,
+  registerProfessionnel,
+  getStatut,
+  listerEnAttente,
+  valider,
+  rejeter,
+  getDocumentsRequis,
+  preVerifierDocuments,
 };

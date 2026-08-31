@@ -28,7 +28,7 @@ const spin = keyframes`
 const FAB = styled.button`
   position: fixed;
   bottom: ${({ $lifted }) => ($lifted
-    ? 'calc(84px + env(safe-area-inset-bottom, 0px))'
+    ? 'calc(96px + env(safe-area-inset-bottom, 0px))'
     : '24px')};
   right: 24px;
   width: 56px;
@@ -55,7 +55,7 @@ const FAB = styled.button`
 const Panel = styled.div`
   position: fixed;
   bottom: ${({ $lifted }) => ($lifted
-    ? 'calc(156px + env(safe-area-inset-bottom, 0px))'
+    ? 'calc(168px + env(safe-area-inset-bottom, 0px))'
     : '96px')};
   right: 24px;
   width: 400px;

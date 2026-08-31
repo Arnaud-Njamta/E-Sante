@@ -60,3 +60,14 @@ export function useRejeterInscription() {
         onSuccess: () => qc.invalidateQueries({ queryKey: ['inscriptions'] }),
     });
 }
+
+export function usePreVerifierInscription() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async (id) => {
+            const { data } = await client.post(ENDPOINTS.inscriptions.preVerifier(id));
+            return data.data;
+        },
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['inscriptions'] }),
+    });
+}

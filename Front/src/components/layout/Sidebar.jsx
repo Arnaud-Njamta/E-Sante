@@ -4,6 +4,8 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getBranding, getDisplayName } from '../../config/branding';
 import { getInitials } from '../../utils/helpers';
+import BrandLogo from '../brand/BrandLogo';
+import UserAvatar from '../ui/UserAvatar';
 import {
   LayoutDashboard, Heart, Clock, FileText, BarChart3, User, LogOut,
   ChevronLeft, Building2, MessageCircle, Stethoscope, Star, Pill, Newspaper, Camera, Package, Shield, Wallet, ScrollText, Briefcase, Users,
@@ -289,12 +291,10 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
       <CollapseButton onClick={onToggle} $collapsed={collapsed}><ChevronLeft /></CollapseButton>
 
       <LogoSection>
-        <LogoIcon><RoleIcon /></LogoIcon>
-        {!collapsed && (
-          <LogoText>
-            <h1>{branding.appName}</h1>
-            <span>{branding.tagline}</span>
-          </LogoText>
+        {collapsed ? (
+          <BrandLogo variant="emblem" emblemSize={40} />
+        ) : (
+          <BrandLogo variant="compact" tagline={branding.tagline} emblemSize={40} />
         )}
       </LogoSection>
 
@@ -313,7 +313,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
       </NavSection>
 
       <ProfileSection>
-        <Avatar>{initials}</Avatar>
+        <UserAvatar user={user} role={role} size={36} round />
         {!collapsed && (
           <>
             <ProfileInfo>

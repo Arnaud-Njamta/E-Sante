@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { Shield, Check, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Shield, Check, X, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Spinner from '../components/ui/Spinner';
 import ErrorState from '../components/ui/ErrorState';
 import PageHeader from '../components/ui/PageHeader';
 import AdminDocumentPanel from '../components/admin/AdminDocumentPanel';
-import { useInscriptionsEnAttente, useValiderInscription, useRejeterInscription } from '../hooks/useInscription';
+import {
+  useInscriptionsEnAttente, useValiderInscription, useRejeterInscription, usePreVerifierInscription,
+} from '../hooks/useInscription';
 import { useAdminAuditLogs } from '../hooks/useAdminAudit';
 import toast from 'react-hot-toast';
 
@@ -141,18 +143,31 @@ export default function AdminInscriptionsPage() {
   const { data: inscriptions, isLoading, error, refetch } = useInscriptionsEnAttente();
   const valider = useValiderInscription();
   const rejeter = useRejeterInscription();
+  const preVerifier = usePreVerifierInscription();
   const [motif, setMotif] = useState('');
   const [selected, setSelected] = useState(null);
   const [expanded, setExpanded] = useState(null);
+  const [aiReports, setAiReports] = useState({});
 
   const handleValider = async (id) => {
     try {
       await valider.mutateAsync(id);
-      toast.success('Inscription validée — compte créé');
+      toast.success('Dossier validé — compte pleinement activé');
       setSelected(null);
       setExpanded(null);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur');
+    }
+  };
+
+  const handlePreVerifier = async (id) => {
+    try {
+      const rapport = await preVerifier.mutateAsync(id);
+      setAiReports((prev) => ({ ...prev, [id]: rapport }));
+      setExpanded(id);
+      toast.success(`Pré-analyse IA : ${rapport.verdict_global}`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Pré-vérification impossible');
     }
   };
 
@@ -211,6 +226,9 @@ export default function AdminInscriptionsPage() {
                 <Meta style={{ marginTop: 8, fontSize: '0.75rem' }}>Statut : {ins.statut}</Meta>
               </div>
               <Actions>
+                <Button size="sm" variant="secondary" onClick={() => handlePreVerifier(ins.id)} disabled={preVerifier.isPending}>
+                  <Sparkles size={14} /> Pré-analyse IA
+                </Button>
                 <Button size="sm" onClick={() => handleValider(ins.id)} disabled={valider.isPending}>
                   <Check size={14} /> Valider
                 </Button>
@@ -228,6 +246,14 @@ export default function AdminInscriptionsPage() {
             {isOpen && (
               <>
                 <AdminDocumentPanel documents={ins.documents} />
+                {(aiReports[ins.id] || ins.donnees?.ai_verification) && (
+                  <div style={{ marginTop: 12, padding: 12, background: '#F8FAFC', borderRadius: 8, fontSize: '0.82rem' }}>
+                    <strong>Rapport IA (indicatif)</strong>
+                    <pre style={{ whiteSpace: 'pre-wrap', margin: '8px 0 0', fontSize: '0.75rem' }}>
+                      {JSON.stringify(aiReports[ins.id] || ins.donnees?.ai_verification, null, 2)}
+                    </pre>
+                  </div>
+                )}
                 <InscriptionAuditTimeline inscriptionId={ins.id} />
               </>
             )}

@@ -17,19 +17,19 @@ export const EMERGENCY = {
 
 export const EMERGENCY_SHORT = `${EMERGENCY.national.number} ou ${EMERGENCY.medical.number}`;
 
-export const WELCOME_AI_PATIENT = `Bonjour, je suis **Dr. DjamSanté** 🇨🇲 — votre assistant santé au Cameroun.
+export const WELCOME_AI_PATIENT = `Bonjour, je suis **Dr. DjamSanté** 🇨🇲.
 
-Je vous écoute : décrivez ce qui vous arrive (malaise, accident dont vous êtes témoin, douleur, fièvre…). Je pose quelques questions si besoin, puis je vous guide et je peux **vous proposer un médecin** sur DjamSanté.
+Je recueille vos symptômes pour préparer une **synthèse utile à votre médecin**, puis je peux vous aider à **prendre rendez-vous**. Je ne prescrit pas de médicaments et je ne remplace pas une consultation.
 
 ⚠️ Urgence vitale → **${EMERGENCY.national.number}** ou **${EMERGENCY.medical.number}** immédiatement.
 
-Que puis-je faire pour vous aujourd'hui ?`;
+Que souhaitez-vous décrire aujourd'hui ?`;
 
 export const WELCOME_AI_MEDECIN = `Bonjour Docteur 👨‍⚕️ — **Dr. DjamSanté** à votre service.
 
-Je peux vous aider à structurer des conseils patients ou réfléchir à une orientation.
+Je structure anamnèses et synthèses pour votre dossier — sans diagnostic définitif ni ordonnance.
 
-🔐 **Mode formation** : écrivez « je suis docteur alors voici ce que tu dois intégrer dans ton apprentissage : … » pour enrichir ma base de connaissances.
+🔐 **Mode formation** : « je suis docteur alors voici ce que tu dois intégrer dans ton apprentissage : … »
 
 Comment puis-je vous assister ?`;
 
@@ -38,15 +38,15 @@ export const WELCOME_AI = WELCOME_AI_PATIENT;
 export const EMERGENCY_FOOTER = `En cas d'urgence vitale au Cameroun : appelez le **${EMERGENCY.national.number}** ou le **${EMERGENCY.medical.number}**, ou rendez-vous aux urgences de l'hôpital le plus proche.`;
 
 export const SUGGESTIONS_PATIENT = [
-  'J\'ai assisté à un accident de route',
-  'Quelqu\'un s\'est brûlé, que faire ?',
-  'Fièvre depuis 2 jours chez mon enfant',
-  'Besoin d\'aide / écoute',
+  'Fièvre depuis 2 jours — préparer ma synthèse',
+  'Douleur persistante, je veux un RDV',
+  'Aide pour décrire mes symptômes au médecin',
+  'Besoin d\'écoute / orientation vers un praticien',
 ];
 
 export const SUGGESTIONS_MEDECIN = [
-  'Conseils paludisme enfant',
-  'Orientation hypertension',
+  'Structurer une anamnèse patient',
+  'Formater une synthèse clinique courte',
   'je suis docteur alors voici ce que tu dois intégrer dans ton apprentissage :',
 ];
 

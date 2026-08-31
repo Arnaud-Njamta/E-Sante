@@ -105,6 +105,14 @@ const Patient = sequelize.define('Patient', {
     type: DataTypes.STRING(20),
     allowNull: true,
   },
+  fichier_photo_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+  },
+  photo_url: {
+    type: DataTypes.STRING(500),
+    allowNull: true,
+  },
 }, {
   tableName: 'patients',
 });

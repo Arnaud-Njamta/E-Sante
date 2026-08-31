@@ -5,10 +5,12 @@ import { useForm } from 'react-hook-form';
 import { useAuth } from '../context/AuthContext';
 import { getBranding, getHomeRoute } from '../config/branding';
 import toast from 'react-hot-toast';
+import Spinner from '../components/ui/Spinner';
 import AuthShell, {
   Wordmark, SectionTitle, SectionHint, AuthForm, Field, FieldLabel,
   FieldInput, FieldError, AuthSubmit, Footnotes, DEEP,
 } from '../components/auth/AuthShell';
+import BrandLogo from '../components/brand/BrandLogo';
 
 const TextLink = styled(Link)`
   align-self: flex-end;
@@ -22,10 +24,24 @@ const TextLink = styled(Link)`
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated, role, loading } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const branding = getBranding('patient');
   const { register, handleSubmit, formState: { errors } } = useForm();
+
+  React.useEffect(() => {
+    if (!loading && isAuthenticated) {
+      navigate(getHomeRoute(role), { replace: true });
+    }
+  }, [loading, isAuthenticated, role, navigate]);
+
+  if (loading) {
+    return <Spinner fullPage text="Chargement..." />;
+  }
+
+  if (isAuthenticated) {
+    return null;
+  }
 
   const onSubmit = async (formData) => {
     setSubmitting(true);
@@ -49,8 +65,7 @@ export default function LoginPage() {
   return (
     <AuthShell>
       <Wordmark>
-        <h2>{branding.appName}</h2>
-        <p>{branding.tagline}</p>
+        <BrandLogo variant="compact" tagline={branding.tagline} emblemSize={52} />
       </Wordmark>
 
       <SectionTitle>Connexion</SectionTitle>

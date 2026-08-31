@@ -20,7 +20,9 @@ router.post(
   inscriptionController.registerProfessionnel,
 );
 router.post('/statut', inscriptionStatutLimiter, validate(inscriptionStatutSchema), inscriptionController.getStatut);
-router.get('/admin/en-attente', authMiddleware, requireRole('admin'), inscriptionController.listerEnAttente);router.post('/admin/:id/valider', authMiddleware, requireRole('admin'), inscriptionController.valider);
+router.get('/admin/en-attente', authMiddleware, requireRole('admin'), inscriptionController.listerEnAttente);
+router.post('/admin/:id/valider', authMiddleware, requireRole('admin'), inscriptionController.valider);
 router.post('/admin/:id/rejeter', authMiddleware, requireRole('admin'), inscriptionController.rejeter);
+router.post('/admin/:id/pre-verifier', authMiddleware, requireRole('admin'), inscriptionController.preVerifierDocuments);
 
 module.exports = router;

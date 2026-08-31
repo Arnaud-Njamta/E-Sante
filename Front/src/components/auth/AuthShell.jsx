@@ -34,9 +34,7 @@ const Visual = styled.aside`
   overflow: hidden;
 
   @media (max-width: 960px) {
-    position: relative;
-    height: auto;
-    min-height: 320px;
+    display: none;
   }
 
   &::before {
@@ -137,8 +135,10 @@ const Auth = styled.main`
   max-height: 100vh;
 
   @media (max-width: 960px) {
-    padding: 36px 20px 48px;
-    max-height: none;
+    padding: 28px 20px 40px;
+    align-items: center;
+    min-height: 100vh;
+    justify-content: center;
   }
 `;
 
@@ -148,24 +148,7 @@ const AuthInner = styled.div`
 `;
 
 export const Wordmark = styled.div`
-  margin-bottom: 40px;
-
-  h2 {
-    margin: 0;
-    font-family: ${SERIF};
-    font-size: 2.35rem;
-    font-weight: 500;
-    letter-spacing: -0.03em;
-    color: ${INK};
-    line-height: 1;
-  }
-
-  p {
-    margin: 10px 0 0;
-    font-size: 0.95rem;
-    color: ${MUTED};
-    line-height: 1.5;
-  }
+  margin-bottom: 32px;
 `;
 
 export const SectionTitle = styled.h3`
@@ -456,26 +439,6 @@ export const DocZone = styled.div`
   }
 `;
 
-const MobileAlert = styled.div`
-  display: none;
-  @media (max-width: 960px) {
-    display: block;
-    margin-bottom: 24px;
-    padding: 14px 16px;
-    background: ${CAMEROON_COLORS.redDark};
-    color: #fff;
-    font-size: 0.84rem;
-    line-height: 1.5;
-    strong {
-      display: block;
-      font-family: ${SERIF};
-      font-size: 1rem;
-      font-weight: 500;
-      margin-bottom: 4px;
-    }
-  }
-`;
-
 export default function AuthShell({ children, wide = false }) {
   return (
     <Shell>
@@ -499,10 +462,6 @@ export default function AuthShell({ children, wide = false }) {
 
       <Auth>
         <AuthInner $wide={wide}>
-          <MobileAlert>
-            <strong>{FEMINICIDE_BANNER.title}</strong>
-            En danger : <strong>117</strong> · <strong>112</strong> · <strong>1515</strong>
-          </MobileAlert>
           {children}
         </AuthInner>
       </Auth>

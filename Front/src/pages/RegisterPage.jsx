@@ -13,6 +13,7 @@ import AuthShell, {
   FieldInput, FieldError, AuthSubmit, AuthSecondary, Footnotes, Notice,
   VerifiedBadge, FormGrid,
 } from '../components/auth/AuthShell';
+import BrandLogo from '../components/brand/BrandLogo';
 
 const OtpActions = styled.div`
   display: flex;
@@ -124,8 +125,7 @@ export default function RegisterPage() {
   return (
     <AuthShell>
       <Wordmark>
-        <h2>{branding.appName}</h2>
-        <p>{branding.tagline}</p>
+        <BrandLogo variant="compact" tagline={branding.tagline} emblemSize={52} />
       </Wordmark>
 
       <SectionTitle>Créer un compte</SectionTitle>
@@ -271,6 +271,19 @@ export default function RegisterPage() {
           {errors.confirmPassword && <FieldError>{errors.confirmPassword.message}</FieldError>}
         </Field>
 
+        <Field>
+          <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: '0.84rem', color: '#6B6560', lineHeight: 1.45 }}>
+            <input type="checkbox" {...register('acceptCgu', { required: 'Acceptation des CGU obligatoire' })} style={{ marginTop: 3 }} />
+            <span>
+              J&apos;accepte les{' '}
+              <Link to="/cgu" target="_blank">Conditions Générales d&apos;Utilisation</Link>
+              {' '}et la{' '}
+              <Link to="/confidentialite" target="_blank">Politique de confidentialité</Link>.
+            </span>
+          </label>
+          {errors.acceptCgu && <FieldError>{errors.acceptCgu.message}</FieldError>}
+        </Field>
+
         <AuthSubmit type="submit" disabled={submitting || !phoneVerified}>
           {submitting ? 'Création…' : 'Créer mon compte'}
         </AuthSubmit>
@@ -279,7 +292,9 @@ export default function RegisterPage() {
       <Footnotes>
         <p>Déjà un compte ? <Link to="/login">Se connecter</Link></p>
         <p>
-          <Link to="/confidentialite">Politique de confidentialité</Link>
+          <Link to="/cgu">CGU</Link>
+          {' · '}
+          <Link to="/confidentialite">Confidentialité</Link>
         </p>
       </Footnotes>
     </AuthShell>

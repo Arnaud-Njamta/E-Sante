@@ -1,4 +1,5 @@
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const {
   InscriptionProfessionnel, Medecin, Etablissement, Patient, Fichier,
 } = require('../models');
@@ -26,6 +27,25 @@ const DOC_LABELS = {
   document: 'Document',
 };
 
+const ROLE_BY_TYPE = {
+  medecin: USER_ROLES.MEDECIN,
+  pharmacie: USER_ROLES.PHARMACIE,
+  hopital: USER_ROLES.HOPITAL,
+  clinique: USER_ROLES.CLINIQUE,
+};
+
+const generateToken = (id, role) => jwt.sign(
+  { id, role },
+  process.env.JWT_SECRET,
+  { expiresIn: process.env.JWT_EXPIRES_IN || '24h' },
+);
+
+const generateRefreshToken = (id, role) => jwt.sign(
+  { id, role },
+  process.env.JWT_SECRET,
+  { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d' },
+);
+
 const sanitizeInscriptionForAdmin = async (inscription) => {
   const plain = inscription.toJSON ? inscription.toJSON() : { ...inscription };
   if (plain.donnees) {
@@ -48,8 +68,24 @@ const sanitizeInscriptionForAdmin = async (inscription) => {
   return plain;
 };
 
+/**
+ * Compte créé immédiatement (statut_validation = en_attente).
+ * Documents optionnels à l'inscription — complétés ensuite pour validation MINSANTE.
+ */
 const creerInscription = async (payload, files = []) => {
-  const { type_profil, email, password, paiement, ...rest } = payload;
+  const { type_profil, email, password, paiement, accept_cgu, ...rest } = payload;
+
+  if (!accept_cgu && accept_cgu !== true && accept_cgu !== 'true') {
+    const error = new Error('Vous devez accepter les Conditions Générales d\'Utilisation');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!password || String(password).length < 8) {
+    const error = new Error('Mot de passe requis (8 caractères minimum)');
+    error.statusCode = 400;
+    throw error;
+  }
 
   const coordonneesPaiement = validerCoordonneesPaiement(paiement || {
     operateur: rest.operateur_mobile,
@@ -71,6 +107,66 @@ const creerInscription = async (payload, files = []) => {
     throw error;
   }
 
+  const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
+  let compte;
+  let role;
+
+  if (type_profil === 'medecin') {
+    role = USER_ROLES.MEDECIN;
+    compte = await Medecin.create({
+      nom: rest.nom,
+      prenom: rest.prenom,
+      email,
+      telephone: rest.telephone,
+      specialite: rest.specialite,
+      numero_ordre: rest.numero_ordre,
+      password_hash,
+      coordonnees_paiement: coordonneesPaiement,
+      statut_validation: STATUT_VALIDATION.EN_ATTENTE,
+      actif: true,
+    });
+  } else {
+    const typeMap = {
+      pharmacie: TYPE_ETABLISSEMENT.PHARMACIE,
+      hopital: TYPE_ETABLISSEMENT.HOPITAL,
+      clinique: TYPE_ETABLISSEMENT.CLINIQUE,
+    };
+    role = ROLE_BY_TYPE[type_profil];
+    compte = await Etablissement.create({
+      type: typeMap[type_profil],
+      nom: rest.nom_structure || rest.nom,
+      email,
+      telephone: rest.telephone,
+      ville: rest.ville,
+      region: rest.region,
+      numero_agrement: rest.numero_agrement,
+      password_hash,
+      coordonnees_paiement: coordonneesPaiement,
+      modes_paiement: [coordonneesPaiement?.operateur, 'especes'].filter(Boolean),
+      statut_validation: STATUT_VALIDATION.EN_ATTENTE,
+      chat_actif: false,
+      actif: true,
+    });
+  }
+
+  const docs = [];
+  for (const file of files) {
+    const fieldName = file.fieldname;
+    const meta = await saveFichier({
+      buffer: file.buffer,
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      proprietaire_type: 'inscription',
+      proprietaire_id: compte.id,
+      type_fichier: mapTypeFichier(fieldName),
+    });
+    docs.push({ type: fieldName, fichier_id: meta.id, url: meta.url });
+  }
+
+  const requis = DOCUMENTS_REQUIS[type_profil] || [];
+  const fournis = docs.map((d) => d.type);
+  const manquants = requis.filter((r) => !fournis.includes(r));
+
   const inscription = await InscriptionProfessionnel.create({
     type_profil,
     email,
@@ -83,40 +179,17 @@ const creerInscription = async (payload, files = []) => {
     numero_ordre: rest.numero_ordre,
     numero_agrement: rest.numero_agrement,
     specialite: rest.specialite,
+    compte_cree_id: compte.id,
     donnees: {
       ...rest,
       paiement: coordonneesPaiement,
-      password_hash_pending: await bcrypt.hash(password, SALT_ROUNDS),
+      accept_cgu: true,
+      accept_cgu_at: new Date().toISOString(),
+      documents_manquants: manquants,
     },
-    statut: 'en_attente',
-    documents: [],
+    statut: manquants.length ? 'documents_manquants' : 'en_revision',
+    documents: docs,
   });
-
-  const docs = [];
-  for (const file of files) {
-    const fieldName = file.fieldname;
-    const meta = await saveFichier({
-      buffer: file.buffer,
-      originalname: file.originalname,
-      mimetype: file.mimetype,
-      proprietaire_type: 'inscription',
-      proprietaire_id: inscription.id,
-      type_fichier: mapTypeFichier(fieldName),
-    });
-    docs.push({ type: fieldName, fichier_id: meta.id, url: meta.url });
-  }
-
-  const requis = DOCUMENTS_REQUIS[type_profil] || [];
-  const fournis = docs.map((d) => d.type);
-  const manquants = requis.filter((r) => !fournis.includes(r));
-
-  inscription.documents = docs;
-  inscription.statut = manquants.length ? 'documents_manquants' : 'en_revision';
-  inscription.donnees = {
-    ...inscription.donnees,
-    documents_manquants: manquants,
-  };
-  await inscription.save();
 
   await adminAudit.log({
     categorie: adminAudit.CATEGORIES.INSCRIPTION,
@@ -126,22 +199,35 @@ const creerInscription = async (payload, files = []) => {
     details: {
       type_profil,
       email,
+      compte_id: compte.id,
       statut: inscription.statut,
       documents_fournis: fournis,
       documents_manquants: manquants,
+      compte_cree_immediatement: true,
     },
   });
+
+  const profile = compte.toJSON();
+  delete profile.password_hash;
+  profile.role = role;
 
   return {
     id: inscription.id,
     statut: inscription.statut,
-    documents_manquants: manquants,
+    documents_manquants: manquants.map((d) => DOC_LABELS[d] || d),
+    compte_id: compte.id,
+    role,
+    user: profile,
+    token: generateToken(compte.id, role),
+    refreshToken: generateRefreshToken(compte.id, role),
+    validation_pending: true,
     message: manquants.length
-      ? 'Demande enregistrée — documents manquants à compléter'
-      : 'Demande enregistrée — en cours de validation par notre équipe',
+      ? 'Compte créé. Connectez-vous puis ajoutez les documents manquants pour la validation MINSANTE.'
+      : 'Compte créé. Votre dossier est en cours de vérification — vous pouvez déjà vous connecter.',
   };
 };
 
+/** Valide le compte déjà créé (passe statut_validation à valide) */
 const validerInscription = async (inscriptionId, { valide_par = 'admin', admin = null, ip = null } = {}) => {
   const inscription = await InscriptionProfessionnel.findByPk(inscriptionId);
   if (!inscription) {
@@ -155,52 +241,71 @@ const validerInscription = async (inscriptionId, { valide_par = 'admin', admin =
     throw error;
   }
 
-  const password_hash = inscription.donnees?.password_hash_pending;
-  if (!password_hash) {
-    const error = new Error('Mot de passe manquant dans la demande');
-    error.statusCode = 400;
-    throw error;
-  }
+  let compteId = inscription.compte_cree_id;
 
-  let compteId;
-  const paiement = inscription.donnees?.paiement || null;
-
-  if (inscription.type_profil === 'medecin') {
-    const medecin = await Medecin.create({
-      nom: inscription.nom,
-      prenom: inscription.prenom,
-      email: inscription.email,
-      telephone: inscription.telephone,
-      specialite: inscription.specialite,
-      numero_ordre: inscription.numero_ordre,
-      password_hash,
-      coordonnees_paiement: paiement,
-      statut_validation: STATUT_VALIDATION.VALIDE,
-      actif: true,
-    });
-    compteId = medecin.id;
+  if (compteId) {
+    if (inscription.type_profil === 'medecin') {
+      const medecin = await Medecin.findByPk(compteId);
+      if (medecin) {
+        medecin.statut_validation = STATUT_VALIDATION.VALIDE;
+        medecin.actif = true;
+        await medecin.save();
+      }
+    } else {
+      const etab = await Etablissement.findByPk(compteId);
+      if (etab) {
+        etab.statut_validation = STATUT_VALIDATION.VALIDE;
+        etab.actif = true;
+        if (inscription.type_profil === 'pharmacie') etab.chat_actif = true;
+        await etab.save();
+      }
+    }
   } else {
-    const typeMap = {
-      pharmacie: TYPE_ETABLISSEMENT.PHARMACIE,
-      hopital: TYPE_ETABLISSEMENT.HOPITAL,
-      clinique: TYPE_ETABLISSEMENT.CLINIQUE,
-    };
-    const etab = await Etablissement.create({
-      type: typeMap[inscription.type_profil],
-      nom: inscription.nom_structure || inscription.nom,
-      email: inscription.email,
-      telephone: inscription.telephone,
-      ville: inscription.ville,
-      region: inscription.region,
-      numero_agrement: inscription.numero_agrement,
-      password_hash,
-      coordonnees_paiement: paiement,
-      modes_paiement: [paiement?.operateur, 'especes'].filter(Boolean),
-      statut_validation: STATUT_VALIDATION.VALIDE,
-      chat_actif: inscription.type_profil === 'pharmacie',
-      actif: true,
-    });
-    compteId = etab.id;
+    // Ancien flux (compat) : créer le compte à la validation
+    const password_hash = inscription.donnees?.password_hash_pending;
+    if (!password_hash) {
+      const error = new Error('Compte introuvable et mot de passe manquant');
+      error.statusCode = 400;
+      throw error;
+    }
+    const paiement = inscription.donnees?.paiement || null;
+    if (inscription.type_profil === 'medecin') {
+      const medecin = await Medecin.create({
+        nom: inscription.nom,
+        prenom: inscription.prenom,
+        email: inscription.email,
+        telephone: inscription.telephone,
+        specialite: inscription.specialite,
+        numero_ordre: inscription.numero_ordre,
+        password_hash,
+        coordonnees_paiement: paiement,
+        statut_validation: STATUT_VALIDATION.VALIDE,
+        actif: true,
+      });
+      compteId = medecin.id;
+    } else {
+      const typeMap = {
+        pharmacie: TYPE_ETABLISSEMENT.PHARMACIE,
+        hopital: TYPE_ETABLISSEMENT.HOPITAL,
+        clinique: TYPE_ETABLISSEMENT.CLINIQUE,
+      };
+      const etab = await Etablissement.create({
+        type: typeMap[inscription.type_profil],
+        nom: inscription.nom_structure || inscription.nom,
+        email: inscription.email,
+        telephone: inscription.telephone,
+        ville: inscription.ville,
+        region: inscription.region,
+        numero_agrement: inscription.numero_agrement,
+        password_hash,
+        coordonnees_paiement: paiement,
+        modes_paiement: [paiement?.operateur, 'especes'].filter(Boolean),
+        statut_validation: STATUT_VALIDATION.VALIDE,
+        chat_actif: inscription.type_profil === 'pharmacie',
+        actif: true,
+      });
+      compteId = etab.id;
+    }
   }
 
   inscription.statut = 'valide';
@@ -237,6 +342,20 @@ const rejeterInscription = async (inscriptionId, motif_rejet, { admin = null, ip
   inscription.statut = 'rejete';
   inscription.motif_rejet = motif_rejet;
   await inscription.save();
+
+  if (inscription.compte_cree_id) {
+    if (inscription.type_profil === 'medecin') {
+      await Medecin.update(
+        { statut_validation: STATUT_VALIDATION.REJETE, actif: false },
+        { where: { id: inscription.compte_cree_id } },
+      );
+    } else {
+      await Etablissement.update(
+        { statut_validation: STATUT_VALIDATION.REJETE, actif: false },
+        { where: { id: inscription.compte_cree_id } },
+      );
+    }
+  }
 
   await adminAudit.log({
     categorie: adminAudit.CATEGORIES.INSCRIPTION,
@@ -282,6 +401,7 @@ const getStatutDemande = async (email, reference) => {
     motif_rejet: inscription.motif_rejet,
     documents_manquants: inscription.donnees?.documents_manquants || [],
     date_validation: inscription.date_validation,
+    compte_cree: !!inscription.compte_cree_id,
   };
 };
 

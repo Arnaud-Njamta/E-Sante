@@ -28,22 +28,16 @@ const REFERENCE_HOSPITALS = [
   'Hôpital de district de votre ville',
 ];
 
-const EMERGENCY_REPLY = `🚨 **URGENCE VITALE — CAMEROUN**
+const EMERGENCY_REPLY = `🚨 **URGENCE — CAMEROUN**
 
 ${EMERGENCY_CALL_TO_ACTION}
-Rendez-vous aux **urgences** de l'hôpital le plus proche (CHU, hôpital de district ou hôpital de référence de votre ville).
+Rendez-vous aux **urgences** de l'hôpital le plus proche (CHU, hôpital de district ou hôpital de référence).
 
-**Numéros utiles au Cameroun :**
+**Numéros utiles :**
 ${EMERGENCY_LINES_TEXT}
 
-En attendant les secours :
-- Asseyez-vous ou allongez-vous, tête légèrement surélevée si possible
-- Desserrez vêtements serrés (col, ceinture)
-- Aérez la pièce
-- Ne restez pas seul
-- Si vous avez un inhalateur (asthme), utilisez-le selon votre protocole habituel
-
-🔴 **Urgences immédiates** — ne perdez pas de temps. Au Cameroun, le **${EMERGENCY.national.number}** et le **${EMERGENCY.medical.number}** sont gratuits depuis un mobile.`;
+Dr. DjamSanté ne remplace pas les secours : **appelez immédiatement**, puis un professionnel de santé prendra le relais.
+Un rendez-vous sur la plateforme pourra être proposé **après** la mise en sécurité.`;
 
 module.exports = {
   COUNTRY: 'Cameroun',

@@ -16,7 +16,28 @@ const getProfile = async (patientId) => {
     throw error;
   }
 
-  return patient;
+  return formatPatient(patient);
+};
+
+const formatPatient = (patient) => {
+  const data = patient.toJSON ? patient.toJSON() : patient;
+  if (data.fichier_photo_id && !data.photo_url) {
+    data.photo_url = `/api/fichiers/${data.fichier_photo_id}`;
+  }
+  return data;
+};
+
+const uploadPhoto = async (patientId, fichierMeta) => {
+  const patient = await Patient.findByPk(patientId);
+  if (!patient) {
+    const error = new Error('Patient non trouvé');
+    error.statusCode = 404;
+    throw error;
+  }
+  patient.fichier_photo_id = fichierMeta.id;
+  patient.photo_url = fichierMeta.url;
+  await patient.save();
+  return formatPatient(patient);
 };
 
 const updateProfile = async (patientId, data) => {
@@ -42,7 +63,7 @@ const updateProfile = async (patientId, data) => {
   await patient.update(updateData);
 
   const { password_hash, reset_password_token, ...patientData } = patient.toJSON();
-  return patientData;
+  return formatPatient(patientData);
 };
 
 const updateParametresVie = async (patientId, data) => {
@@ -66,7 +87,7 @@ const updateParametresVie = async (patientId, data) => {
   await patient.update(updateData);
 
   const { password_hash, reset_password_token, ...patientData } = patient.toJSON();
-  return patientData;
+  return formatPatient(patientData);
 };
 
 const exportPatientData = async (patientId) => {
@@ -177,4 +198,5 @@ module.exports = {
   updateParametresVie,
   exportPatientData,
   deletePatientAccount,
+  uploadPhoto,
 };

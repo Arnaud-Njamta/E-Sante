@@ -8,7 +8,7 @@ const editorial = {
   paper: '#F5F2ED',
   muted: '#6B6560',
   line: '#DDD6CE',
-  deep: '#0B3D30',
+  deep: '#0D5C6E',
   sans: "'DM Sans', system-ui, -apple-system, sans-serif",
   serif: "'Playfair Display', Georgia, 'Times New Roman', serif",
 };

@@ -18,6 +18,7 @@ const ENDPOINTS = {
         statut: '/inscriptions/statut',
         valider: (id) => `/inscriptions/admin/${id}/valider`,
         rejeter: (id) => `/inscriptions/admin/${id}/rejeter`,
+        preVerifier: (id) => `/inscriptions/admin/${id}/pre-verifier`,
         adminEnAttente: '/inscriptions/admin/en-attente',
     },
     publications: {
@@ -31,6 +32,7 @@ const ENDPOINTS = {
     },
     patients: {
         profile: '/patients/profile',
+        mePhoto: '/patients/me/photo',
         parametresVie: '/patients/parametres-vie',
         export: '/patients/export',
         account: '/patients/account',

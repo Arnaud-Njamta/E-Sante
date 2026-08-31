@@ -117,10 +117,10 @@ const login = async ({ email, password }) => {
     },
     order: [['createdAt', 'DESC']],
   });
-  if (pendingInscription) {
+  if (pendingInscription && !pendingInscription.compte_cree_id) {
     const error = new Error(
-      'Votre demande professionnelle est en attente de validation MINSANTE. '
-      + 'Vous pourrez vous connecter une fois le dossier approuvé.',
+      'Votre demande est encore en cours de création. Réessayez dans un instant, '
+      + 'ou contactez le support si le problème persiste.',
     );
     error.statusCode = 403;
     throw error;
@@ -145,22 +145,21 @@ const loginEntity = async (entity, password, role) => {
     throw error;
   }
 
-  if (role === USER_ROLES.MEDECIN && entity.statut_validation && entity.statut_validation !== STATUT_VALIDATION.VALIDE) {
-    const error = new Error('Compte médecin en attente de validation MINSANTE ou suspendu');
+  const statut = entity.statut_validation;
+  if (statut === STATUT_VALIDATION.REJETE || statut === STATUT_VALIDATION.SUSPENDU) {
+    const error = new Error(
+      statut === STATUT_VALIDATION.SUSPENDU
+        ? 'Compte suspendu — contactez le support DjamSanté'
+        : 'Compte rejeté — contactez le support ou soumettez une nouvelle demande',
+    );
     error.statusCode = 403;
     throw error;
   }
 
-  if ([USER_ROLES.PHARMACIE, USER_ROLES.HOPITAL, USER_ROLES.CLINIQUE].includes(role)
-    && entity.statut_validation && entity.statut_validation !== STATUT_VALIDATION.VALIDE) {
-    const error = new Error('Établissement en attente de validation MINSANTE ou suspendu');
-    error.statusCode = 403;
-    throw error;
-  }
-
-  const profile = formatProfile(entity, role);
+  // en_attente : connexion autorisée — documents / validation MINSANTE peuvent être complétés ensuite
   const token = generateToken(entity.id, role);
   const refreshToken = generateRefreshToken(entity.id, role);
+  const profile = formatProfile(entity, role);
 
   return {
     user: profile,
@@ -173,6 +172,7 @@ const loginEntity = async (entity, password, role) => {
     admin: role === USER_ROLES.ADMIN ? profile : undefined,
     token,
     refreshToken,
+    validation_pending: statut === STATUT_VALIDATION.EN_ATTENTE,
   };
 };
 
@@ -293,6 +293,9 @@ const formatProfile = (entity, role) => {
   delete data.password_hash;
   delete data.reset_password_token;
   delete data.reset_password_expires;
+  if (data.fichier_photo_id && !data.photo_url) {
+    data.photo_url = `/api/fichiers/${data.fichier_photo_id}`;
+  }
   return { ...data, role };
 };
 

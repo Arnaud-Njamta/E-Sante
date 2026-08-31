@@ -6,13 +6,45 @@ import { useAuth } from '../../context/AuthContext';
 import useMediaQuery from '../../hooks/useMediaQuery';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
-import PatientBottomNav from './PatientBottomNav';
+import PatientBottomNav, { BOTTOM_NAV_HEIGHT } from './PatientBottomNav';
 import AiAssistantWidget from '../ai/AiAssistantWidget';
+import { HERO_IMAGE } from '../auth/authTheme';
 
 const LayoutWrapper = styled.div`
   display: flex;
   min-height: 100vh;
-  background: ${({ theme }) => theme.colors.background};
+  position: relative;
+  background: ${({ $patient, theme }) => ($patient ? 'transparent' : theme.colors.background)};
+`;
+
+const PatientBackdrop = styled.div`
+  display: none;
+  pointer-events: none;
+
+  ${({ $visible }) => $visible && `
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url('${HERO_IMAGE}') center 22% / cover no-repeat;
+      opacity: 0.24;
+      filter: saturate(0.9);
+    }
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(236, 253, 245, 0.78) 0%, rgba(245, 242, 237, 0.88) 50%, rgba(245, 242, 237, 0.94) 100%),
+        radial-gradient(ellipse 90% 55% at 50% -5%, rgba(0, 122, 94, 0.18), transparent 65%);
+    }
+  `}
 `;
 
 const MainArea = styled.main`
@@ -21,6 +53,8 @@ const MainArea = styled.main`
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  position: relative;
+  z-index: 1;
   transition: margin-left ${({ theme }) => theme.transitions.normal};
 
   @media (max-width: ${({ theme }) => theme.breakpoints.md}) {
@@ -35,13 +69,15 @@ const PageContent = styled.div`
   width: 100%;
   margin: 0 auto;
   padding-bottom: ${({ $patientMobile, theme }) => (
-    $patientMobile ? `calc(88px + ${theme.spacing[4]})` : theme.spacing[6]
+    $patientMobile
+      ? `calc(${BOTTOM_NAV_HEIGHT}px + 28px + env(safe-area-inset-bottom, 0px))`
+      : theme.spacing[6]
   )};
 
   @media (max-width: ${({ theme }) => theme.breakpoints.sm}) {
     padding: ${({ theme, $patientMobile }) => (
       $patientMobile
-        ? `calc(${theme.spacing[4]} + 4px) ${theme.spacing[4]} calc(88px + ${theme.spacing[4]})`
+        ? `${theme.spacing[3]} ${theme.spacing[4]} calc(${BOTTOM_NAV_HEIGHT}px + 28px + env(safe-area-inset-bottom, 0px))`
         : theme.spacing[4]
     )};
   }
@@ -63,7 +99,8 @@ export default function AppLayout() {
   const theme = useTheme();
   const { role } = useAuth();
   const isMobile = useMediaQuery(`(max-width: ${theme.breakpoints.md})`);
-  const isPatientMobile = role === 'patient' && isMobile;
+  const isPatient = role === 'patient';
+  const isPatientMobile = isPatient && isMobile;
 
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -71,7 +108,8 @@ export default function AppLayout() {
   const sidebarWidth = isPatientMobile ? '0px' : (collapsed ? '72px' : '260px');
 
   return (
-    <LayoutWrapper>
+    <LayoutWrapper $patient={isPatient}>
+      <PatientBackdrop $visible={isPatient} aria-hidden />
       {!isPatientMobile && (
         <Sidebar
           collapsed={collapsed}

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { flushSync } from 'react-dom';
 import client from '../api/client';
 import ENDPOINTS from '../api/endpoints';
 import { ROLES } from '../config/branding';
@@ -46,7 +47,8 @@ export function AuthProvider({ children }) {
             const { data } = await client.get(ENDPOINTS.auth.me);
             const result = data.data || data;
             const resolvedRole = result.role || tokenRole || ROLES.PATIENT;
-            setUser(result.user);
+            const profile = result.user || result.patient || result.medecin || result;
+            setUser(profile);
             setRole(resolvedRole);
             localStorage.setItem(ROLE_KEY, resolvedRole);
         } catch {
@@ -66,15 +68,14 @@ export function AuthProvider({ children }) {
             localStorage.setItem('esante_refresh_token', result.refreshToken);
         }
         localStorage.setItem(ROLE_KEY, userRole);
-        setUser(profile);
-        setRole(userRole);
+        flushSync(() => {
+            setUser(profile);
+            setRole(userRole);
+        });
         return { user: profile, role: userRole };
     }, []);
 
     const login = useCallback(async (email, password) => {
-        clearStoredAuth();
-        setUser(null);
-        setRole(ROLES.PATIENT);
         const { data } = await client.post(ENDPOINTS.auth.login, { email, password });
         const result = data.data || data;
         return applyAuthResult(result);

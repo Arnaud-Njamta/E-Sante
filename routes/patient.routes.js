@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const patientController = require('../controllers/patient.controller');
 const { patientAuth } = require('../middlewares/auth.middleware');
+const { uploadImage } = require('../middlewares/upload.middleware');
 const { validate, updateProfileSchema, parametresVieSchema, deleteAccountSchema } = require('../middlewares/validation.middleware');
 
 /**
@@ -68,6 +69,7 @@ router.get('/profile', patientAuth, patientController.getProfile);
  *         description: Profil mis à jour
  */
 router.put('/profile', patientAuth, validate(updateProfileSchema), patientController.updateProfile);
+router.post('/me/photo', patientAuth, uploadImage.single('photo'), patientController.uploadPhoto);
 
 /**
  * @swagger

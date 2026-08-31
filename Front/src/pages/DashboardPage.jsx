@@ -17,6 +17,9 @@ import {
   Activity, CheckCircle, Pill, Sun, Moon, Sunrise, Sunset,
   ShieldCheck, Camera, Lightbulb, ChevronRight, Zap,
 } from 'lucide-react';
+import PatientPageHeader from '../components/patient/PatientPageHeader';
+import PatientMobileProfileHero from '../components/patient/PatientMobileProfileHero';
+import PatientMobileQuickActions from '../components/patient/PatientMobileQuickActions';
 
 /* ─── Keyframes ─── */
 const drawCircle = keyframes`
@@ -24,21 +27,6 @@ const drawCircle = keyframes`
 `;
 
 /* ─── Layout ─── */
-const PageHeader = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing[6]};
-  animation: fadeIn 0.4s ease both;
-  h1 {
-    font-family: ${({ theme }) => theme.typography.fontFamilySerif};
-    font-size: clamp(1.65rem, 3vw, 2rem);
-    font-weight: 500;
-    letter-spacing: -0.02em;
-    color: ${({ theme }) => theme.colors.text};
-    margin: 0 0 6px;
-    line-height: 1.15;
-  }
-  p  { font-size: 0.92rem; color: ${({ theme }) => theme.colors.textSecondary}; margin: 0; line-height: 1.55; }
-`;
-
 const TopGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
@@ -210,13 +198,14 @@ const MedActionRow = styled.div`
 
 /* ── CTA Cards ── */
 const CTACard = styled.div`
-  background: linear-gradient(135deg, #2D7FF9, #1A66D9);
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.primary[500]}, ${({ theme }) => theme.colors.primary[700]});
   border-radius: ${({ theme }) => theme.radii.xl};
   padding: ${({ theme }) => theme.spacing[6]};
   color: white;
   animation: fadeInUp 0.5s ease both;
   animation-delay: 0.3s;
   margin-bottom: ${({ theme }) => theme.spacing[4]};
+  box-shadow: 0 8px 24px rgba(0, 122, 94, 0.2);
 `;
 
 const CTAIcon = styled.div`
@@ -347,10 +336,14 @@ export default function DashboardPage() {
 
   return (
     <>
-      <PageHeader>
-        <h1>Bonjour, {user?.prenom || 'Patient'}</h1>
-        <p>Voici votre aperçu d'observance pour aujourd'hui.</p>
-      </PageHeader>
+      <PatientMobileProfileHero />
+
+      <PatientPageHeader
+        title={`Bonjour, ${user?.prenom || 'Patient'}`}
+        subtitle="Voici votre aperçu d'observance pour aujourd'hui."
+      />
+
+      <PatientMobileQuickActions />
 
       {/* ── Top row ── */}
       <TopGrid>
@@ -396,7 +389,7 @@ export default function DashboardPage() {
                   <XAxis dataKey="jour" tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
                   <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '8px', fontSize: '13px' }} formatter={(v) => [`${v}%`, 'Observance']} />
-                  <Bar dataKey="taux" fill="#2D7FF9" radius={[4, 4, 0, 0]} maxBarSize={24} />
+                  <Bar dataKey="taux" fill="#007A5E" radius={[4, 4, 0, 0]} maxBarSize={24} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -461,7 +454,7 @@ export default function DashboardPage() {
             <Button
               variant="secondary"
               size="sm"
-              style={{ background: 'white', color: '#2D7FF9', fontWeight: 600 }}
+              style={{ background: 'white', color: '#007A5E', fontWeight: 600 }}
               onClick={() => navigate('/ordonnances')}
             >
               Commencer le scan

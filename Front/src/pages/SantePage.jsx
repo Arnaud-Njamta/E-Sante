@@ -18,7 +18,7 @@ const NearbyBar = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: ${({ theme }) => theme.spacing[4]};
   padding: 12px 14px;
   border-radius: 12px;
@@ -26,16 +26,6 @@ const NearbyBar = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.primary[100] || '#A7F3D0'};
   font-size: 0.85rem;
   color: ${({ theme }) => theme.colors.textSecondary};
-  button {
-    border: none;
-    background: ${({ theme }) => theme.colors.primary[600] || '#059669'};
-    color: #fff;
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    cursor: pointer;
-  }
 `;
 
 const DistBadge = styled.span`
@@ -209,6 +199,12 @@ export default function SantePage() {
     const q = searchParams.get('q');
     if (q) setSearch(q);
   }, [searchParams]);
+
+  useEffect(() => {
+    if (cityLabel && tab === 'medicaments' && !villeMed) {
+      setVilleMed(cityLabel);
+    }
+  }, [cityLabel, tab, villeMed]);
   const [typeFilter, setTypeFilter] = useState('');
   const [search, setSearch] = useState(initialQ);
   const [villeMed, setVilleMed] = useState('');
@@ -216,10 +212,9 @@ export default function SantePage() {
   const [dispoOnly, setDispoOnly] = useState(false);
   const [competenceFilter, setCompetenceFilter] = useState('');
   const [etablissementFilter, setEtablissementFilter] = useState('');
-  const [nearbyOn, setNearbyOn] = useState(true);
-  const { coords, error: geoError, loading: geoLoading, refresh: refreshGeo } = useGeolocation({
-    enabled: nearbyOn && tab === 'etablissements',
-  });
+  const {
+    coords, cityLabel, loading: geoLoading, hasLocation,
+  } = useGeolocation({ enabled: tab === 'etablissements' });
 
   const { data: etabListData } = useEtablissements({
     type: undefined,
@@ -232,15 +227,18 @@ export default function SantePage() {
   const { data: etabData, isLoading: etabLoading, error: etabError, refetch: refetchEtab } = useEtablissements({
     type: typeFilter || undefined,
     recherche: search || undefined,
-    ...(nearbyOn && coords
+    limit: 50,
+    ...(hasLocation && coords
       ? {
         latitude: coords.latitude,
         longitude: coords.longitude,
         nearby: true,
-        radius_km: 30,
-        limit: 50,
+        radius_km: 25,
+        ville: cityLabel || undefined,
       }
-      : {}),
+      : cityLabel
+        ? { ville: cityLabel }
+        : {}),
   });
 
   const { data: medData, isLoading: medLoading, error: medError, refetch: refetchMed } = useMedecins({
@@ -272,25 +270,11 @@ export default function SantePage() {
       {tab === 'etablissements' && (
         <NearbyBar>
           <MapPin size={16} />
-          {nearbyOn && coords
-            ? `Tri par proximité (±30 km) — précision ~${Math.round(coords.accuracy || 0)} m`
-            : geoLoading
-              ? 'Localisation en cours…'
-              : geoError
-                ? `Localisation : ${geoError}`
-                : 'Activez la localisation pour voir les établissements les plus proches'}
-          <button type="button" onClick={() => { setNearbyOn(true); refreshGeo(); }}>
-            Me localiser
-          </button>
-          {nearbyOn && (
-            <button
-              type="button"
-              style={{ background: '#64748B' }}
-              onClick={() => setNearbyOn(false)}
-            >
-              Voir tout
-            </button>
-          )}
+          {geoLoading && !hasLocation
+            ? 'Recherche des établissements autour de vous…'
+            : cityLabel
+              ? `Autour de ${cityLabel} — les plus proches en premier`
+              : 'Établissements les mieux notés près de vous'}
         </NearbyBar>
       )}
 
@@ -378,6 +362,13 @@ export default function SantePage() {
         etabLoading ? <Spinner /> :
         etabError ? <ErrorState message="Impossible de charger les établissements" onRetry={refetchEtab} /> :
         <Grid>
+          {etablissements.length === 0 && !etabLoading && (
+            <Card style={{ padding: 32, gridColumn: '1 / -1', textAlign: 'center', color: '#94A3B8' }}>
+              {cityLabel
+                ? `Aucun établissement répertorié autour de ${cityLabel} pour le moment.`
+                : 'Aucun établissement trouvé.'}
+            </Card>
+          )}
           {etablissements.map((e) => {
             const Icon = TYPE_ICONS[e.type] || Building2;
             return (

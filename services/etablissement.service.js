@@ -13,7 +13,6 @@ const lister = async ({
   const where = { actif: true, statut_validation: STATUT_VALIDATION.VALIDE };
 
   if (type) where.type = type;
-  if (ville) where.ville = { [Op.like]: `%${ville}%` };
   if (recherche) {
     where[Op.or] = [
       { nom: { [Op.like]: `%${recherche}%` } },
@@ -26,6 +25,8 @@ const lister = async ({
   const useGeo = Number.isFinite(lat) && Number.isFinite(lng)
     && (nearby === true || nearby === 'true' || nearby === '1'
       || latitude != null);
+
+  if (ville && !useGeo) where.ville = { [Op.like]: `%${ville}%` };
 
   const offset = (page - 1) * limit;
   const fetchLimit = useGeo ? Math.min(500, Math.max(limit * 10, 100)) : limit;
@@ -72,17 +73,53 @@ const lister = async ({
   if (useGeo) {
     const radius = Number(radius_km) || 25;
     etablissements = etablissements
-      .filter((e) => e.distance_km == null || e.distance_km <= radius)
-      .sort((a, b) => {
-        if (a.distance_km == null) return 1;
-        if (b.distance_km == null) return 1;
-        return a.distance_km - b.distance_km;
+      .filter((e) => e.distance_km != null && e.distance_km <= radius)
+      .sort((a, b) => a.distance_km - b.distance_km);
+
+    if (etablissements.length === 0 && ville) {
+      const villeWhere = { ...where, ville: { [Op.like]: `%${ville}%` } };
+      const villeRows = await Etablissement.findAll({
+        where: villeWhere,
+        include: [{
+          model: ServiceEtablissement,
+          as: 'services',
+          where: { disponible: true },
+          required: false,
+        }],
+        order: [['note_moyenne', 'DESC'], ['nom', 'ASC']],
+        limit,
       });
+      etablissements = villeRows.map((r) => r.toJSON ? r.toJSON() : { ...r });
+    }
+
     const total = etablissements.length;
     etablissements = etablissements.slice(offset, offset + limit);
     return {
       etablissements,
-      geo: { latitude: lat, longitude: lng, radius_km: radius },
+      geo: { latitude: lat, longitude: lng, radius_km: radius, ville: ville || null },
+      pagination: { total, page, limit, pages: Math.ceil(total / limit) || 1 },
+    };
+  }
+
+  if (ville && !useGeo) {
+    const villeRows = await Etablissement.findAll({
+      where: { ...where, ville: { [Op.like]: `%${ville}%` } },
+      include: [{
+        model: ServiceEtablissement,
+        as: 'services',
+        where: { disponible: true },
+        required: false,
+      }],
+      order: [['note_moyenne', 'DESC'], ['nom', 'ASC']],
+      limit: fetchLimit,
+      offset,
+    });
+    const total = await Etablissement.count({
+      where: { ...where, ville: { [Op.like]: `%${ville}%` } },
+    });
+    return {
+      etablissements: villeRows.map((r) => (r.toJSON ? r.toJSON() : { ...r })),
+      geo: { ville },
       pagination: { total, page, limit, pages: Math.ceil(total / limit) || 1 },
     };
   }

@@ -200,11 +200,6 @@ export default function SantePage() {
     if (q) setSearch(q);
   }, [searchParams]);
 
-  useEffect(() => {
-    if (cityLabel && tab === 'medicaments' && !villeMed) {
-      setVilleMed(cityLabel);
-    }
-  }, [cityLabel, tab, villeMed]);
   const [typeFilter, setTypeFilter] = useState('');
   const [search, setSearch] = useState(initialQ);
   const [villeMed, setVilleMed] = useState('');
@@ -214,7 +209,13 @@ export default function SantePage() {
   const [etablissementFilter, setEtablissementFilter] = useState('');
   const {
     coords, cityLabel, loading: geoLoading, hasLocation,
-  } = useGeolocation({ enabled: tab === 'etablissements' });
+  } = useGeolocation({ enabled: true });
+
+  useEffect(() => {
+    if (cityLabel && tab === 'medicaments' && !villeMed) {
+      setVilleMed(cityLabel);
+    }
+  }, [cityLabel, tab, villeMed]);
 
   const { data: etabListData } = useEtablissements({
     type: undefined,

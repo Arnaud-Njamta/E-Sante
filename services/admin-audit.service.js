@@ -46,6 +46,22 @@ const log = async ({
   }
 };
 
+const formatLog = (log) => {
+  const plain = log.toJSON ? log.toJSON() : log;
+  return {
+    id: plain.id,
+    categorie: plain.categorie,
+    action: plain.action,
+    acteur_id: plain.acteur_id,
+    acteur_label: plain.acteur_label,
+    cible_type: plain.cible_type,
+    cible_id: plain.cible_id,
+    details: plain.details,
+    ip: plain.ip,
+    created_at: plain.created_at || plain.createdAt,
+  };
+};
+
 const lister = async ({
   categorie,
   cible_type,
@@ -58,14 +74,25 @@ const lister = async ({
   if (cible_type) where.cible_type = cible_type;
   if (cible_id) where.cible_id = cible_id;
 
-  const { rows, count } = await AdminAuditLog.findAndCountAll({
-    where,
-    order: [['createdAt', 'DESC']],
-    limit: Math.min(parseInt(limit, 10) || 100, 500),
-    offset: parseInt(offset, 10) || 0,
-  });
+  const cap = Math.min(parseInt(limit, 10) || 100, 500);
+  const skip = Math.max(parseInt(offset, 10) || 0, 0);
 
-  return { logs: rows, total: count };
+  try {
+    const [total, rows] = await Promise.all([
+      AdminAuditLog.count({ where }),
+      AdminAuditLog.findAll({
+        where,
+        order: [['createdAt', 'DESC']],
+        limit: cap,
+        offset: skip,
+      }),
+    ]);
+
+    return { logs: rows.map(formatLog), total };
+  } catch (err) {
+    console.warn('[admin-audit] lister:', err.message);
+    return { logs: [], total: 0 };
+  }
 };
 
 module.exports = {

@@ -26,10 +26,17 @@ const base = process.env.API_PUBLIC_URL || `http://127.0.0.1:${process.env.PORT 
     const overviewRes = await fetch(`${base}/admin/overview`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    const text = await overviewRes.text();
+    const overviewText = await overviewRes.text();
     console.log('Overview HTTP', overviewRes.status);
-    console.log(text.slice(0, 800));
-    process.exit(overviewRes.ok ? 0 : 1);
+    console.log(overviewText.slice(0, 400));
+
+    const auditRes = await fetch(`${base}/admin/audit-logs?limit=5`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const auditText = await auditRes.text();
+    console.log('Audit HTTP', auditRes.status);
+    console.log(auditText.slice(0, 400));
+    process.exit(overviewRes.ok && auditRes.ok ? 0 : 1);
   } catch (err) {
     console.error('ERR', err.message);
     process.exit(1);

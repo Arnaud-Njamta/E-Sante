@@ -12,6 +12,7 @@ const lister = async (req, res, next) => {
     });
     res.json({ success: true, data: result });
   } catch (error) {
+    console.error('[admin/audit-logs]', error.message);
     next(error);
   }
 };

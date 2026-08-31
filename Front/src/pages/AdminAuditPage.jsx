@@ -95,6 +95,7 @@ const Footer = styled.div`
 
 const ACTION_META = {
   inscription_soumise: { label: 'Demande soumise', variant: 'info' },
+  inscription_patient: { label: 'Nouveau patient', variant: 'info' },
   inscription_validee: { label: 'Inscription validée', variant: 'ok' },
   inscription_rejetee: { label: 'Inscription rejetée', variant: 'warn' },
   document_consulte: { label: 'Document consulté', variant: 'info' },
@@ -108,7 +109,10 @@ const CATEGORIE_LABELS = {
 };
 
 function formatDate(iso) {
-  return new Date(iso).toLocaleString('fr-FR', {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleString('fr-FR', {
     day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit',
   });
 }
@@ -138,8 +142,17 @@ export default function AdminAuditPage() {
   const logs = data?.logs || [];
   const total = data?.total || 0;
 
-  if (isLoading) return <Spinner />;
-  if (error) return <ErrorState message="Impossible de charger le journal" onRetry={refetch} />;
+  if (isLoading && !data) return <Spinner />;
+  if (error && !data) {
+    const detail = error.response?.data?.message
+      || (error.response ? `Erreur ${error.response.status}` : 'API injoignable');
+    return (
+      <ErrorState
+        message={`Impossible de charger le journal. ${detail}`}
+        onRetry={refetch}
+      />
+    );
+  }
 
   return (
     <div>
@@ -156,6 +169,9 @@ export default function AdminAuditPage() {
           <option value="inscription">Inscriptions</option>
           <option value="document">Documents</option>
         </Select>
+        <Button size="sm" variant="secondary" onClick={() => refetch()} disabled={isFetching}>
+          Actualiser
+        </Button>
         {isFetching && <span style={{ fontSize: '0.8rem', color: '#94A3B8' }}>Actualisation…</span>}
       </Toolbar>
 

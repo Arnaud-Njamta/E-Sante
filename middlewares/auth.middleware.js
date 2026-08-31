@@ -9,75 +9,60 @@ const attachEtablissement = (req, profile, role) => {
   if (role === USER_ROLES.CLINIQUE) req.clinique = profile;
 };
 
+const resolveUserFromRequest = async (req) => {
+  let authHeader = req.headers.authorization;
+  if ((!authHeader || !authHeader.startsWith('Bearer ')) && req.query.access_token) {
+    authHeader = `Bearer ${req.query.access_token}`;
+  }
+  if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
+
+  const token = authHeader.split(' ')[1];
+  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  const role = decoded.role || USER_ROLES.PATIENT;
+
+  let profile = null;
+  if (role === USER_ROLES.ADMIN) {
+    profile = await Admin.findByPk(decoded.id, { attributes: { exclude: ['password_hash'] } });
+    if (profile) req.admin = profile;
+  } else if (role === USER_ROLES.PATIENT) {
+    profile = await Patient.findByPk(decoded.id, { attributes: { exclude: ['password_hash'] } });
+    if (profile) req.patient = profile;
+  } else if (role === USER_ROLES.MEDECIN) {
+    profile = await Medecin.findByPk(decoded.id, { attributes: { exclude: ['password_hash'] } });
+    if (profile) req.medecin = profile;
+  } else if ([USER_ROLES.PHARMACIE, USER_ROLES.HOPITAL, USER_ROLES.CLINIQUE].includes(role)) {
+    const typeMap = {
+      [USER_ROLES.PHARMACIE]: TYPE_ETABLISSEMENT.PHARMACIE,
+      [USER_ROLES.HOPITAL]: TYPE_ETABLISSEMENT.HOPITAL,
+      [USER_ROLES.CLINIQUE]: TYPE_ETABLISSEMENT.CLINIQUE,
+    };
+    profile = await Etablissement.findOne({
+      where: { id: decoded.id, type: typeMap[role] },
+      attributes: { exclude: ['password_hash'] },
+    });
+    if (profile) attachEtablissement(req, profile, role);
+  }
+
+  if (!profile) return null;
+  return { id: decoded.id, role, profile };
+};
+
 const authMiddleware = async (req, res, next) => {
   try {
-    let authHeader = req.headers.authorization;
-
-    if ((!authHeader || !authHeader.startsWith('Bearer ')) && req.query.access_token) {
-      authHeader = `Bearer ${req.query.access_token}`;
-    }
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const user = await resolveUserFromRequest(req);
+    if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Token d\'authentification manquant',
+        message: 'Token d\'authentification manquant ou utilisateur non trouvé',
       });
     }
-
-    const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const role = decoded.role || USER_ROLES.PATIENT;
-
-    let profile = null;
-
-    if (role === USER_ROLES.ADMIN) {
-      profile = await Admin.findByPk(decoded.id, {
-        attributes: { exclude: ['password_hash'] },
-      });
-      if (profile) req.admin = profile;
-    } else if (role === USER_ROLES.PATIENT) {
-      profile = await Patient.findByPk(decoded.id, {
-        attributes: { exclude: ['password_hash'] },
-      });
-      if (profile) req.patient = profile;
-    } else if (role === USER_ROLES.MEDECIN) {
-      profile = await Medecin.findByPk(decoded.id, {
-        attributes: { exclude: ['password_hash'] },
-      });
-      if (profile) req.medecin = profile;
-    } else if ([USER_ROLES.PHARMACIE, USER_ROLES.HOPITAL, USER_ROLES.CLINIQUE].includes(role)) {
-      const typeMap = {
-        [USER_ROLES.PHARMACIE]: TYPE_ETABLISSEMENT.PHARMACIE,
-        [USER_ROLES.HOPITAL]: TYPE_ETABLISSEMENT.HOPITAL,
-        [USER_ROLES.CLINIQUE]: TYPE_ETABLISSEMENT.CLINIQUE,
-      };
-      profile = await Etablissement.findOne({
-        where: { id: decoded.id, type: typeMap[role] },
-        attributes: { exclude: ['password_hash'] },
-      });
-      if (profile) attachEtablissement(req, profile, role);
-    }
-
-    if (!profile) {
-      return res.status(401).json({
-        success: false,
-        message: 'Utilisateur non trouvé',
-      });
-    }
-
-    req.user = { id: decoded.id, role, profile };
+    req.user = user;
     next();
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({
-        success: false,
-        message: 'Token expiré',
-      });
+      return res.status(401).json({ success: false, message: 'Token expiré' });
     }
-    return res.status(401).json({
-      success: false,
-      message: 'Token invalide',
-    });
+    return res.status(401).json({ success: false, message: 'Token invalide' });
   }
 };
 
@@ -93,6 +78,16 @@ const requireRole = (...roles) => (req, res, next) => {
 
 module.exports = authMiddleware;
 module.exports.requireRole = requireRole;
+
+/** Auth optionnelle — pour fichiers publics (images profil, produits, actualités). */
+module.exports.optionalAuthMiddleware = async (req, res, next) => {
+  try {
+    req.user = await resolveUserFromRequest(req);
+  } catch {
+    req.user = null;
+  }
+  next();
+};
 module.exports.patientAuth = [authMiddleware, requireRole('patient')];
 module.exports.medecinAuth = [authMiddleware, requireRole('medecin')];
 module.exports.pharmacieAuth = [authMiddleware, requireRole('pharmacie')];

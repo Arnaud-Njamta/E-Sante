@@ -11,8 +11,7 @@ import { useEtablissements } from '../hooks/useEtablissements';
 import { useMedecins } from '../hooks/useMedecins';
 import { useRechercheProduits } from '../hooks/useProduits';
 import { parseJsonArray } from '../utils/helpers';
-
-const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000';
+import { resolveFileUrl } from '../components/ui/PhotoUploadCard';
 
 const PageHeader = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing[6]};
@@ -179,6 +178,15 @@ export default function SantePage() {
   const [typeMed, setTypeMed] = useState('');
   const [dispoOnly, setDispoOnly] = useState(false);
   const [competenceFilter, setCompetenceFilter] = useState('');
+  const [etablissementFilter, setEtablissementFilter] = useState('');
+
+  const { data: etabListData } = useEtablissements({
+    type: undefined,
+    limit: 100,
+  });
+  const etabOptions = (etabListData?.etablissements || []).filter(
+    (e) => e.type === 'hopital' || e.type === 'clinique',
+  );
 
   const { data: etabData, isLoading: etabLoading, error: etabError, refetch: refetchEtab } = useEtablissements({
     type: typeFilter || undefined,
@@ -189,6 +197,7 @@ export default function SantePage() {
     recherche: search || undefined,
     disponible_maintenant: dispoOnly || undefined,
     competence: competenceFilter || undefined,
+    etablissement_id: etablissementFilter || undefined,
   });
 
   const { data: produitsData, isLoading: prodLoading, error: prodError, refetch: refetchProd } = useRechercheProduits(
@@ -269,12 +278,24 @@ export default function SantePage() {
           />
         )}
         {tab === 'medecins' && (
-          <input
-            placeholder="Compétence (ex. Cardiologie)"
-            value={competenceFilter}
-            onChange={(e) => setCompetenceFilter(e.target.value)}
-            style={{ width: 200, padding: '10px 14px', border: '1px solid #E2E8F0', borderRadius: 8 }}
-          />
+          <>
+            <input
+              placeholder="Compétence (ex. Cardiologie)"
+              value={competenceFilter}
+              onChange={(e) => setCompetenceFilter(e.target.value)}
+              style={{ width: 200, padding: '10px 14px', border: '1px solid #E2E8F0', borderRadius: 8 }}
+            />
+            <select
+              value={etablissementFilter}
+              onChange={(e) => setEtablissementFilter(e.target.value)}
+              style={{ width: 220, padding: '10px 14px', border: '1px solid #E2E8F0', borderRadius: 8 }}
+            >
+              <option value="">Tous les établissements</option>
+              {etabOptions.map((e) => (
+                <option key={e.id} value={e.id}>{e.nom} ({e.ville})</option>
+              ))}
+            </select>
+          </>
         )}
       </SearchBar>
 
@@ -316,10 +337,11 @@ export default function SantePage() {
               {(produitsData || []).map((p) => {
                 const etab = p.etablissement || p.pharmacie;
                 const Icon = TYPE_ICONS[etab?.type] || Pill;
+                const imgSrc = resolveFileUrl(p.image_url, p.fichier_image_id);
                 return (
                   <ItemCard key={p.id} onClick={() => etab && navigate(`/sante/etablissement/${etab.id}`)}>
-                    {p.image_url && (
-                      <img src={`${API_BASE}${p.image_url}`} alt={p.nom} style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 8, marginBottom: 8 }} />
+                    {imgSrc && (
+                      <img src={imgSrc} alt={p.nom} style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 8, marginBottom: 8 }} />
                     )}
                     <CardTitle>{p.nom}</CardTitle>
                     {etab && (

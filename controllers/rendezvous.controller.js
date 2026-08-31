@@ -6,7 +6,11 @@ const getCreneaux = async (req, res, next) => {
     if (req.user.role === 'medecin' && req.user.id !== req.params.medecinId) {
       return res.status(403).json({ success: false, message: 'Accès refusé' });
     }
-    const result = await rendezvousService.getCreneauxDisponibles(req.params.medecinId, date);
+    const result = await rendezvousService.getCreneauxDisponibles(
+      req.params.medecinId,
+      date,
+      req.query.affiliation_id || null,
+    );
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);

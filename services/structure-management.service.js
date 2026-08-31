@@ -3,7 +3,7 @@ const { Op } = require('sequelize');
 const {
   Medecin, ServiceEtablissement, RendezVous, Patient, Etablissement,
 } = require('../models');
-const { formatMedecin } = require('./medecin.service');
+const { formatMedecin, formatMedecinForStructure } = require('./medecin.service');
 const { TYPE_ETABLISSEMENT, STATUT_RDV } = require('../utils/constants');
 const { parseJsonField } = require('../utils/helpers');
 
@@ -70,7 +70,7 @@ const enrichStructureDashboard = async (etab) => {
       rdv_aujourdhui: rdvAujourdhui,
       type: etab.type,
     },
-    medecins: medecins.map(formatMedecin),
+    medecins: medecins.map(formatMedecinForStructure),
     services: services.map(formatService),
     rdv_recents: rdvRecents,
     horaires: parseJsonField(etab.horaires_ouverture, {}),
@@ -87,7 +87,7 @@ const listMedecins = async (etablissementId) => {
     where: { etablissement_id: etablissementId },
     order: [['nom', 'ASC']],
   });
-  return rows.map(formatMedecin);
+  return rows.map(formatMedecinForStructure);
 };
 
 const addMedecin = async (etablissementId, data) => {
@@ -122,12 +122,12 @@ const addMedecin = async (etablissementId, data) => {
     telephone: data.telephone,
     email: data.email || null,
     password_hash,
-    tarif_consultation_fcfa: data.tarif_consultation_fcfa || null,
+    tarif_consultation_fcfa: null,
     actif: true,
     statut_validation: 'valide',
   });
 
-  return formatMedecin(medecin);
+  return formatMedecinForStructure(medecin);
 };
 
 const updateMedecinStructure = async (etablissementId, medecinId, data) => {
@@ -137,10 +137,10 @@ const updateMedecinStructure = async (etablissementId, medecinId, data) => {
     error.statusCode = 404;
     throw error;
   }
-  const allowed = ['nom', 'prenom', 'specialite', 'numero_ordre', 'bio', 'telephone', 'tarif_consultation_fcfa', 'actif'];
+  const allowed = ['nom', 'prenom', 'specialite', 'numero_ordre', 'bio', 'telephone', 'actif'];
   allowed.forEach((k) => { if (data[k] !== undefined) medecin[k] = data[k]; });
   await medecin.save();
-  return formatMedecin(medecin);
+  return formatMedecinForStructure(medecin);
 };
 
 const listServices = async (etablissementId) => {

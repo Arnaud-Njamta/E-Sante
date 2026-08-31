@@ -136,11 +136,6 @@ export default function StructureDashboardPage() {
                       <strong style={{ fontSize: '0.9rem' }}>Dr {m.prenom} {m.nom}</strong>
                       <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748B' }}>{m.specialite}</p>
                     </div>
-                    {m.tarif_consultation_fcfa && (
-                      <span style={{ marginLeft: 'auto', fontSize: '0.8rem', color: '#059669' }}>
-                        {Number(m.tarif_consultation_fcfa).toLocaleString()} FCFA
-                      </span>
-                    )}
                   </div>
                 );
               })}

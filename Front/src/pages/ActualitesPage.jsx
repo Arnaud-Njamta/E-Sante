@@ -16,9 +16,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { getHomeRoute } from '../config/branding';
 import { CAMEROON_COLORS } from '../config/cameroonHealth';
-import toast from 'react-hot-toast';
-
-const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000';
+import { resolveFileUrl } from '../components/ui/PhotoUploadCard';
 
 const Page = styled.div`
   max-width: 1080px;
@@ -406,7 +404,7 @@ function PostItem({ post }) {
     }
   };
 
-  const imgUrl = post.image_url ? `${API_BASE}${post.image_url}` : null;
+  const imgUrl = resolveFileUrl(post.image_url, post.fichier_image_id);
   const dateStr = post.created_at || post.createdAt
     ? new Date(post.created_at || post.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
     : '';

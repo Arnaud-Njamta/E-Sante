@@ -3,12 +3,12 @@ import { Stamp, Clock, Save, Video } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Spinner from '../components/ui/Spinner';
-import PhotoUploadCard, { resolveFileUrl } from '../components/ui/PhotoUploadCard';
+import PhotoUploadCard from '../components/ui/PhotoUploadCard';
+import { authenticatedFileUrl } from '../utils/fileUrl';
 import { useMedecinDashboard } from '../hooks/useDashboards';
 import { useUploadMedecinPhoto, useUploadMedecinCachet, useUpdateMedecinHoraires, useUpdateMedecinProfil } from '../hooks/useProfessionnel';
 import toast from 'react-hot-toast';
 
-const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000';
 const JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
 
 const defaultHoraires = () => Object.fromEntries(JOURS.map((j) => [
@@ -42,12 +42,9 @@ export default function MedecinParametresPage() {
   if (isLoading) return <Spinner />;
   const profil = data?.profil;
 
-  const photoUrl = resolveFileUrl(profil?.photo_url, profil?.fichier_photo_id);
-  const cachetUrl = profil?.cachet_url?.startsWith('/')
-    ? `${API_BASE}${profil.cachet_url}?t=${photoKey}`
-    : profil?.fichier_cachet_id
-      ? `${API_BASE}/api/fichiers/${profil.fichier_cachet_id}?t=${photoKey}`
-      : null;
+  const cachetUrl = profil?.fichier_cachet_id
+    ? authenticatedFileUrl(profil.fichier_cachet_id, photoKey)
+    : null;
 
   const handlePhoto = async (file) => {
     try {
@@ -55,8 +52,8 @@ export default function MedecinParametresPage() {
       setPhotoKey((k) => k + 1);
       await refetch();
       toast.success('Photo mise à jour');
-    } catch {
-      toast.error('Erreur lors de l\'upload de la photo');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Erreur lors de l\'upload de la photo');
     }
   };
 
@@ -104,7 +101,8 @@ export default function MedecinParametresPage() {
         <PhotoUploadCard
           title="Photo de profil"
           subtitle="Visible dans l'annuaire santé et sur votre fiche publique"
-          photoUrl={photoUrl}
+          photoUrl={profil?.photo_url}
+          fichierId={profil?.fichier_photo_id}
           onUpload={handlePhoto}
           isUploading={uploadPhoto.isPending}
         />
@@ -130,6 +128,9 @@ export default function MedecinParametresPage() {
         </label>
         <div style={{ marginBottom: 16 }}>
           <label style={{ fontSize: '0.85rem' }}>Tarif consultation (FCFA)</label>
+          <p style={{ fontSize: '0.75rem', color: '#94A3B8', margin: '4px 0 6px' }}>
+            Privé — visible uniquement par vos patients, pas par les établissements où vous exercez.
+          </p>
           <input type="number" value={tarif} onChange={(e) => setTarif(e.target.value)} style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #E2E8F0', marginTop: 4 }} />
         </div>
         <Button onClick={saveTeleconsult} disabled={updateProfil.isPending}><Save size={16} /> Enregistrer</Button>

@@ -13,7 +13,7 @@ import toast from 'react-hot-toast';
 
 const EMPTY = {
   nom: '', prenom: '', specialite: '', numero_ordre: '', telephone: '',
-  email: '', password: '', tarif_consultation_fcfa: '', bio: '',
+  email: '', password: '', bio: '',
 };
 
 const SPECIALITES_CM = [
@@ -37,10 +37,7 @@ export default function StructureMedecinsPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await addMedecin.mutateAsync({
-        ...form,
-        tarif_consultation_fcfa: form.tarif_consultation_fcfa ? Number(form.tarif_consultation_fcfa) : null,
-      });
+      await addMedecin.mutateAsync({ ...form });
       toast.success('Médecin inscrit dans votre établissement');
       setForm(EMPTY);
       setShowForm(false);
@@ -142,7 +139,6 @@ export default function StructureMedecinsPage() {
               <Input label="Téléphone" value={form.telephone} onChange={(e) => setForm({ ...form, telephone: e.target.value })} placeholder="+237 6XX XXX XXX" />
               <Input label="Email (connexion)" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
               <Input label="Mot de passe initial" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
-              <Input label="Tarif consultation (FCFA)" type="number" value={form.tarif_consultation_fcfa} onChange={(e) => setForm({ ...form, tarif_consultation_fcfa: e.target.value })} />
             </div>
             <div style={{ marginTop: 12 }}>
               <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Biographie</label>
@@ -175,11 +171,6 @@ export default function StructureMedecinsPage() {
                   <strong>Dr {m.prenom} {m.nom}</strong>
                   <p style={{ margin: '2px 0', fontSize: '0.85rem', color: '#64748B' }}>{m.specialite}</p>
                   {m.numero_ordre && <p style={{ margin: 0, fontSize: '0.75rem', color: '#94A3B8' }}>Ordre : {m.numero_ordre}</p>}
-                  {m.tarif_consultation_fcfa && (
-                    <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#059669', fontWeight: 600 }}>
-                      {Number(m.tarif_consultation_fcfa).toLocaleString()} FCFA
-                    </p>
-                  )}
                 </div>
               </div>
               <Button

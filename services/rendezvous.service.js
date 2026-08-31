@@ -1,5 +1,5 @@
 const { Op } = require('sequelize');
-const { RendezVous, Patient, Medecin, Etablissement } = require('../models');
+const { RendezVous, Patient, Medecin, Etablissement, MedecinAffiliation } = require('../models');
 const { STATUT_RDV, JOURS_SEMAINE } = require('../utils/constants');
 const { parseJsonField } = require('../utils/helpers');
 const commissionService = require('./commission.service');
@@ -63,7 +63,7 @@ const collectCreneauxPris = (rdvs, date) => {
   return heuresPrises;
 };
 
-const getCreneauxDisponibles = async (medecinId, date) => {
+const getCreneauxDisponibles = async (medecinId, date, affiliationId = null) => {
   const medecin = await Medecin.findByPk(medecinId);
   if (!medecin) {
     const error = new Error('Médecin non trouvé');
@@ -71,7 +71,18 @@ const getCreneauxDisponibles = async (medecinId, date) => {
     throw error;
   }
 
-  const horaires = await ensureMedecinHoraires(medecin);
+  let horaires;
+  if (affiliationId) {
+    const aff = await MedecinAffiliation.findOne({
+      where: { id: affiliationId, medecin_id: medecinId, statut: 'actif' },
+    });
+    if (aff?.horaires && parseJsonField(aff.horaires, null)) {
+      horaires = parseJsonField(aff.horaires, {});
+    }
+  }
+  if (!horaires) {
+    horaires = await ensureMedecinHoraires(medecin);
+  }
   const jour = getJourSemaine(date);
   const jourConfig = horaires[jour];
 

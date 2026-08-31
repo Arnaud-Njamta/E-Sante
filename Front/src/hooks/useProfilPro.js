@@ -76,6 +76,17 @@ export function useSupprimerParcours() {
   });
 }
 
+export function useUpdateAffiliation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...payload }) => {
+      const { data } = await client.put(ENDPOINTS.medecins.updateAffiliation(id), payload);
+      return data.data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['medecin', 'affiliations'] }),
+  });
+}
+
 export function useStructureAffiliations() {
   return useQuery({
     queryKey: ['structure', 'affiliations'],

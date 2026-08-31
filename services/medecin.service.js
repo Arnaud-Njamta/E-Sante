@@ -1,5 +1,5 @@
 const { Op } = require('sequelize');
-const { Medecin, Etablissement, Avis } = require('../models');
+const { Medecin, Etablissement, Avis, MedecinAffiliation } = require('../models');
 const { TYPE_CIBLE_AVIS, STATUT_VALIDATION } = require('../utils/constants');
 const { parseJsonField } = require('../utils/helpers');
 const affiliationService = require('./medecin-affiliation.service');
@@ -24,6 +24,13 @@ const formatMedecin = (medecin) => {
   };
 };
 
+/** Vue établissement — tarif privé (visible uniquement par le médecin et les patients). */
+const formatMedecinForStructure = (medecin) => {
+  const data = formatMedecin(medecin);
+  delete data.tarif_consultation_fcfa;
+  return data;
+};
+
 const enrichMedecinPublic = async (medecin) => {
   const formatted = formatMedecin(medecin);
   const [affiliations, parcours] = await Promise.all([
@@ -39,19 +46,37 @@ const lister = async ({
   const where = { actif: true, statut_validation: STATUT_VALIDATION.VALIDE };
 
   if (specialite) where.specialite = { [Op.like]: `%${specialite}%` };
-  if (etablissement_id) where.etablissement_id = etablissement_id;
+  const andConditions = [];
+  if (etablissement_id) {
+    const affRows = await MedecinAffiliation.findAll({
+      where: { etablissement_id, statut: 'actif' },
+      attributes: ['medecin_id'],
+    });
+    const affIds = affRows.map((r) => r.medecin_id);
+    andConditions.push({
+      [Op.or]: [
+        { etablissement_id },
+        ...(affIds.length ? [{ id: { [Op.in]: affIds } }] : []),
+      ],
+    });
+  }
   if (disponible_maintenant === 'true' || disponible_maintenant === true) {
     where.disponible_maintenant = true;
   }
   if (recherche) {
-    where[Op.or] = [
-      { nom: { [Op.like]: `%${recherche}%` } },
-      { prenom: { [Op.like]: `%${recherche}%` } },
-      { specialite: { [Op.like]: `%${recherche}%` } },
-    ];
+    andConditions.push({
+      [Op.or]: [
+        { nom: { [Op.like]: `%${recherche}%` } },
+        { prenom: { [Op.like]: `%${recherche}%` } },
+        { specialite: { [Op.like]: `%${recherche}%` } },
+      ],
+    });
   }
   if (competence) {
     where.competences = { [Op.like]: `%${competence}%` };
+  }
+  if (andConditions.length) {
+    where[Op.and] = andConditions;
   }
 
   const offset = (page - 1) * limit;
@@ -176,5 +201,6 @@ const uploadCachet = async (medecinId, fichierMeta) => {
 };
 
 module.exports = {
-  lister, getById, getProfile, getDashboard, updateProfil, updateHoraires, uploadPhoto, uploadCachet, formatMedecin,
+  lister, getById, getProfile, getDashboard, updateProfil, updateHoraires, uploadPhoto, uploadCachet,
+  formatMedecin, formatMedecinForStructure,
 };

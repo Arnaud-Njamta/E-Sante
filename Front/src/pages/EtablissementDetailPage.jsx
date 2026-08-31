@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, Phone, Mail, Clock, MessageCircle, ShoppingBag, Pill, Shield, CreditCard, Video, Newspaper } from 'lucide-react';
+import { ArrowLeft, MapPin, Phone, Mail, Clock, MessageCircle, ShoppingBag, Pill, Shield, CreditCard, Video, Newspaper, Users } from 'lucide-react';
 import Card from '../components/ui/Card';
 import StarRating from '../components/ui/StarRating';
 import Button from '../components/ui/Button';
@@ -16,6 +16,8 @@ import { useDemarrerConversation } from '../hooks/useMessagerie';
 import { useCreerReservation } from '../hooks/useReservations';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+
+import { resolveFileUrl } from '../components/ui/PhotoUploadCard';
 
 const BackBtn = styled.button`
   display: flex;
@@ -64,10 +66,27 @@ const ServiceName = styled.h4`
 
 const ServiceMeta = styled.div`
   display: flex;
-  gap: 12px;
-  font-size: 0.8rem;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.75rem;
   color: ${({ theme }) => theme.colors.textMuted};
-  margin-top: 6px;
+  margin-top: 8px;
+
+  span {
+    display: inline-block;
+    line-height: 1.35;
+    word-break: break-word;
+  }
+`;
+
+const ProduitBadge = styled.span`
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  width: fit-content;
+  max-width: 100%;
 `;
 
 const HoraireGrid = styled.div`
@@ -118,8 +137,6 @@ const TYPE_LABELS = {
   clinique: 'Clinique',
 };
 
-const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000';
-
 const ProduitGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -129,6 +146,11 @@ const ProduitGrid = styled.div`
 
 const ProduitCard = styled(Card)`
   padding: ${({ theme }) => theme.spacing[4]};
+  overflow: hidden;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+
   img {
     width: 100%;
     height: 100px;
@@ -202,7 +224,7 @@ export default function EtablissementDetailPage() {
 
   const horaires = horairesInfo?.horaires_ouverture || etab.horaires_ouverture || {};
   const produits = (etab.produits || []).filter((p) => p.actif !== false && p.stock_disponible > 0);
-  const heroUrl = etab.image_url ? `${API_BASE}${etab.image_url}` : null;
+  const heroUrl = resolveFileUrl(etab.image_url, etab.fichier_photo_id);
   const modesPaiement = (() => {
     if (Array.isArray(etab.modes_paiement)) return etab.modes_paiement;
     try { return JSON.parse(etab.modes_paiement || '[]'); } catch { return []; }
@@ -334,16 +356,20 @@ export default function EtablissementDetailPage() {
             {etab.type !== 'pharmacie' && ' (dispensaire interne)'}
           </p>
           <ProduitGrid>
-            {produits.map((p) => (
+            {produits.map((p) => {
+              const imgSrc = resolveFileUrl(p.image_url, p.fichier_image_id);
+              return (
               <ProduitCard key={p.id}>
-                {p.image_url && <img src={`${API_BASE}${p.image_url}`} alt={p.nom} />}
+                {imgSrc && <img src={imgSrc} alt={p.nom} />}
                 <ServiceName>{p.nom}</ServiceName>
-                {p.description && <p style={{ margin: '0 0 6px', fontSize: '0.8rem', color: '#64748B' }}>{p.description}</p>}
-                <strong style={{ color: '#059669' }}>{Number(p.prix_fcfa || 0).toLocaleString()} FCFA</strong>
+                {p.description && <p style={{ margin: '0 0 6px', fontSize: '0.8rem', color: '#64748B', lineHeight: 1.4 }}>{p.description}</p>}
+                <strong style={{ color: '#059669', fontSize: '0.95rem' }}>{Number(p.prix_fcfa || 0).toLocaleString()} FCFA</strong>
                 <ServiceMeta>
-                  {p.categorie && <span>{p.categorie}</span>}
-                  <span style={{ color: '#22C55E' }}>En stock ({p.stock_disponible})</span>
-                  {p.necessite_ordonnance && <span style={{ color: '#B45309' }}>Ordonnance requise</span>}
+                  {p.categorie && <ProduitBadge style={{ background: '#F1F5F9', color: '#475569' }}>{p.categorie}</ProduitBadge>}
+                  <ProduitBadge style={{ background: '#DCFCE7', color: '#166534' }}>En stock ({p.stock_disponible})</ProduitBadge>
+                  {p.necessite_ordonnance && (
+                    <ProduitBadge style={{ background: '#FEF3C7', color: '#92400E' }}>Ordonnance requise</ProduitBadge>
+                  )}
                 </ServiceMeta>
                 {isPatient && (
                   <Button size="sm" variant="secondary" onClick={() => ajouterPanier(p)} style={{ marginTop: 10, width: '100%' }}>
@@ -351,7 +377,8 @@ export default function EtablissementDetailPage() {
                   </Button>
                 )}
               </ProduitCard>
-            ))}
+              );
+            })}
           </ProduitGrid>
           {isPatient && panier.length > 0 && (
             <Card style={{ padding: 20, marginTop: 16, background: '#F8FAFC' }}>
@@ -395,6 +422,24 @@ export default function EtablissementDetailPage() {
                   {s.prix_indicatif && <span>{Number(s.prix_indicatif).toLocaleString()} FCFA</span>}
                   {s.duree_minutes && <span>{s.duree_minutes} min</span>}
                 </ServiceMeta>
+              </ServiceCard>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {etab.equipe?.length > 0 && (
+        <div style={{ marginTop: 32 }}>
+          <h3><Users size={18} style={{ verticalAlign: 'middle' }} /> Notre équipe</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16, marginTop: 16 }}>
+            {etab.equipe.map((m) => (
+              <ServiceCard key={m.id}>
+                <ServiceName>{m.prenom} {m.nom}</ServiceName>
+                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#0F766E', fontWeight: 600 }}>{m.role}</p>
+                {m.bio && <p style={{ margin: '8px 0 0', fontSize: '0.82rem', color: '#64748B' }}>{m.bio}</p>}
+                {m.competences?.length > 0 && (
+                  <p style={{ margin: '6px 0 0', fontSize: '0.75rem', color: '#94A3B8' }}>{m.competences.join(' · ')}</p>
+                )}
               </ServiceCard>
             ))}
           </div>

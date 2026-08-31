@@ -34,6 +34,7 @@ const PharmacieHorairesPage = React.lazy(() => import('./pages/PharmacieHoraires
 const PharmacieProduitsPage = React.lazy(() => import('./pages/PharmacieProduitsPage'));
 const StructureReservationsPage = React.lazy(() => import('./pages/StructureReservationsPage'));
 const PatientReservationsPage = React.lazy(() => import('./pages/PatientReservationsPage'));
+const PatientRendezVousPage = React.lazy(() => import('./pages/PatientRendezVousPage'));
 const PaymentReturnPage = React.lazy(() => import('./pages/PaymentReturnPage'));
 const PatientOrdonnancesElecPage = React.lazy(() => import('./pages/PatientOrdonnancesElecPage'));
 const DispensaireProduitsPage = React.lazy(() => import('./pages/DispensaireProduitsPage'));

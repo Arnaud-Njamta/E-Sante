@@ -2,11 +2,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import client from '../api/client';
 import ENDPOINTS from '../api/endpoints';
 
-export function useCreneaux(medecinId, date) {
+export function useCreneaux(medecinId, date, affiliationId = null) {
     return useQuery({
-        queryKey: ['creneaux', medecinId, date],
+        queryKey: ['creneaux', medecinId, date, affiliationId],
         queryFn: async () => {
-            const { data } = await client.get(ENDPOINTS.medecins.creneaux(medecinId), { params: { date } });
+            const params = { date };
+            if (affiliationId) params.affiliation_id = affiliationId;
+            const { data } = await client.get(ENDPOINTS.medecins.creneaux(medecinId), { params });
             return data.data;
         },
         enabled: !!medecinId && !!date,

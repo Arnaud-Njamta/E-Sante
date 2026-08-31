@@ -1,8 +1,10 @@
 const { Op } = require('sequelize');
-const { Etablissement, ServiceEtablissement, Medecin, Conversation, Message, ProduitPharmacie, Publication } = require('../models');
+const { Etablissement, ServiceEtablissement, Medecin, Conversation, Message, ProduitPharmacie, Publication, MedecinAffiliation, MembreEquipeEtablissement } = require('../models');
 const { TYPE_ETABLISSEMENT, STATUT_VALIDATION } = require('../utils/constants');
 const { parseJsonField } = require('../utils/helpers');
 const structureMgmt = require('./structure-management.service');
+const { formatMedecin } = require('./medecin.service');
+const membreEquipeService = require('./membre-equipe.service');
 
 const lister = async ({ type, ville, recherche, page = 1, limit = 20 }) => {
   const where = { actif: true, statut_validation: STATUT_VALIDATION.VALIDE };
@@ -70,6 +72,28 @@ const getById = async (id) => {
       image_url: p.fichier_image_id ? `/api/fichiers/${p.fichier_image_id}` : null,
     }));
   }
+
+  const affiliations = await MedecinAffiliation.findAll({
+    where: { etablissement_id: id, statut: 'actif' },
+    include: [{
+      model: Medecin,
+      as: 'medecin',
+      where: { actif: true },
+      required: true,
+      attributes: { exclude: ['password_hash'] },
+    }],
+  });
+  const affiliated = affiliations.map((a) => ({
+    ...formatMedecin(a.medecin),
+    affiliation_id: a.id,
+    affiliation_role: a.role,
+  }));
+  const legacyIds = new Set((data.medecins || []).map((m) => m.id));
+  data.medecins = [
+    ...(data.medecins || []).map((m) => formatMedecin(m)),
+    ...affiliated.filter((m) => !legacyIds.has(m.id)),
+  ];
+  data.equipe = await membreEquipeService.listerPublic(id);
 
   return data;
 };

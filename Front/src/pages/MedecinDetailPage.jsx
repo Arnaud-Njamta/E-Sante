@@ -17,6 +17,7 @@ import { useCreneaux, useCreerRdv } from '../hooks/useRendezVous';
 import { parseJsonArray } from '../utils/helpers';
 import { resolveFileUrl } from '../components/ui/PhotoUploadCard';
 import { useAuth } from '../context/AuthContext';
+import { formatHorairesSummary } from '../utils/horairesDefaults';
 import toast from 'react-hot-toast';
 
 const BackBtn = styled.button`
@@ -108,7 +109,10 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
   const [heureRdv, setHeureRdv] = useState('');
   const [motif, setMotif] = useState('');
   const [typeConsultation, setTypeConsultation] = useState('presentiel');
-  const { data: creneauxData, isLoading: creneauxLoading, isError: creneauxError } = useCreneaux(id, dateRdv);
+  const [selectedAffiliation, setSelectedAffiliation] = useState('');
+  const { data: creneauxData, isLoading: creneauxLoading, isError: creneauxError } = useCreneaux(
+    id, dateRdv, selectedAffiliation || null,
+  );
   const creerRdv = useCreerRdv();
 
   useEffect(() => {
@@ -250,6 +254,11 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
                   {a.type_lieu === 'cabinet_prive' ? a.nom_lieu : a.etablissement?.nom}
                   {' — '}{a.ville || a.etablissement?.ville}
                   {a.type_lieu === 'cabinet_prive' && ' (Cabinet privé)'}
+                  {a.horaires && (
+                    <span style={{ display: 'block', fontSize: '0.75rem', color: '#94A3B8', marginTop: 2 }}>
+                      {formatHorairesSummary(a.horaires)}
+                    </span>
+                  )}
                 </p>
               ))}
             </div>
@@ -297,6 +306,24 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
       {!isPreview && isPatient && (
         <Card style={{ padding: 24, marginTop: 24 }}>
           <h3 style={{ margin: '0 0 16px' }}>Prendre rendez-vous</h3>
+          {medecin.affiliations?.length > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: '0.85rem', display: 'block', marginBottom: 4 }}>Lieu de consultation</label>
+              <select
+                value={selectedAffiliation}
+                onChange={(e) => { setSelectedAffiliation(e.target.value); setHeureRdv(''); }}
+                style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #E2E8F0' }}
+              >
+                <option value="">Horaires généraux</option>
+                {medecin.affiliations.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.type_lieu === 'cabinet_prive' ? a.nom_lieu : a.etablissement?.nom}
+                    {a.ville ? ` (${a.ville})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <label style={{ fontSize: '0.85rem', display: 'block', marginBottom: 4 }}>Date</label>

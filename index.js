@@ -27,6 +27,7 @@ const routes = require('./routes');
 const errorMiddleware = require('./middlewares/error.middleware');
 
 const { seedDemoData, seedDemoAccounts, seedPublications, seedDispensaireDemo, seedAdminAccount } = require('./services/seed.service');
+const { ensureStorageDirs } = require('./services/fichier.service');
 
 
 
@@ -212,6 +213,8 @@ const start = async () => {
     const { runPendingMigrations } = require('./services/db-migrate.service');
 
     await runPendingMigrations();
+
+    ensureStorageDirs();
 
     await sequelize.sync(syncOptions);
 

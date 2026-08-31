@@ -12,8 +12,9 @@ import { useMedecinDashboard } from '../hooks/useDashboards';
 import { useUpdateMedecinProfil } from '../hooks/useProfessionnel';
 import {
   useMedecinAffiliations, useCreerCabinet, useRepondreAffiliation, useTerminerAffiliation,
-  useMedecinParcours, useCreerParcours, useSupprimerParcours,
+  useMedecinParcours, useCreerParcours, useSupprimerParcours, useUpdateAffiliation,
 } from '../hooks/useProfilPro';
+import AffiliationHorairesEditor from '../components/medecin/AffiliationHorairesEditor';
 import toast from 'react-hot-toast';
 
 const Section = styled(Card)`
@@ -76,6 +77,7 @@ export default function MedecinProfilProPage() {
   const terminer = useTerminerAffiliation();
   const creerParcours = useCreerParcours();
   const supprimerParcours = useSupprimerParcours();
+  const updateAffiliation = useUpdateAffiliation();
 
   const [competenceInput, setCompetenceInput] = useState('');
   const [competences, setCompetences] = useState([]);
@@ -241,6 +243,17 @@ export default function MedecinProfilProPage() {
                 </Button>
               )}
             </div>
+            {a.statut === 'actif' && (
+              <AffiliationHorairesEditor
+                horaires={a.horaires}
+                isSaving={updateAffiliation.isPending}
+                onSave={async (horaires) => {
+                  await updateAffiliation.mutateAsync({ id: a.id, horaires });
+                  toast.success('Horaires enregistrés pour ce lieu');
+                  refetchAff();
+                }}
+              />
+            )}
           </AffCard>
         ))}
 

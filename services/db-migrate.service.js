@@ -237,6 +237,17 @@ const runPendingMigrations = async () => {
     `);
     console.log('Migration: table membres_equipe_etablissement créée.');
   }
+
+  await addColumnIfMissing('fichiers', 'chemin_disque', '`chemin_disque` VARCHAR(512) NULL AFTER `taille`');
+
+  const [dataCol] = await sequelize.query(
+    `SELECT IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'fichiers' AND COLUMN_NAME = 'data'`,
+  );
+  if (dataCol[0]?.IS_NULLABLE === 'NO') {
+    await sequelize.query('ALTER TABLE `fichiers` MODIFY COLUMN `data` LONGBLOB NULL');
+    console.log('Migration: fichiers.data nullable (stockage disque).');
+  }
 };
 
 

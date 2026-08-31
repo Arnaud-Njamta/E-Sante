@@ -99,11 +99,51 @@ const sendResetPasswordEmail = async (email, token) => {
         console.log(`Email de réinitialisation envoyé à ${email}`);
     } catch (error) {
         console.error('Erreur lors de l\'envoi de l\'email:', error.message);
-        // On ne lance pas l'erreur pour ne pas exposer les détails SMTP au client
-        // En production, on pourrait logger dans un service de monitoring
     }
+};
+
+const sendAffiliationInviteEmail = async ({
+  medecinEmail, medecinNom, etablissementNom, message,
+}) => {
+  if (!medecinEmail) return;
+
+  const frontUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const carriereUrl = `${frontUrl}/medecin/carriere`;
+
+  const htmlContent = `
+    <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
+      <h2 style="color: #0B3D30;">Invitation d'affiliation — DjamSanté</h2>
+      <p>Bonjour Dr. ${medecinNom},</p>
+      <p><strong>${etablissementNom}</strong> vous invite à rejoindre son équipe sur DjamSanté.</p>
+      ${message ? `<p style="color: #64748B; font-style: italic;">« ${message} »</p>` : ''}
+      <p>Connectez-vous pour accepter ou refuser l'invitation :</p>
+      <p><a href="${carriereUrl}" style="display: inline-block; background: #0B3D30; color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Voir l'invitation</a></p>
+      <p style="font-size: 12px; color: #94A3B8;">DjamSanté — Santé numérique Cameroun</p>
+    </div>
+  `;
+
+  const mailOptions = {
+    from: process.env.SMTP_FROM || '"DjamSanté" <noreply@djamsante.cm>',
+    to: medecinEmail,
+    subject: `Invitation — ${etablissementNom} souhaite vous affilier`,
+    html: htmlContent,
+  };
+
+  try {
+    if (!process.env.SMTP_HOST) {
+      console.log(`[EMAIL MOCK] Invitation affiliation → ${medecinEmail} (${etablissementNom})`);
+      console.log(`  Lien: ${carriereUrl}`);
+      return;
+    }
+    const transporter = createTransporter();
+    await transporter.sendMail(mailOptions);
+    console.log(`Email invitation affiliation envoyé à ${medecinEmail}`);
+  } catch (error) {
+    console.error('Erreur email invitation:', error.message);
+  }
 };
 
 module.exports = {
     sendResetPasswordEmail,
+    sendAffiliationInviteEmail,
 };

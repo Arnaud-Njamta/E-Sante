@@ -1,6 +1,8 @@
 const { MedecinAffiliation, Etablissement, Medecin } = require('../models');
 const { TYPE_ETABLISSEMENT } = require('../utils/constants');
 const { parseJsonField } = require('../utils/helpers');
+const emailService = require('./email.service');
+const { emptyHoraires } = require('../utils/horaires-defaults');
 
 const formatAffiliation = (row) => {
   const data = row.toJSON ? row.toJSON() : { ...row };
@@ -92,6 +94,14 @@ const inviterMedecin = async (etablissementId, { email, role = 'employe', messag
     statut: 'en_attente',
     message_invitation: message || `Invitation de ${etab.nom}`,
     actuel: true,
+    horaires: emptyHoraires(),
+  });
+
+  await emailService.sendAffiliationInviteEmail({
+    medecinEmail: medecin.email,
+    medecinNom: `${medecin.prenom} ${medecin.nom}`,
+    etablissementNom: etab.nom,
+    message: message || affiliation.message_invitation,
   });
 
   return formatAffiliation(await affiliation.reload({
@@ -122,7 +132,7 @@ const creerCabinetPrive = async (medecinId, data) => {
     nom_lieu: data.nom_lieu,
     adresse: data.adresse,
     ville: data.ville,
-    horaires: data.horaires || null,
+    horaires: data.horaires || emptyHoraires(),
     date_debut: data.date_debut || new Date().toISOString().split('T')[0],
     actuel: true,
   });

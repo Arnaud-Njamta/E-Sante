@@ -34,9 +34,15 @@ const Fichier = sequelize.define('Fichier', {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
+  chemin_disque: {
+    type: DataTypes.STRING(512),
+    allowNull: true,
+    comment: 'Chemin relatif sous UPLOAD_DIR (stockage disque, pas de BLOB en base)',
+  },
   data: {
     type: DataTypes.BLOB('long'),
-    allowNull: false,
+    allowNull: true,
+    comment: 'Legacy — anciens fichiers uniquement ; nouveaux uploads → chemin_disque',
   },
 }, {
   tableName: 'fichiers',

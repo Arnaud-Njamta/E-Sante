@@ -7,9 +7,8 @@ import Spinner from '../components/ui/Spinner';
 import ErrorState from '../components/ui/ErrorState';
 import { useMesProduits, useCreerProduit, useDeleteProduit } from '../hooks/useProduits';
 import { useAuth } from '../context/AuthContext';
+import { resolveFileUrl } from '../components/ui/PhotoUploadCard';
 import toast from 'react-hot-toast';
-
-const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000';
 
 const CATEGORIES = [
   'general', 'antalgique', 'antibiotique', 'antipaludéen', 'antidiabétique',
@@ -110,8 +109,8 @@ export default function DispensaireProduitsPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
         {(produits || []).filter((p) => p.actif !== false).map((p) => (
           <Card key={p.id} style={{ padding: 16 }}>
-            {p.image_url && (
-              <img src={`${API_BASE}${p.image_url}`} alt={p.nom} style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 8, marginBottom: 8 }} />
+            {resolveFileUrl(p.image_url, p.fichier_image_id) && (
+              <img src={resolveFileUrl(p.image_url, p.fichier_image_id)} alt={p.nom} style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 8, marginBottom: 8 }} />
             )}
             <strong>{p.nom}</strong>
             {p.necessite_ordonnance && (

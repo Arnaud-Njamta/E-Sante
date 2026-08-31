@@ -8,7 +8,7 @@ const errorMiddleware = (err, req, res, next) => {
     return res.status(400).json({ success: false, message });
   }
 
-  if (err.message?.includes('Format de fichier non supporté')) {
+  if (err.message?.includes('Format non supporté')) {
     return res.status(400).json({ success: false, message: err.message });
   }
 

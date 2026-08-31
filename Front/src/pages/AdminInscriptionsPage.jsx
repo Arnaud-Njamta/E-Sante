@@ -140,7 +140,7 @@ function InscriptionAuditTimeline({ inscriptionId }) {
 }
 
 export default function AdminInscriptionsPage() {
-  const { data: inscriptions, isLoading, error, refetch } = useInscriptionsEnAttente();
+  const { data: inscriptions, isLoading, error, refetch, isFetching } = useInscriptionsEnAttente();
   const valider = useValiderInscription();
   const rejeter = useRejeterInscription();
   const preVerifier = usePreVerifierInscription();
@@ -193,8 +193,14 @@ export default function AdminInscriptionsPage() {
     <div>
       <PageHeader
         title={<> <Shield size={22} style={{ verticalAlign: 'middle', marginRight: 8 }} /> Validation MINSANTE</>}
-        subtitle="Dossiers professionnels en attente — consultez les pièces jointes avant validation."
-      />
+        subtitle={`Dossiers professionnels en attente${isFetching ? ' · actualisation…' : ''} — rafraîchissement auto toutes les 15 s.`}
+      >
+        <div style={{ marginTop: 12 }}>
+          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+            Actualiser
+          </Button>
+        </div>
+      </PageHeader>
 
       {list.length === 0 ? (
         <Card style={{ padding: 40, textAlign: 'center', color: '#94A3B8' }}>

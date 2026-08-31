@@ -33,9 +33,16 @@ export function useInscriptionsEnAttente() {
     return useQuery({
         queryKey: ['inscriptions', 'admin', 'en-attente'],
         queryFn: async () => {
-            const { data } = await client.get(ENDPOINTS.inscriptions.adminEnAttente);
+            const { data } = await client.get(ENDPOINTS.inscriptions.adminEnAttente, {
+                params: { _t: Date.now() },
+                headers: { 'Cache-Control': 'no-cache' },
+            });
             return data.data;
         },
+        staleTime: 0,
+        refetchOnMount: 'always',
+        refetchOnWindowFocus: true,
+        refetchInterval: 15_000,
     });
 }
 
@@ -46,7 +53,10 @@ export function useValiderInscription() {
             const { data } = await client.post(ENDPOINTS.inscriptions.valider(id));
             return data;
         },
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['inscriptions'] }),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['inscriptions'] });
+            qc.invalidateQueries({ queryKey: ['admin'] });
+        },
     });
 }
 
@@ -57,7 +67,10 @@ export function useRejeterInscription() {
             const { data } = await client.post(ENDPOINTS.inscriptions.rejeter(id), { motif_rejet });
             return data;
         },
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['inscriptions'] }),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['inscriptions'] });
+            qc.invalidateQueries({ queryKey: ['admin'] });
+        },
     });
 }
 
@@ -68,6 +81,9 @@ export function usePreVerifierInscription() {
             const { data } = await client.post(ENDPOINTS.inscriptions.preVerifier(id));
             return data.data;
         },
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['inscriptions'] }),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['inscriptions'] });
+            qc.invalidateQueries({ queryKey: ['admin'] });
+        },
     });
 }

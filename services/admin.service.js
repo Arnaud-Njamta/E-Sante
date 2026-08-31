@@ -1,3 +1,4 @@
+const { Op } = require('sequelize');
 const {
   Patient, Medecin, Etablissement, Admin, InscriptionProfessionnel, AdminAuditLog,
 } = require('../models');
@@ -41,6 +42,18 @@ const pickEtab = (e) => ({
   created_at: e.createdAt,
 });
 
+const pickInscription = (i) => ({
+  id: i.id,
+  type: i.type_profil,
+  nom: i.nom_structure || [i.prenom, i.nom].filter(Boolean).join(' ') || i.nom,
+  prenom: i.prenom,
+  email: i.email,
+  telephone: i.telephone,
+  ville: i.ville,
+  statut: i.statut,
+  created_at: i.createdAt,
+});
+
 const getOverview = async () => {
   const [
     patients,
@@ -53,7 +66,8 @@ const getOverview = async () => {
     recentPatients,
     recentMedecins,
     recentEtablissements,
-    recentConnexions,
+    recentInscriptionsPro,
+    recentActivite,
   ] = await Promise.all([
     Patient.count(),
     Medecin.count({ where: { actif: true } }),
@@ -67,7 +81,7 @@ const getOverview = async () => {
     Patient.findAll({
       attributes: ['id', 'nom', 'prenom', 'email', 'telephone', 'createdAt'],
       order: [['createdAt', 'DESC']],
-      limit: 8,
+      limit: 12,
     }),
     Medecin.findAll({
       attributes: [
@@ -75,7 +89,7 @@ const getOverview = async () => {
         'statut_validation', 'createdAt',
       ],
       order: [['createdAt', 'DESC']],
-      limit: 8,
+      limit: 12,
     }),
     Etablissement.findAll({
       attributes: [
@@ -85,10 +99,23 @@ const getOverview = async () => {
       order: [['createdAt', 'DESC']],
       limit: 12,
     }),
+    InscriptionProfessionnel.findAll({
+      attributes: [
+        'id', 'type_profil', 'email', 'nom', 'prenom', 'nom_structure',
+        'telephone', 'ville', 'statut', 'createdAt',
+      ],
+      order: [['createdAt', 'DESC']],
+      limit: 15,
+    }),
     AdminAuditLog.findAll({
-      where: { categorie: 'auth', action: 'connexion' },
-      order: [['created_at', 'DESC']],
-      limit: 20,
+      where: {
+        [Op.or]: [
+          { categorie: 'auth', action: 'connexion' },
+          { categorie: 'inscription' },
+        ],
+      },
+      order: [['createdAt', 'DESC']],
+      limit: 30,
     }),
   ]);
 
@@ -107,10 +134,12 @@ const getOverview = async () => {
       patients: recentPatients.map(pickPatient),
       medecins: recentMedecins.map(pickMedecin),
       etablissements: recentEtablissements.map(pickEtab),
-      connexions: recentConnexions.map((log) => {
+      inscriptions_pro: recentInscriptionsPro.map(pickInscription),
+      connexions: recentActivite.map((log) => {
         const plain = log.toJSON ? log.toJSON() : log;
         return {
           id: plain.id,
+          categorie: plain.categorie,
           action: plain.action,
           acteur_label: plain.acteur_label,
           details: plain.details,
@@ -119,6 +148,7 @@ const getOverview = async () => {
         };
       }),
     },
+    fetched_at: new Date().toISOString(),
   };
 };
 

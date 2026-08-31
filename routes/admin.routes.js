@@ -5,9 +5,18 @@ const adminAuditController = require('../controllers/admin-audit.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const { requireRole } = require('../middlewares/auth.middleware');
 
-router.get('/overview', authMiddleware, requireRole('admin'), adminController.getOverview);
-router.get('/comptes', authMiddleware, requireRole('admin'), adminController.listComptes);
-router.get('/etablissements', authMiddleware, requireRole('admin'), adminController.listEtablissements);
-router.get('/audit-logs', authMiddleware, requireRole('admin'), adminAuditController.lister);
+const noCache = (_req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  next();
+};
+
+router.use(authMiddleware, requireRole('admin'), noCache);
+
+router.get('/overview', adminController.getOverview);
+router.get('/comptes', adminController.listComptes);
+router.get('/etablissements', adminController.listEtablissements);
+router.get('/audit-logs', adminAuditController.lister);
 
 module.exports = router;

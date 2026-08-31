@@ -5,6 +5,18 @@ const adminAudit = require('../services/admin-audit.service');
 const register = async (req, res, next) => {
   try {
     const result = await authService.register(req.body);
+    adminAudit.log({
+      categorie: adminAudit.CATEGORIES.INSCRIPTION,
+      action: adminAudit.ACTIONS.INSCRIPTION_PATIENT,
+      acteur: { id: result.user?.id, role: result.role, profile: result.user },
+      details: {
+        email: (req.body.email || '').trim().toLowerCase(),
+        nom: req.body.nom,
+        prenom: req.body.prenom,
+        role: 'patient',
+      },
+      ip: req.ip || req.headers['x-forwarded-for'] || null,
+    });
     res.status(201).json({ success: true, data: result });
   } catch (error) {
     next(error);

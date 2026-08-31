@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import {
-  Users, Stethoscope, Building2, Pill, Hospital, Shield, ScrollText, LogIn,
+  Users, Stethoscope, Building2, Pill, Hospital, Shield, ScrollText, LogIn, RefreshCw,
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Spinner from '../components/ui/Spinner';
@@ -98,6 +98,48 @@ const QuickLinks = styled.div`
   }
 `;
 
+const RefreshBar = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+`;
+
+const RefreshBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 99px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.surface};
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: ${CAMEROON_COLORS.greenDark};
+  cursor: pointer;
+
+  &:hover { background: ${({ theme }) => theme.colors.primary[50]}; }
+  &:disabled { opacity: 0.6; cursor: wait; }
+
+  svg.spin { animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+`;
+
+const UpdatedAt = styled.span`
+  font-size: 0.75rem;
+  color: #94A3B8;
+`;
+
+const ACTION_LABELS = {
+  connexion: 'Connexion',
+  inscription_soumise: 'Inscription pro',
+  inscription_patient: 'Nouveau patient',
+  inscription_validee: 'Dossier validé',
+  inscription_rejetee: 'Dossier rejeté',
+};
+
 const TYPE_COLORS = {
   patient: '#3B82F6',
   medecin: '#0D9488',
@@ -114,17 +156,19 @@ function formatDate(iso) {
 }
 
 export default function AdminDashboardPage() {
-  const { data, isLoading, error, refetch } = useAdminOverview();
+  const { data, isLoading, error, refetch, isFetching, dataUpdatedAt } = useAdminOverview();
   const [tab, setTab] = useState('comptes');
 
-  if (isLoading) return <Spinner />;
-  if (error) return <ErrorState message="Impossible de charger le tableau de bord admin" onRetry={refetch} />;
+  if (isLoading && !data) return <Spinner />;
+  if (error && !data) return <ErrorState message="Impossible de charger le tableau de bord admin" onRetry={refetch} />;
 
-  const { stats, recent } = data;
+  const { stats, recent, fetched_at: fetchedAt } = data || { stats: {}, recent: {} };
   const comptes = [...(recent.patients || []), ...(recent.medecins || [])]
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   const etabs = recent.etablissements || [];
-  const connexions = recent.connexions || [];
+  const inscriptionsPro = recent.inscriptions_pro || [];
+  const activite = recent.connexions || [];
+  const lastUpdate = fetchedAt || (dataUpdatedAt ? new Date(dataUpdatedAt).toISOString() : null);
 
   return (
     <div>
@@ -148,10 +192,24 @@ export default function AdminDashboardPage() {
         <Kpi><h4><Shield size={14} /> Dossiers à valider</h4><p>{stats.inscriptions_en_attente}</p></Kpi>
       </Grid>
 
+      <RefreshBar>
+        <UpdatedAt>
+          {lastUpdate ? `Mis à jour : ${formatDate(lastUpdate)}` : 'Chargement…'}
+          {isFetching ? ' · actualisation…' : ''}
+        </UpdatedAt>
+        <RefreshBtn type="button" onClick={() => refetch()} disabled={isFetching}>
+          <RefreshCw size={14} className={isFetching ? 'spin' : ''} />
+          Actualiser
+        </RefreshBtn>
+      </RefreshBar>
+
       <Tabs>
         <Tab $active={tab === 'comptes'} onClick={() => setTab('comptes')}>Comptes récents</Tab>
+        <Tab $active={tab === 'inscriptions'} onClick={() => setTab('inscriptions')}>
+          Inscriptions pro ({inscriptionsPro.filter((i) => ['en_attente', 'en_revision', 'documents_manquants'].includes(i.statut)).length})
+        </Tab>
         <Tab $active={tab === 'etablissements'} onClick={() => setTab('etablissements')}>Établissements</Tab>
-        <Tab $active={tab === 'connexions'} onClick={() => setTab('connexions')}>Connexions</Tab>
+        <Tab $active={tab === 'activite'} onClick={() => setTab('activite')}>Activité</Tab>
       </Tabs>
 
       <TableWrap>
@@ -178,6 +236,35 @@ export default function AdminDashboardPage() {
                   <td>{c.telephone || '—'}</td>
                   <td>{c.statut_validation || 'actif'}</td>
                   <td>{formatDate(c.created_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+
+        {tab === 'inscriptions' && (
+          <Table>
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Structure / nom</th>
+                <th>Email</th>
+                <th>Ville</th>
+                <th>Statut</th>
+                <th>Reçu</th>
+              </tr>
+            </thead>
+            <tbody>
+              {inscriptionsPro.length === 0 ? (
+                <tr><td colSpan={6} style={{ textAlign: 'center', padding: 28, color: '#94A3B8' }}>Aucune inscription professionnelle</td></tr>
+              ) : inscriptionsPro.map((i) => (
+                <tr key={i.id}>
+                  <td><Badge $c={TYPE_COLORS[i.type] || '#64748B'}>{i.type}</Badge></td>
+                  <td>{i.nom}</td>
+                  <td>{i.email}</td>
+                  <td>{i.ville || '—'}</td>
+                  <td>{i.statut}</td>
+                  <td>{formatDate(i.created_at)}</td>
                 </tr>
               ))}
             </tbody>
@@ -213,28 +300,34 @@ export default function AdminDashboardPage() {
           </Table>
         )}
 
-        {tab === 'connexions' && (
+        {tab === 'activite' && (
           <Table>
             <thead>
               <tr>
                 <th><LogIn size={12} style={{ verticalAlign: 'middle' }} /> Date</th>
+                <th>Événement</th>
                 <th>Email / acteur</th>
-                <th>Rôle</th>
+                <th>Détail</th>
                 <th>IP</th>
               </tr>
             </thead>
             <tbody>
-              {connexions.length === 0 ? (
+              {activite.length === 0 ? (
                 <tr>
-                  <td colSpan={4} style={{ textAlign: 'center', padding: 28, color: '#94A3B8' }}>
-                    Aucune connexion enregistrée — reconnectez-vous ou demandez à un utilisateur de se connecter.
+                  <td colSpan={5} style={{ textAlign: 'center', padding: 28, color: '#94A3B8' }}>
+                    Aucune activité — les connexions et inscriptions apparaîtront ici automatiquement.
                   </td>
                 </tr>
-              ) : connexions.map((log) => (
+              ) : activite.map((log) => (
                 <tr key={log.id}>
                   <td>{formatDate(log.created_at)}</td>
+                  <td>
+                    <Badge $c={log.categorie === 'auth' ? '#0D9488' : '#8B5CF6'}>
+                      {ACTION_LABELS[log.action] || log.action}
+                    </Badge>
+                  </td>
                   <td>{log.details?.email || log.acteur_label || '—'}</td>
-                  <td><Badge $c="#0D9488">{log.details?.role || '—'}</Badge></td>
+                  <td>{log.details?.role || log.details?.type_profil || '—'}</td>
                   <td style={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>{log.ip || '—'}</td>
                 </tr>
               ))}
@@ -243,10 +336,10 @@ export default function AdminDashboardPage() {
         )}
       </TableWrap>
 
-      {tab === 'connexions' && connexions.length > 0 && (
+      {tab === 'activite' && activite.length > 0 && (
         <p style={{ marginTop: 12, fontSize: '0.8rem', color: '#64748B' }}>
           <ScrollText size={14} style={{ verticalAlign: 'middle' }} />
-          {' '}Historique détaillé dans le <Link to="/admin/audit">journal de contrôle</Link> (filtre « Authentification »).
+          {' '}Actualisation automatique toutes les 15 s. Journal complet : <Link to="/admin/audit">audit</Link>.
         </p>
       )}
     </div>

@@ -2,6 +2,7 @@ const { AdminAuditLog } = require('../models');
 
 const ACTIONS = {
   INSCRIPTION_SOUMISE: 'inscription_soumise',
+  INSCRIPTION_PATIENT: 'inscription_patient',
   INSCRIPTION_VALIDEE: 'inscription_validee',
   INSCRIPTION_REJETEE: 'inscription_rejetee',
   DOCUMENT_CONSULTE: 'document_consulte',
@@ -59,7 +60,7 @@ const lister = async ({
 
   const { rows, count } = await AdminAuditLog.findAndCountAll({
     where,
-    order: [['created_at', 'DESC']],
+    order: [['createdAt', 'DESC']],
     limit: Math.min(parseInt(limit, 10) || 100, 500),
     offset: parseInt(offset, 10) || 0,
   });

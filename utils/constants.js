@@ -142,6 +142,7 @@ const STATUT_ORDONNANCE_ELEC = {
 const TYPE_FICHIER = {
   PHOTO_PROFIL: 'photo_profil',
   CACHET: 'cachet',
+  SIGNATURE: 'signature',
   DOCUMENT: 'document',
   PRODUIT: 'produit',
   ORDONNANCE_PDF: 'ordonnance_pdf',
@@ -170,6 +171,17 @@ const STATUT_RESERVATION = {
   ANNULEE: 'annulee',
 };
 
+// Consentements RGPD / santé (Cameroun — Loi n° 2010/012, secret médical)
+const POLITIQUE_CONFIDENTIALITE_VERSION = '2026-01';
+
+const CONSENTEMENT_TYPES = {
+  POLITIQUE: 'politique_confidentialite',
+  CARNET_ACTIVATION: 'carnet_medical_activation',
+  PARTAGE_CARNET_RDV: 'partage_carnet_rdv',
+  PARTAGE_CARNET_MEDECIN: 'partage_carnet_medecin',
+  TELECONSULTATION: 'teleconsultation',
+};
+
 module.exports = {
   STATUT_TRAITEMENT,
   STATUT_PRISE,
@@ -194,4 +206,6 @@ module.exports = {
   REGIONS_SENEGAL,
   REGIONS_CAMEROUN,
   STATUT_RESERVATION,
+  POLITIQUE_CONFIDENTIALITE_VERSION,
+  CONSENTEMENT_TYPES,
 };

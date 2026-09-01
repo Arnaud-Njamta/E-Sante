@@ -129,7 +129,31 @@ const getCreneauxDisponibles = async (medecinId, date, affiliationId = null) => 
   };
 };
 
-const creerRdv = async (patientId, { medecin_id, date_rdv, heure_debut, motif, type_consultation }) => {
+const creerRdv = async (patientId, payload, meta = {}) => {
+  const {
+    medecin_id, date_rdv, heure_debut, motif, type_consultation,
+    consentement_politique,
+    consentement_partage_carnet,
+    consentement_teleconsultation,
+    politique_version,
+  } = payload;
+
+  const consentementService = require('./consentement.service');
+  const { CONSENTEMENT_TYPES, POLITIQUE_CONFIDENTIALITE_VERSION } = require('../utils/constants');
+
+  if (!consentement_politique) {
+    const error = new Error('Vous devez accepter la politique de confidentialité pour prendre rendez-vous');
+    error.statusCode = 400;
+    throw error;
+  }
+  if (!consentement_partage_carnet) {
+    const error = new Error(
+      'Vous devez autoriser l\'accès à votre carnet médical pour le médecin consulté (secret médical / RGPD)',
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
   const medecin = await Medecin.findByPk(medecin_id);
   if (!medecin || !medecin.actif) {
     const error = new Error('Médecin non disponible');
@@ -140,6 +164,11 @@ const creerRdv = async (patientId, { medecin_id, date_rdv, heure_debut, motif, t
   const type = type_consultation || 'presentiel';
   if (type === 'teleconsultation' && !medecin.accepte_teleconsultation) {
     const error = new Error('Ce médecin n\'accepte pas la téléconsultation');
+    error.statusCode = 400;
+    throw error;
+  }
+  if (type === 'teleconsultation' && !consentement_teleconsultation) {
+    const error = new Error('Le consentement à la téléconsultation est requis');
     error.statusCode = 400;
     throw error;
   }
@@ -172,6 +201,23 @@ const creerRdv = async (patientId, { medecin_id, date_rdv, heure_debut, motif, t
     type_consultation: type,
     statut: STATUT_RDV.EN_ATTENTE,
   });
+
+  const version = politique_version || POLITIQUE_CONFIDENTIALITE_VERSION;
+  const consentBase = {
+    patient_id: patientId,
+    medecin_id,
+    rendez_vous_id: rdv.id,
+    politique_version: version,
+    ip: meta.ip || null,
+    user_agent: meta.user_agent || null,
+  };
+  await consentementService.enregistrerLot([
+    { ...consentBase, type: CONSENTEMENT_TYPES.POLITIQUE },
+    { ...consentBase, type: CONSENTEMENT_TYPES.PARTAGE_CARNET_RDV },
+    ...(type === 'teleconsultation'
+      ? [{ ...consentBase, type: CONSENTEMENT_TYPES.TELECONSULTATION }]
+      : []),
+  ]);
 
   const transaction = await commissionService.creerTransactionConsultation({
     patientId,

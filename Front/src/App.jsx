@@ -39,6 +39,7 @@ const StructureReservationsPage = React.lazy(() => import('./pages/StructureRese
 const PatientReservationsPage = React.lazy(() => import('./pages/PatientReservationsPage'));
 const PatientRendezVousPage = React.lazy(() => import('./pages/PatientRendezVousPage'));
 const PaymentReturnPage = React.lazy(() => import('./pages/PaymentReturnPage'));
+const CarnetMedicalPage = React.lazy(() => import('./pages/CarnetMedicalPage'));
 const PatientOrdonnancesElecPage = React.lazy(() => import('./pages/PatientOrdonnancesElecPage'));
 const DispensaireProduitsPage = React.lazy(() => import('./pages/DispensaireProduitsPage'));
 const PharmacieLocalisationPage = React.lazy(() => import('./pages/PharmacieLocalisationPage'));
@@ -104,6 +105,7 @@ export default function App() {
                                     <Route path="/reservations" element={<PatientReservationsPage />} />
                                     <Route path="/paiements" element={<PatientPaiementsPage />} />
                                     <Route path="/ordonnances-electroniques" element={<PatientOrdonnancesElecPage />} />
+                                    <Route path="/carnet-medical" element={<CarnetMedicalPage />} />
                                     <Route path="/pharmacie/chat" element={<PharmacieChatPage />} />
                                     <Route path="/pharmacie/chat/:conversationId" element={<PharmacieChatPage />} />
                                     <Route path="/profil" element={<ProfilePage />} />

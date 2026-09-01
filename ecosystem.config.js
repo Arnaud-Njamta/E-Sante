@@ -1,9 +1,8 @@
 const path = require('path');
-const os = require('os');
 
-const instances = process.env.PM2_INSTANCES || 'max';
-const resolvedInstances = instances === 'max' ? os.cpus().length : parseInt(instances, 10) || 1;
-const useCluster = resolvedInstances > 1 || instances === 'max';
+/** Par défaut : 1 processus fork (stable sur VPS 2 Go). Cluster via PM2_INSTANCES=2|max */
+const instances = process.env.PM2_INSTANCES || '1';
+const useCluster = instances !== '1' && instances !== 'fork';
 
 module.exports = {
   apps: [{
@@ -14,7 +13,9 @@ module.exports = {
     instances: useCluster ? instances : 1,
     autorestart: true,
     watch: false,
-    max_memory_restart: process.env.PM2_MAX_MEMORY || '768M',
+    max_memory_restart: process.env.PM2_MAX_MEMORY || '512M',
+    kill_timeout: 5000,
+    listen_timeout: 10000,
     env: {
       NODE_ENV: 'production',
     },

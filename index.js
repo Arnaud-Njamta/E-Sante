@@ -136,10 +136,25 @@ app.get('/', (req, res) => {
 
 
 
-app.get('/api/health', (req, res) => {
-
-  res.json({ success: true, status: 'ok', env: process.env.NODE_ENV });
-
+app.get('/api/health', async (req, res) => {
+  try {
+    await sequelize.authenticate({ logging: false });
+    res.json({
+      success: true,
+      status: 'ok',
+      db: 'connected',
+      env: process.env.NODE_ENV,
+      uptime: Math.floor(process.uptime()),
+      instance: process.env.NODE_APP_INSTANCE ?? '0',
+    });
+  } catch (err) {
+    res.status(503).json({
+      success: false,
+      status: 'degraded',
+      db: 'disconnected',
+      message: err.message,
+    });
+  }
 });
 
 
@@ -231,9 +246,11 @@ const start = async () => {
       console.log('Production : sync Sequelize ignoré (migrations uniquement).');
     }
 
-
-
-    await runSeeds();
+    if (isPrimaryPm2Instance()) {
+      await runSeeds();
+    } else {
+      console.log(`Instance PM2 #${process.env.NODE_APP_INSTANCE} — seeds ignorés.`);
+    }
 
 
 

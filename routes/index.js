@@ -21,6 +21,7 @@ const publicationRoutes = require('./publication.routes');
 router.use('/auth', authRoutes);
 router.use('/inscriptions', inscriptionRoutes);
 router.use('/patients', patientRoutes);
+router.use('/carnet-medical', require('./carnet-medical.routes'));
 router.use('/traitements', traitementRoutes);
 router.use('/prises', priseRoutes);
 router.use('/ordonnances', ordonnanceRoutes);

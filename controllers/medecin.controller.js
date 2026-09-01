@@ -96,7 +96,27 @@ const uploadCachet = async (req, res, next) => {
   }
 };
 
+const uploadSignature = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Fichier signature requis' });
+    }
+    const meta = await saveFichier({
+      buffer: req.file.buffer,
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      proprietaire_type: 'medecin',
+      proprietaire_id: req.medecin.id,
+      type_fichier: TYPE_FICHIER.SIGNATURE,
+    });
+    const medecin = await medecinService.uploadSignature(req.medecin.id, meta);
+    res.json({ success: true, data: medecin, message: 'Signature électronique enregistrée' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   lister, getById, getProfile, getDashboard,
-  updateProfil, updateHoraires, uploadPhoto, uploadCachet,
+  updateProfil, updateHoraires, uploadPhoto, uploadCachet, uploadSignature,
 };

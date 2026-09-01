@@ -39,6 +39,11 @@ const ENDPOINTS = {
         account: '/patients/account',
         privacy: '/patients/privacy',
     },
+    carnetMedical: {
+        me: '/carnet-medical/me',
+        textes: '/carnet-medical/textes-consentement',
+        consentements: '/carnet-medical/me/consentements',
+    },
     traitements: {
         base: '/traitements',
         byId: (id) => `/traitements/${id}`,
@@ -62,6 +67,7 @@ const ENDPOINTS = {
         verifier: (numero) => `/ordonnances-electroniques/verifier/${numero}`,
         delivrer: (id) => `/ordonnances-electroniques/${id}/delivrer`,
         audit: (id) => `/ordonnances-electroniques/${id}/audit`,
+        document: (id) => `/ordonnances-electroniques/${id}/document`,
         disponibilite: (id, etabId) => `/ordonnances-electroniques/${id}/disponibilite?etablissement_id=${etabId}`,
         reserver: (id) => `/ordonnances-electroniques/${id}/reserver`,
     },
@@ -101,6 +107,8 @@ const ENDPOINTS = {
         meHoraires: '/medecins/me/horaires',
         mePhoto: '/medecins/me/photo',
         meCachet: '/medecins/me/cachet',
+        meSignature: '/medecins/me/signature',
+        carnetPatient: (patientId) => `/medecins/patients/${patientId}/carnet`,
         meAffiliations: '/medecins/me/affiliations',
         meCabinet: '/medecins/me/cabinet',
         repondreAffiliation: (id) => `/medecins/me/affiliations/${id}/repondre`,

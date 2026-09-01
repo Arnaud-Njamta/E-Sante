@@ -21,6 +21,7 @@ const formatMedecin = (medecin) => {
     note_moyenne: Number(data.note_moyenne) || 5,
     photo_url: data.fichier_photo_id ? `/api/fichiers/${data.fichier_photo_id}` : data.photo_url,
     cachet_url: data.fichier_cachet_id ? `/api/fichiers/${data.fichier_cachet_id}` : null,
+    signature_url: data.fichier_signature_id ? `/api/fichiers/${data.fichier_signature_id}` : null,
   };
 };
 
@@ -200,7 +201,15 @@ const uploadCachet = async (medecinId, fichierMeta) => {
   return formatMedecin(medecin);
 };
 
+const uploadSignature = async (medecinId, fichierMeta) => {
+  const medecin = await Medecin.findByPk(medecinId);
+  medecin.fichier_signature_id = fichierMeta.id;
+  await medecin.save();
+  return formatMedecin(medecin);
+};
+
 module.exports = {
-  lister, getById, getProfile, getDashboard, updateProfil, updateHoraires, uploadPhoto, uploadCachet,
+  lister, getById, getProfile, getDashboard, updateProfil, updateHoraires,
+  uploadPhoto, uploadCachet, uploadSignature,
   formatMedecin, formatMedecinForStructure,
 };

@@ -76,6 +76,22 @@ export function useUploadMedecinCachet() {
     });
 }
 
+export function useUploadMedecinSignature() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async (file) => {
+            const fd = new FormData();
+            fd.append('signature', file);
+            const { data } = await client.post(ENDPOINTS.medecins.meSignature, fd);
+            return data.data;
+        },
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['medecin'] });
+            qc.invalidateQueries({ queryKey: ['medecin', 'dashboard'] });
+        },
+    });
+}
+
 export function useUpdateMedecinHoraires() {
     const qc = useQueryClient();
     return useMutation({

@@ -19,7 +19,10 @@ const getCreneaux = async (req, res, next) => {
 
 const creer = async (req, res, next) => {
   try {
-    const rdv = await rendezvousService.creerRdv(req.patient.id, req.body);
+    const rdv = await rendezvousService.creerRdv(req.patient.id, req.body, {
+      ip: req.ip || req.headers['x-forwarded-for'],
+      user_agent: req.headers['user-agent'],
+    });
     res.status(201).json({ success: true, data: rdv, message: 'Rendez-vous demandé — en attente de confirmation' });
   } catch (error) {
     next(error);

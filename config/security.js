@@ -25,13 +25,20 @@ const globalApiLimiter = rateLimit({
   max: parseInt(process.env.RATE_LIMIT_GLOBAL || '3000', 10),
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => req.path === '/api/health' || req.path === '/health',
+  skip: (req) => {
+    const p = req.path || req.originalUrl || '';
+    return p === '/api/health'
+      || p === '/health'
+      || p.startsWith('/api/auth/')
+      || p === '/api/auth/login'
+      || p === '/api/auth/refresh';
+  },
   message: { success: false, message: 'Trop de requêtes, réessayez dans quelques minutes' },
 });
 
 const authLoginLimiter = rateLimit({
   windowMs: WINDOW_MS,
-  max: parseInt(process.env.RATE_LIMIT_LOGIN || '20', 10),
+  max: parseInt(process.env.RATE_LIMIT_LOGIN || '60', 10),
   message: { success: false, message: 'Trop de tentatives de connexion. Réessayez plus tard.' },
 });
 

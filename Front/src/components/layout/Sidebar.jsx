@@ -7,7 +7,7 @@ import { getInitials } from '../../utils/helpers';
 import BrandLogo from '../brand/BrandLogo';
 import UserAvatar from '../ui/UserAvatar';
 import {
-  LayoutDashboard, Heart, Clock, FileText, BarChart3, User, LogOut,
+  LayoutDashboard, Heart, BookHeart, Clock, FileText, BarChart3, User, LogOut,
   ChevronLeft, Building2, MessageCircle, Stethoscope, Star, Pill, Newspaper, Camera, Package, Shield, Wallet, ScrollText, Briefcase, Users,
 } from 'lucide-react';
 
@@ -190,6 +190,7 @@ const ROLE_NAV = {
     { to: '/rendez-vous', icon: Clock, label: 'Mes rendez-vous', section: 'sante' },
     { to: '/reservations', icon: Package, label: 'Mes réservations', section: 'sante' },
     { to: '/paiements', icon: Wallet, label: 'Mes paiements', section: 'sante' },
+    { to: '/carnet-medical', icon: BookHeart, label: 'Carnet médical', section: 'sante' },
     { to: '/ordonnances-electroniques', icon: FileText, label: 'Ordonnances élec.', section: 'sante' },
     { to: '/sante?tab=medecins', icon: Stethoscope, label: 'Trouver un médecin', section: 'sante' },
     { to: '/actualites', icon: Newspaper, label: 'Actualités', section: 'sante' },

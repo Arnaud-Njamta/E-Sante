@@ -64,6 +64,15 @@ const getAudit = async (req, res, next) => {
   }
 };
 
+const getDocument = async (req, res, next) => {
+  try {
+    const doc = await ordonnanceService.getDocument(req.params.id, req.user.id, req.user.role);
+    res.json({ success: true, data: doc });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const disponibilite = async (req, res, next) => {
   try {
     const reservationService = require('../services/reservation-dispensaire.service');
@@ -94,5 +103,5 @@ const reserver = async (req, res, next) => {
 };
 
 module.exports = {
-  creer, signer, listerMedecin, listerPatient, verifier, delivrer, disponibilite, reserver, getAudit,
+  creer, signer, listerMedecin, listerPatient, verifier, delivrer, disponibilite, reserver, getAudit, getDocument,
 };

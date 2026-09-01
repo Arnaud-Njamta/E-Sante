@@ -41,6 +41,10 @@ const OrdonnanceElectronique = sequelize.define('OrdonnanceElectronique', {
     type: DataTypes.UUID,
     allowNull: true,
   },
+  fichier_signature_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+  },
   statut: {
     type: DataTypes.ENUM('brouillon', 'signee', 'delivree', 'expiree', 'annulee'),
     allowNull: false,

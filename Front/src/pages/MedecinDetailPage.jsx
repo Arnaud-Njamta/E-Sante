@@ -14,6 +14,7 @@ import ENDPOINTS from '../api/endpoints';
 import { useMedecin } from '../hooks/useMedecins';
 import { useAvis, useCreerAvis } from '../hooks/useMessagerie';
 import { useCreneaux, useCreerRdv } from '../hooks/useRendezVous';
+import { useTextesConsentement } from '../hooks/useCarnetMedical';
 import { parseJsonArray } from '../utils/helpers';
 import { resolveFileUrl } from '../components/ui/PhotoUploadCard';
 import { useAuth } from '../context/AuthContext';
@@ -110,6 +111,10 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
   const [motif, setMotif] = useState('');
   const [typeConsultation, setTypeConsultation] = useState('presentiel');
   const [selectedAffiliation, setSelectedAffiliation] = useState('');
+  const [consentPolitique, setConsentPolitique] = useState(false);
+  const [consentCarnet, setConsentCarnet] = useState(false);
+  const [consentTele, setConsentTele] = useState(false);
+  const { data: textesConsent } = useTextesConsentement();
   const { data: creneauxData, isLoading: creneauxLoading, isError: creneauxError } = useCreneaux(
     id, dateRdv, selectedAffiliation || null,
   );
@@ -158,6 +163,14 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
 
   const handleRdv = async () => {
     if (!dateRdv || !heureRdv) { toast.error('Choisissez une date et un créneau'); return; }
+    if (!consentPolitique || !consentCarnet) {
+      toast.error('Vous devez accepter la politique de confidentialité et autoriser l\'accès au carnet médical');
+      return;
+    }
+    if (typeConsultation === 'teleconsultation' && !consentTele) {
+      toast.error('Consentement téléconsultation requis');
+      return;
+    }
     try {
       await creerRdv.mutateAsync({
         medecin_id: id,
@@ -165,6 +178,10 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
         heure_debut: heureRdv,
         motif,
         type_consultation: typeConsultation,
+        consentement_politique: true,
+        consentement_partage_carnet: true,
+        consentement_teleconsultation: typeConsultation === 'teleconsultation',
+        politique_version: textesConsent?.version,
       });
       toast.success('Demande de rendez-vous envoyée !');
       navigate('/rendez-vous');
@@ -394,7 +411,29 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
             breakdown={creneauxData?.commission || commissionPreview}
             label="Tarif & frais plateforme"
           />
-          <Button onClick={handleRdv} disabled={creerRdv.isPending || !dateRdv || !heureRdv} style={{ marginTop: 12 }}>
+          <div style={{
+            marginTop: 16, padding: 14, borderRadius: 10,
+            background: '#F8FAFC', border: '1px solid #E2E8F0', fontSize: '0.82rem',
+          }}>
+            <p style={{ margin: '0 0 10px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Shield size={14} /> Consentements obligatoires (RGPD / secret médical)
+            </p>
+            <label style={{ display: 'flex', gap: 8, marginBottom: 8, cursor: 'pointer' }}>
+              <input type="checkbox" checked={consentPolitique} onChange={(e) => setConsentPolitique(e.target.checked)} />
+              {textesConsent?.politique_confidentialite?.resume || 'J\'accepte la politique de confidentialité DjamSanté'}
+            </label>
+            <label style={{ display: 'flex', gap: 8, marginBottom: 8, cursor: 'pointer' }}>
+              <input type="checkbox" checked={consentCarnet} onChange={(e) => setConsentCarnet(e.target.checked)} />
+              {textesConsent?.partage_carnet_rdv?.resume || 'J\'autorise ce médecin à consulter mon carnet médical pour cette consultation'}
+            </label>
+            {typeConsultation === 'teleconsultation' && (
+              <label style={{ display: 'flex', gap: 8, cursor: 'pointer' }}>
+                <input type="checkbox" checked={consentTele} onChange={(e) => setConsentTele(e.target.checked)} />
+                {textesConsent?.teleconsultation?.resume || 'J\'accepte la téléconsultation'}
+              </label>
+            )}
+          </div>
+          <Button onClick={handleRdv} disabled={creerRdv.isPending || !dateRdv || !heureRdv || !consentPolitique || !consentCarnet} style={{ marginTop: 12 }}>
             Demander un RDV
           </Button>
         </Card>

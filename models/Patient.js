@@ -71,6 +71,38 @@ const Patient = sequelize.define('Patient', {
     allowNull: true,
     defaultValue: [],
   },
+  groupe_sanguin: {
+    type: DataTypes.STRING(5),
+    allowNull: true,
+  },
+  antecedents_familiaux: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: [],
+  },
+  antecedents_chirurgicaux: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: [],
+  },
+  traitements_habituelles: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: [],
+  },
+  vaccinations: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: [],
+  },
+  notes_medicales: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
+  consentement_carnet_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
   preferences_notification: {
     type: DataTypes.JSON,
     allowNull: true,

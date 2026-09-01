@@ -78,12 +78,27 @@ const resolveUserFromRequest = async (req) => {
   const token = authHeader.split(' ')[1];
   const decoded = jwt.verify(token, process.env.JWT_SECRET);
   const role = decoded.role || USER_ROLES.PATIENT;
+  const id = decoded.id;
 
-  const profile = await getProfile(decoded.id, role);
-  if (!profile) return null;
+  let profile = null;
+  try {
+    profile = await getProfile(id, role);
+  } catch (dbErr) {
+    console.warn('[auth] DB indisponible, repli JWT:', dbErr.message);
+  }
+
+  if (!profile) {
+    profile = {
+      id,
+      role,
+      email: decoded.email || null,
+      nom: decoded.nom || null,
+      prenom: decoded.prenom || null,
+    };
+  }
 
   attachRoleShortcut(req, profile, role);
-  return { id: decoded.id, role, profile };
+  return { id, role, profile };
 };
 
 const authMiddleware = async (req, res, next) => {

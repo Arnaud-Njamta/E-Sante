@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Stamp, Clock, Save, Video } from 'lucide-react';
+import { Stamp, Clock, Save, Video, PenLine } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Spinner from '../components/ui/Spinner';
 import PhotoUploadCard from '../components/ui/PhotoUploadCard';
 import { authenticatedFileUrl } from '../utils/fileUrl';
 import { useMedecinDashboard } from '../hooks/useDashboards';
-import { useUploadMedecinPhoto, useUploadMedecinCachet, useUpdateMedecinHoraires, useUpdateMedecinProfil } from '../hooks/useProfessionnel';
+import { useUploadMedecinPhoto, useUploadMedecinCachet, useUploadMedecinSignature, useUpdateMedecinHoraires, useUpdateMedecinProfil } from '../hooks/useProfessionnel';
 import toast from 'react-hot-toast';
 
 const JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
@@ -22,6 +22,7 @@ export default function MedecinParametresPage() {
   const { data, isLoading, refetch } = useMedecinDashboard();
   const uploadPhoto = useUploadMedecinPhoto();
   const uploadCachet = useUploadMedecinCachet();
+  const uploadSignature = useUploadMedecinSignature();
   const updateHoraires = useUpdateMedecinHoraires();
   const updateProfil = useUpdateMedecinProfil();
   const [horaires, setHoraires] = useState(null);
@@ -45,6 +46,9 @@ export default function MedecinParametresPage() {
   const cachetUrl = profil?.fichier_cachet_id
     ? authenticatedFileUrl(profil.fichier_cachet_id, photoKey)
     : null;
+  const signatureUrl = profil?.fichier_signature_id
+    ? authenticatedFileUrl(profil.fichier_signature_id, photoKey)
+    : null;
 
   const handlePhoto = async (file) => {
     try {
@@ -67,6 +71,19 @@ export default function MedecinParametresPage() {
       toast.success('Cachet électronique enregistré');
     } catch {
       toast.error('Erreur upload');
+    }
+  };
+
+  const handleSignature = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      await uploadSignature.mutateAsync(file);
+      setPhotoKey((k) => k + 1);
+      await refetch();
+      toast.success('Signature électronique enregistrée');
+    } catch {
+      toast.error('Erreur upload signature');
     }
   };
 
@@ -97,7 +114,7 @@ export default function MedecinParametresPage() {
     <div>
       <h1 style={{ margin: '0 0 24px' }}>Paramètres professionnels</h1>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
         <PhotoUploadCard
           title="Photo de profil"
           subtitle="Visible dans l'annuaire santé et sur votre fiche publique"
@@ -110,10 +127,19 @@ export default function MedecinParametresPage() {
         <Card style={{ padding: 24 }}>
           <h3><Stamp size={18} /> Cachet électronique</h3>
           <p style={{ fontSize: '0.85rem', color: '#64748B' }}>
-            Obligatoire pour signer des ordonnances électroniques (Ordre des Médecins du Cameroun).
+            Obligatoire pour signer des ordonnances électroniques (ONMC).
           </p>
           {cachetUrl && <img src={cachetUrl} alt="Cachet" style={{ maxWidth: 120, marginBottom: 12 }} />}
           <input type="file" accept="image/*" onChange={handleCachet} />
+        </Card>
+
+        <Card style={{ padding: 24 }}>
+          <h3><PenLine size={18} /> Signature électronique</h3>
+          <p style={{ fontSize: '0.85rem', color: '#64748B' }}>
+            Votre signature manuscrite scannée — affichée avec le cachet sur les ordonnances signées.
+          </p>
+          {signatureUrl && <img src={signatureUrl} alt="Signature" style={{ maxWidth: 160, marginBottom: 12 }} />}
+          <input type="file" accept="image/*" onChange={handleSignature} />
         </Card>
       </div>
 

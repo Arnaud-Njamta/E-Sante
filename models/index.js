@@ -27,6 +27,7 @@ const OtpCode = require('./OtpCode');
 const MedecinAffiliation = require('./MedecinAffiliation');
 const ParcoursProfessionnel = require('./ParcoursProfessionnel');
 const MembreEquipeEtablissement = require('./MembreEquipeEtablissement');
+const ConsentementPatient = require('./ConsentementPatient');
 
 // ==================== ASSOCIATIONS ====================
 
@@ -70,6 +71,11 @@ Medecin.hasMany(RendezVous, { foreignKey: 'medecin_id', as: 'rendez_vous' });
 RendezVous.belongsTo(Medecin, { foreignKey: 'medecin_id', as: 'medecin' });
 Etablissement.hasMany(RendezVous, { foreignKey: 'etablissement_id', as: 'rendez_vous' });
 RendezVous.belongsTo(Etablissement, { foreignKey: 'etablissement_id', as: 'etablissement' });
+
+Patient.hasMany(ConsentementPatient, { foreignKey: 'patient_id', as: 'consentements' });
+ConsentementPatient.belongsTo(Patient, { foreignKey: 'patient_id', as: 'patient' });
+ConsentementPatient.belongsTo(Medecin, { foreignKey: 'medecin_id', as: 'medecin' });
+ConsentementPatient.belongsTo(RendezVous, { foreignKey: 'rendez_vous_id', as: 'rendez_vous' });
 
 // Produits pharmacie
 Etablissement.hasMany(ProduitPharmacie, { foreignKey: 'pharmacie_id', as: 'produits' });
@@ -142,4 +148,5 @@ module.exports = {
   MedecinAffiliation,
   ParcoursProfessionnel,
   MembreEquipeEtablissement,
+  ConsentementPatient,
 };

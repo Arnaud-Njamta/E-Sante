@@ -35,6 +35,14 @@ const addColumnIfMissing = async (table, column, definition) => {
 
 
 const runPendingMigrations = async () => {
+  let lockHeld = false;
+  try {
+    const [lockRows] = await sequelize.query("SELECT GET_LOCK('djamsante_migrate', 120) AS l");
+    lockHeld = lockRows[0]?.l === 1;
+    if (!lockHeld) {
+      console.warn('Migration: verrou non acquis, attente 3s…');
+      await new Promise((r) => { setTimeout(r, 3000); });
+    }
 
   await addColumnIfMissing('rendez_vous', 'lien_video', '`lien_video` VARCHAR(500) NULL AFTER `rappel_envoye`');
 
@@ -306,6 +314,48 @@ const runPendingMigrations = async () => {
   await addIndexIfMissing('admin_audit_logs', 'idx_audit_created', '`created_at`');
   await addIndexIfMissing('conversations', 'idx_conv_patient_statut', '`patient_id`, `statut`');
   await addIndexIfMissing('conversations', 'idx_conv_etab_statut', '`pharmacie_id`, `statut`');
+
+  await addColumnIfMissing('patients', 'groupe_sanguin', '`groupe_sanguin` VARCHAR(5) NULL');
+  await addColumnIfMissing('patients', 'antecedents_familiaux', '`antecedents_familiaux` JSON NULL');
+  await addColumnIfMissing('patients', 'antecedents_chirurgicaux', '`antecedents_chirurgicaux` JSON NULL');
+  await addColumnIfMissing('patients', 'traitements_habituelles', '`traitements_habituelles` JSON NULL');
+  await addColumnIfMissing('patients', 'vaccinations', '`vaccinations` JSON NULL');
+  await addColumnIfMissing('patients', 'notes_medicales', '`notes_medicales` TEXT NULL');
+  await addColumnIfMissing('patients', 'consentement_carnet_at', '`consentement_carnet_at` DATETIME NULL');
+
+  await addColumnIfMissing('medecins', 'fichier_signature_id', '`fichier_signature_id` CHAR(36) NULL');
+  await addColumnIfMissing('ordonnances_electroniques', 'fichier_signature_id', '`fichier_signature_id` CHAR(36) NULL');
+
+  const [consentTables] = await sequelize.query(
+    "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'consentements_patients'",
+  );
+  if (consentTables.length === 0) {
+    await sequelize.query(`
+      CREATE TABLE \`consentements_patients\` (
+        \`id\` CHAR(36) NOT NULL,
+        \`patient_id\` CHAR(36) NOT NULL,
+        \`type\` VARCHAR(50) NOT NULL,
+        \`medecin_id\` CHAR(36) NULL,
+        \`rendez_vous_id\` CHAR(36) NULL,
+        \`politique_version\` VARCHAR(20) NOT NULL DEFAULT '2026-01',
+        \`accepte\` TINYINT(1) NOT NULL DEFAULT 1,
+        \`ip\` VARCHAR(45) NULL,
+        \`user_agent\` VARCHAR(255) NULL,
+        \`revoked_at\` DATETIME NULL,
+        \`created_at\` DATETIME NOT NULL,
+        PRIMARY KEY (\`id\`),
+        INDEX \`consent_patient_type\` (\`patient_id\`, \`type\`),
+        INDEX \`consent_medecin\` (\`medecin_id\`, \`patient_id\`),
+        INDEX \`consent_rdv\` (\`rendez_vous_id\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+    console.log('Migration: table consentements_patients créée.');
+  }
+  } finally {
+    if (lockHeld) {
+      await sequelize.query("SELECT RELEASE_LOCK('djamsante_migrate')");
+    }
+  }
 };
 
 

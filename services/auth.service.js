@@ -60,7 +60,7 @@ const register = async ({
     emailService.sendWelcomeEmail({ email, prenom, nom }).catch(() => {});
   });
 
-  const token = generateToken(patient.id, USER_ROLES.PATIENT);
+  const token = generateToken(patient.id, USER_ROLES.PATIENT, tokenPayload(patient));
   const refreshToken = generateRefreshToken(patient.id, USER_ROLES.PATIENT);
 
   return {
@@ -151,7 +151,7 @@ const loginEntity = async (entity, password, role) => {
   }
 
   // en_attente : connexion autorisée — documents / validation MINSANTE peuvent être complétés ensuite
-  const token = generateToken(entity.id, role);
+  const token = generateToken(entity.id, role, tokenPayload(entity));
   const refreshToken = generateRefreshToken(entity.id, role);
   const profile = formatProfile(entity, role);
 
@@ -181,7 +181,11 @@ const refreshToken = async (token) => {
       throw error;
     }
 
-    const newToken = generateToken(decoded.id, decoded.role);
+    const newToken = generateToken(decoded.id, decoded.role, {
+      email: profile.email,
+      nom: profile.nom,
+      prenom: profile.prenom,
+    });
     const newRefreshToken = generateRefreshToken(decoded.id, decoded.role);
 
     return { token: newToken, refreshToken: newRefreshToken };
@@ -270,8 +274,14 @@ const loadProfile = async (id, role) => {
   return null;
 };
 
-const generateToken = (id, role) => {
-  return jwt.sign({ id, role }, process.env.JWT_SECRET, {
+const generateToken = (id, role, profile = {}) => {
+  return jwt.sign({
+    id,
+    role,
+    email: profile.email || null,
+    nom: profile.nom || null,
+    prenom: profile.prenom || null,
+  }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN,
   });
 };
@@ -280,6 +290,11 @@ const generateRefreshToken = (id, role) => {
   return jwt.sign({ id, role }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_REFRESH_EXPIRES_IN,
   });
+};
+
+const tokenPayload = (entity, role) => {
+  const data = entity.toJSON ? entity.toJSON() : entity;
+  return { email: data.email, nom: data.nom, prenom: data.prenom };
 };
 
 const formatProfile = (entity, role) => {

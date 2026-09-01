@@ -175,6 +175,25 @@ const canAccessCachet = async (user, fichier) => {
   return false;
 };
 
+const canAccessSignature = async (user, fichier) => {
+  if (isOwner(user, fichier)) return true;
+  if (!user?.id) return false;
+
+  const ord = await OrdonnanceElectronique.findOne({
+    where: { fichier_signature_id: fichier.id },
+    attributes: ['patient_id', 'medecin_id', 'statut'],
+  });
+  if (!ord) return false;
+
+  if (user.role === USER_ROLES.PATIENT && ord.patient_id === user.id) return true;
+  if (user.role === USER_ROLES.MEDECIN && ord.medecin_id === user.id) return true;
+  if ([USER_ROLES.PHARMACIE, USER_ROLES.HOPITAL, USER_ROLES.CLINIQUE].includes(user.role)
+    && ['signee', 'delivree'].includes(ord.statut)) {
+    return true;
+  }
+  return false;
+};
+
 const canAccessFichier = async (user, fichier) => {
   if (PUBLIC_TYPES.has(fichier.type_fichier)) {
     return true;
@@ -186,6 +205,10 @@ const canAccessFichier = async (user, fichier) => {
 
   if (fichier.type_fichier === TYPE_FICHIER.CACHET) {
     return canAccessCachet(user, fichier);
+  }
+
+  if (fichier.type_fichier === TYPE_FICHIER.SIGNATURE) {
+    return canAccessSignature(user, fichier);
   }
 
   if (SENSITIVE_TYPES.has(fichier.type_fichier)) {
@@ -212,6 +235,7 @@ const mapTypeFichier = (fieldName) => {
   const map = {
     photo: TYPE_FICHIER.PHOTO_PROFIL,
     cachet: TYPE_FICHIER.CACHET,
+    signature: TYPE_FICHIER.SIGNATURE,
     diplome: TYPE_FICHIER.DIPLOME,
     carte_ordre: TYPE_FICHIER.CARTE_ORDRE,
     agrement: TYPE_FICHIER.AGREMENT,

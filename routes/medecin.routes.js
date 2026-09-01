@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const medecinController = require('../controllers/medecin.controller');
+const carnetController = require('../controllers/carnet-medical.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const { requireRole } = require('../middlewares/auth.middleware');
 const { uploadImage } = require('../middlewares/upload.middleware');
@@ -12,6 +13,8 @@ router.put('/me/profile', authMiddleware, requireRole('medecin'), medecinControl
 router.put('/me/horaires', authMiddleware, requireRole('medecin'), medecinController.updateHoraires);
 router.post('/me/photo', authMiddleware, requireRole('medecin'), uploadImage.single('photo'), medecinController.uploadPhoto);
 router.post('/me/cachet', authMiddleware, requireRole('medecin'), uploadImage.single('cachet'), medecinController.uploadCachet);
+router.post('/me/signature', authMiddleware, requireRole('medecin'), uploadImage.single('signature'), medecinController.uploadSignature);
+router.get('/patients/:patientId/carnet', authMiddleware, requireRole('medecin'), carnetController.getCarnetPatient);
 
 const profilProController = require('../controllers/profil-pro.controller');
 router.get('/me/affiliations', authMiddleware, requireRole('medecin'), profilProController.listerAffiliationsMedecin);

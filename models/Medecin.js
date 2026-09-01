@@ -95,6 +95,10 @@ const Medecin = sequelize.define('Medecin', {
     type: DataTypes.UUID,
     allowNull: true,
   },
+  fichier_signature_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+  },
   accepte_teleconsultation: {
     type: DataTypes.BOOLEAN,
     allowNull: false,

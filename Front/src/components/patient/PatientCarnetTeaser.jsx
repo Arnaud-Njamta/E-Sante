@@ -1,5 +1,5 @@
 import React from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { BookHeart, ChevronRight, Droplets, AlertTriangle } from 'lucide-react';
 import { useCarnetMedical } from '../../hooks/useCarnetMedical';
@@ -38,11 +38,11 @@ const CardBtn = styled.button`
 
   &:active { transform: scale(0.98); }
 
-  ${({ $active }) => ($active ? `
+  ${({ $active }) => ($active ? css`
     background: linear-gradient(135deg, #FDF2F8, #FCE7F3);
     border: 1px solid #F9A8D4;
     animation: ${pulse} 2.5s ease-in-out infinite;
-  ` : `
+  ` : css`
     background: linear-gradient(135deg, #ECFDF5, #D1FAE5);
     border: 1px solid #6EE7B7;
   `)}

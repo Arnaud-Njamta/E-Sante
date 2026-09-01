@@ -10,7 +10,7 @@ import { useMedecinDashboard } from '../hooks/useDashboards';
 const PageHeader = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing[6]};
   h1 { font-size: 1.75rem; font-weight: 700; margin: 0 0 4px; display: flex; align-items: center; gap: 10px; }
-  p { color: ${({ theme }) => theme.colors.textSecondary }; margin: 0; }
+  p { color: ${({ theme }) => theme.colors.textSecondary}; margin: 0; }
 `;
 
 export default function MedecinAvisPage() {

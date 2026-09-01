@@ -10,8 +10,10 @@ import { useOrdonnances, useScanOrdonnance, useValiderOrdonnance } from '../hook
 import toast from 'react-hot-toast';
 import {
   UploadCloud, Image, FileText, Trash2, Eye, ScanLine,
-  FolderOpen, Pill, CalendarDays, CheckCircle,
+  FolderOpen, Pill, CalendarDays, CheckCircle, Camera, AlertTriangle,
 } from 'lucide-react';
+import CameraCapture from '../components/ui/CameraCapture';
+import { Link } from 'react-router-dom';
 
 /* ─── Styles ─── */
 const PageHeader = styled.div`
@@ -159,6 +161,7 @@ function getStatutInfo(statut) {
 export default function OrdonnancePage() {
   const fileInputRef = useRef(null);
   const [dragging, setDragging] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
 
   const { data: ordonnances, isLoading, error } = useOrdonnances();
   const scanMutation = useScanOrdonnance();
@@ -173,11 +176,15 @@ export default function OrdonnancePage() {
 
   const allOrdonnances = Array.isArray(ordonnances) ? ordonnances : [];
 
-  const handleUpload = (files) => {
-    if (files && files.length > 0) {
-      scanMutation.mutate(files[0], {
+  const handleUpload = (filesOrFile) => {
+    const file = filesOrFile?.length ? filesOrFile[0] : filesOrFile;
+    if (file) {
+      scanMutation.mutate(file, {
         onSuccess: (data) => {
-          toast.success('Ordonnance scannée — vérifiez les médicaments puis validez');
+          const v = data?.verification_ia?.verdict;
+          toast.success(v
+            ? `Analyse IA : ${v} — vérifiez les médicaments détectés`
+            : 'Ordonnance scannée — vérifiez puis validez');
           if (fileInputRef.current) fileInputRef.current.value = '';
         },
         onError: (err) => {
@@ -219,7 +226,19 @@ export default function OrdonnancePage() {
         <UploadTitle>{scanMutation.isPending ? 'Scan en cours…' : 'Glissez votre ordonnance ici'}</UploadTitle>
         <UploadDesc>ou cliquez pour parcourir vos fichiers</UploadDesc>
         <Formats>Formats acceptés : JPG, PNG, PDF — Max 10 Mo</Formats>
+        <div style={{ marginTop: 16, display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); setShowCamera(true); }}>
+            <Camera size={16} /> Filmer l&apos;ordonnance
+          </Button>
+        </div>
       </UploadZone>
+
+      {showCamera && (
+        <CameraCapture
+          onCapture={handleUpload}
+          onClose={() => setShowCamera(false)}
+        />
+      )}
 
       <SectionTitle>
         <FolderOpen />
@@ -236,6 +255,9 @@ export default function OrdonnancePage() {
         <OrdoList>
           {allOrdonnances.map((ordo, index) => {
             const statutInfo = getStatutInfo(ordo.statut);
+            const ia = ordo.verification_ia || ordo.donnees_parsees?.verification_ia;
+            const apiBase = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000';
+            const imageUrl = ordo.image_url ? `${apiBase}${ordo.image_url}` : null;
             return (
               <OrdoCard key={ordo.id} hoverable delay={`${0.05 * (index + 1)}s`}>
                 <OrdoIcon><Image /></OrdoIcon>
@@ -251,6 +273,17 @@ export default function OrdonnancePage() {
                         <Badge key={i} color="primary" size="sm">{m.nom || m}</Badge>
                       ))}
                     </MedsList>
+                  )}
+                  {ia && (
+                    <p style={{ fontSize: '0.8rem', marginTop: 8, color: ia.verdict === 'rejete' ? '#DC2626' : '#059669', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      {ia.verdict === 'rejete' || ia.verdict === 'douteux' ? <AlertTriangle size={14} /> : <CheckCircle size={14} />}
+                      Pré-contrôle IA : {ia.verdict || 'en cours'} {ia.score_confiance ? `(${ia.score_confiance}%)` : ''}
+                    </p>
+                  )}
+                  {ordo.acceptable_pharmacie && (
+                    <p style={{ fontSize: '0.75rem', color: '#3B82F6', marginTop: 4 }}>
+                      <Link to="/sante">Utilisable en pharmacie →</Link>
+                    </p>
                   )}
                 </OrdoInfo>
                 <Badge color={statutInfo.color} dot>
@@ -268,7 +301,7 @@ export default function OrdonnancePage() {
                       Valider
                     </Button>
                   )}
-                  <Button variant="ghost" size="sm" icon={Eye} />
+                  <Button variant="ghost" size="sm" icon={Eye} onClick={() => imageUrl && window.open(imageUrl, '_blank')} />
                 </OrdoActions>
               </OrdoCard>
             );

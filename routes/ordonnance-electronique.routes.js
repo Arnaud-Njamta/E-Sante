@@ -19,6 +19,7 @@ router.post('/:id/signer', authMiddleware, requireRole('medecin'), ordController
 router.get('/medecin', authMiddleware, requireRole('medecin'), ordController.listerMedecin);
 
 router.get('/patient', authMiddleware, requireRole('patient'), ordController.listerPatient);
+router.get('/:id/telecharger', authMiddleware, requireRole('patient', 'medecin', 'pharmacie', 'hopital', 'clinique'), ordController.telecharger);
 router.get('/:id/document', authMiddleware, requireRole('patient', 'medecin', 'pharmacie', 'hopital', 'clinique', 'admin'), ordController.getDocument);
 
 router.get('/:id/disponibilite', authMiddleware, requireRole('patient'), ordController.disponibilite);

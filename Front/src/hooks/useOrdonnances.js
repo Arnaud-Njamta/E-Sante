@@ -8,10 +8,15 @@ const formatOrdonnance = (ordo) => {
         ? JSON.parse(raw.donnees_parsees || '{}')
         : (raw.donnees_parsees || {});
     const medicaments = donnees.medicaments || [];
+    const verification = donnees.verification_ia || raw.verification_ia || null;
     return {
         ...raw,
         donnees_parsees: donnees,
         medicaments_extraits: medicaments,
+        verification_ia: verification,
+        acceptable_pharmacie: raw.acceptable_pharmacie
+            || ['valide', 'acceptable', 'acceptable_pour_revue_humaine'].includes(verification?.verdict)
+            || raw.statut === 'validee',
         nom_fichier: raw.image_url?.split('/').pop() || `Ordonnance`,
     };
 };
@@ -37,7 +42,39 @@ export function useScanOrdonnance() {
             const { data } = await client.post(ENDPOINTS.ordonnances.scan, formData);
             return data.data || data;
         },
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ordonnances'] }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['ordonnances'] });
+            queryClient.invalidateQueries({ queryKey: ['ordonnances', 'pharmacie'] });
+        },
+    });
+}
+
+export function useOrdonnancesPharmacie() {
+    return useQuery({
+        queryKey: ['ordonnances', 'pharmacie'],
+        queryFn: async () => {
+            const { data } = await client.get(ENDPOINTS.ordonnances.pharmacie);
+            return data.data || [];
+        },
+    });
+}
+
+export function useDownloadOrdonnanceElec() {
+    return useMutation({
+        mutationFn: async (id) => {
+            const response = await client.get(ENDPOINTS.ordonnancesElec.telecharger(id), {
+                responseType: 'blob',
+            });
+            const blob = response.data;
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ordonnance-${id.slice(0, 8)}.html`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        },
     });
 }
 

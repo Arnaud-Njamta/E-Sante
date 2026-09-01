@@ -1,36 +1,35 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const multer = require('multer');
 const ordonnanceController = require('../controllers/ordonnance.controller');
 const { patientAuth } = require('../middlewares/auth.middleware');
+const { handleUpload } = require('../middlewares/upload.middleware');
 
 const uploadDir = process.env.UPLOAD_DIR || './uploads';
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Configuration Multer pour upload des ordonnances
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
+const diskStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, 'ordonnance-' + uniqueSuffix + path.extname(file.originalname));
+    const ext = path.extname(file.originalname || '.jpg').toLowerCase() || '.jpg';
+    cb(null, `ordonnance-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
   },
 });
 
-const upload = multer({
-  storage,
-  limits: { fileSize: parseInt(process.env.MAX_FILE_SIZE) || 10 * 1024 * 1024 },
+const uploadOrdonnance = multer({
+  storage: diskStorage,
+  limits: { fileSize: parseInt(process.env.MAX_FILE_SIZE, 10) || 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
-    if (allowedTypes.includes(file.mimetype)) {
+    const allowed = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'image/x-png', 'application/pdf'];
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    if (allowed.includes(file.mimetype) || ['.jpg', '.jpeg', '.png', '.webp', '.pdf'].includes(ext)) {
       cb(null, true);
     } else {
-      cb(new Error('Format de fichier non supporté. Utilisez JPG, PNG ou PDF.'));
+      cb(new Error('Format non supporté. Utilisez JPG, PNG, WEBP ou PDF.'));
     }
   },
 });
@@ -69,7 +68,7 @@ const upload = multer({
  *       400:
  *         description: Aucun fichier fourni
  */
-router.post('/scan', patientAuth, upload.single('image'), ordonnanceController.scanOrdonnance);
+router.post('/scan', patientAuth, handleUpload(uploadOrdonnance.single('image')), ordonnanceController.scanOrdonnance);
 
 /**
  * @swagger
@@ -128,5 +127,7 @@ router.post('/:id/valider', patientAuth, ordonnanceController.validerOrdonnance)
  *         description: Liste des ordonnances
  */
 router.get('/', patientAuth, ordonnanceController.getAll);
+router.get('/pharmacie', patientAuth, ordonnanceController.listerPourPharmacie);
+router.get('/:id', patientAuth, ordonnanceController.getById);
 
 module.exports = router;

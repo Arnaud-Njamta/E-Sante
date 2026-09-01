@@ -227,6 +227,12 @@ const delivrer = async (ordonnanceId, acteurId, acteurType = 'pharmacie') => {
 
 const getAudit = async (ordonnanceId) => auditLog.lister(ordonnanceId);
 
+const telechargerHtml = async (ordonnanceId, userId, role) => {
+  const doc = await getDocument(ordonnanceId, userId, role);
+  const { genererHtmlOrdonnance } = require('./ordonnance-html.service');
+  return genererHtmlOrdonnance(doc);
+};
+
 module.exports = {
   creer,
   signer,
@@ -236,4 +242,5 @@ module.exports = {
   verifier,
   delivrer,
   getAudit,
+  telechargerHtml,
 };

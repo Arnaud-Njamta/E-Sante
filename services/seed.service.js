@@ -93,7 +93,16 @@ const seedDemoData = async () => {
     { pharmacie_id: clinique.id, nom: 'Artéméther-Luméfantrine', description: 'Antipaludéen — traitement 6 doses', categorie: 'antipaludéen', prix_fcfa: 4200, stock_disponible: 30, necessite_ordonnance: true },
     { pharmacie_id: hopital.id, nom: 'Sérum physiologique 500 ml', description: 'Perfusion', categorie: 'matériel médical', prix_fcfa: 1200, stock_disponible: 100, necessite_ordonnance: false },
     { pharmacie_id: hopital.id, nom: 'Metformine 850 mg', description: 'Antidiabétique — boîte de 30', categorie: 'antidiabétique', prix_fcfa: 2800, stock_disponible: 25, necessite_ordonnance: true },
-    { pharmacie_id: pharmacie.id, nom: 'Doliprane 1000 mg', description: 'Paracétamol', categorie: 'antalgique', prix_fcfa: 2000, stock_disponible: 120, necessite_ordonnance: false },
+    { pharmacie_id: pharmacie.id, nom: 'Doliprane 1000 mg', description: 'Paracétamol — boîte de 8', categorie: 'antalgique', prix_fcfa: 2000, stock_disponible: 120, necessite_ordonnance: false },
+    { pharmacie_id: pharmacie.id, nom: 'Amoxicilline 1 g', description: 'Antibiotique — boîte de 12', categorie: 'antibiotique', prix_fcfa: 4500, stock_disponible: 60, necessite_ordonnance: true },
+    { pharmacie_id: pharmacie.id, nom: 'Artéméther-Luméfantrine (Coartem)', description: 'Antipaludéen — 24 comprimés', categorie: 'antipaludéen', prix_fcfa: 5500, stock_disponible: 40, necessite_ordonnance: true },
+    { pharmacie_id: pharmacie.id, nom: 'Ibuprofène 400 mg', description: 'Anti-inflammatoire — boîte de 20', categorie: 'antalgique', prix_fcfa: 1800, stock_disponible: 90, necessite_ordonnance: false },
+    { pharmacie_id: pharmacie.id, nom: 'Oméprazole 20 mg', description: 'Gastro — boîte de 14', categorie: 'gastro', prix_fcfa: 3200, stock_disponible: 55, necessite_ordonnance: true },
+    { pharmacie_id: pharmacie.id, nom: 'Amlodipine 5 mg', description: 'Antihypertenseur — boîte de 30', categorie: 'cardiologie', prix_fcfa: 2900, stock_disponible: 35, necessite_ordonnance: true },
+    { pharmacie_id: pharmacie.id, nom: 'Vitamine C 500 mg', description: 'Complément — boîte de 30', categorie: 'vitamines', prix_fcfa: 1500, stock_disponible: 100, necessite_ordonnance: false },
+    { pharmacie_id: pharmacie.id, nom: 'Sérum physiologique 250 ml', description: 'Nasal / lavage', categorie: 'matériel médical', prix_fcfa: 900, stock_disponible: 75, necessite_ordonnance: false },
+    { pharmacie_id: pharmacie.id, nom: 'Azithromycine 500 mg', description: 'Antibiotique — boîte de 3', categorie: 'antibiotique', prix_fcfa: 3800, stock_disponible: 28, necessite_ordonnance: true },
+    { pharmacie_id: pharmacie.id, nom: 'Cotrimoxazole 480 mg', description: 'Antibiotique — boîte de 20', categorie: 'antibiotique', prix_fcfa: 2200, stock_disponible: 42, necessite_ordonnance: true },
   ]);
 
   await Medecin.bulkCreate([
@@ -358,4 +367,44 @@ const seedAdminAccount = async () => {
   }
 };
 
-module.exports = { seedDemoData, seedDemoAccounts, seedPublications, seedDispensaireDemo, seedAdminAccount };
+const seedPharmacieProducts = async () => {
+  const pharmacies = await Etablissement.findAll({ where: { type: 'pharmacie' } });
+  const catalogue = [
+    { nom: 'Paracétamol 500 mg', description: 'Antalgique — boîte de 20', categorie: 'antalgique', prix_fcfa: 1500, stock_disponible: 100, necessite_ordonnance: false },
+    { nom: 'Doliprane 1000 mg', description: 'Paracétamol — boîte de 8', categorie: 'antalgique', prix_fcfa: 2000, stock_disponible: 80, necessite_ordonnance: false },
+    { nom: 'Ibuprofène 400 mg', description: 'Anti-inflammatoire', categorie: 'antalgique', prix_fcfa: 1800, stock_disponible: 70, necessite_ordonnance: false },
+    { nom: 'Amoxicilline 500 mg', description: 'Antibiotique', categorie: 'antibiotique', prix_fcfa: 3500, stock_disponible: 50, necessite_ordonnance: true },
+    { nom: 'Amoxicilline 1 g', description: 'Antibiotique fort', categorie: 'antibiotique', prix_fcfa: 4500, stock_disponible: 40, necessite_ordonnance: true },
+    { nom: 'Azithromycine 500 mg', description: 'Antibiotique — 3 cp', categorie: 'antibiotique', prix_fcfa: 3800, stock_disponible: 35, necessite_ordonnance: true },
+    { nom: 'Artéméther-Luméfantrine', description: 'Antipaludéen', categorie: 'antipaludéen', prix_fcfa: 5200, stock_disponible: 45, necessite_ordonnance: true },
+    { nom: 'Metformine 850 mg', description: 'Diabète type 2', categorie: 'antidiabétique', prix_fcfa: 2800, stock_disponible: 30, necessite_ordonnance: true },
+    { nom: 'Amlodipine 5 mg', description: 'Hypertension', categorie: 'cardiologie', prix_fcfa: 2900, stock_disponible: 28, necessite_ordonnance: true },
+    { nom: 'Oméprazole 20 mg', description: 'Ulcère / reflux', categorie: 'gastro', prix_fcfa: 3200, stock_disponible: 40, necessite_ordonnance: true },
+    { nom: 'Sérum physiologique 250 ml', description: 'Lavage nasal', categorie: 'matériel médical', prix_fcfa: 900, stock_disponible: 60, necessite_ordonnance: false },
+    { nom: 'Vitamine C 500 mg', description: 'Complément', categorie: 'vitamines', prix_fcfa: 1500, stock_disponible: 90, necessite_ordonnance: false },
+    { nom: 'Cotrimoxazole 480 mg', description: 'Antibiotique large spectre', categorie: 'antibiotique', prix_fcfa: 2200, stock_disponible: 38, necessite_ordonnance: true },
+    { nom: 'Losartan 50 mg', description: 'Antihypertenseur', categorie: 'cardiologie', prix_fcfa: 3100, stock_disponible: 25, necessite_ordonnance: true },
+    { nom: 'Salbutamol inhalateur', description: 'Asthme', categorie: 'respiratoire', prix_fcfa: 4500, stock_disponible: 20, necessite_ordonnance: true },
+  ];
+
+  for (const ph of pharmacies) {
+    const count = await ProduitPharmacie.count({ where: { pharmacie_id: ph.id } });
+    if (count >= 10) continue;
+
+    const existing = await ProduitPharmacie.findAll({
+      where: { pharmacie_id: ph.id },
+      attributes: ['nom'],
+    });
+    const existingNames = new Set(existing.map((p) => p.nom.toLowerCase()));
+    const toAdd = catalogue
+      .filter((p) => !existingNames.has(p.nom.toLowerCase()))
+      .map((p) => ({ ...p, pharmacie_id: ph.id }));
+
+    if (toAdd.length) {
+      await ProduitPharmacie.bulkCreate(toAdd);
+      console.log(`Catalogue pharmacie enrichi : ${ph.nom} (+${toAdd.length} produits)`);
+    }
+  }
+};
+
+module.exports = { seedDemoData, seedDemoAccounts, seedPublications, seedDispensaireDemo, seedAdminAccount, seedPharmacieProducts };

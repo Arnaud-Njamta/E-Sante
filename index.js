@@ -30,7 +30,7 @@ const errorMiddleware = require('./middlewares/error.middleware');
 
 const { isPrimaryPm2Instance } = require('./utils/pm2-primary');
 
-const { seedDemoData, seedDemoAccounts, seedPublications, seedDispensaireDemo, seedAdminAccount } = require('./services/seed.service');
+const { seedDemoData, seedDemoAccounts, seedPublications, seedDispensaireDemo, seedAdminAccount, seedPharmacieProducts } = require('./services/seed.service');
 const { ensureStorageDirs } = require('./services/fichier.service');
 
 
@@ -187,6 +187,7 @@ app.use(errorMiddleware);
 
 const runSeeds = async () => {
   await seedAdminAccount();
+  await seedPharmacieProducts();
 
   if (IS_PROD && process.env.SEED_DEMO !== 'true') {
     console.log('Mode production : seeds démo désactivés.');

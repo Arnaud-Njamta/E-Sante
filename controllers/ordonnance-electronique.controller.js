@@ -102,6 +102,22 @@ const reserver = async (req, res, next) => {
   }
 };
 
+const telecharger = async (req, res, next) => {
+  try {
+    const html = await ordonnanceService.telechargerHtml(
+      req.params.id,
+      req.user.id,
+      req.user.role,
+    );
+    const filename = `ordonnance-${req.params.id.slice(0, 8)}.html`;
+    res.set('Content-Type', 'text/html; charset=utf-8');
+    res.set('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(html);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
-  creer, signer, listerMedecin, listerPatient, verifier, delivrer, disponibilite, reserver, getAudit, getDocument,
+  creer, signer, listerMedecin, listerPatient, verifier, delivrer, disponibilite, reserver, getAudit, getDocument, telecharger,
 };

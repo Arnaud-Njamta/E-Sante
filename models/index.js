@@ -100,6 +100,8 @@ Etablissement.hasMany(ReservationDispensaire, { foreignKey: 'etablissement_id', 
 ReservationDispensaire.belongsTo(Etablissement, { foreignKey: 'etablissement_id', as: 'etablissement' });
 OrdonnanceElectronique.hasMany(ReservationDispensaire, { foreignKey: 'ordonnance_electronique_id', as: 'reservations' });
 ReservationDispensaire.belongsTo(OrdonnanceElectronique, { foreignKey: 'ordonnance_electronique_id', as: 'ordonnance' });
+Ordonnance.hasMany(ReservationDispensaire, { foreignKey: 'ordonnance_papier_id', as: 'reservations_pharmacie' });
+ReservationDispensaire.belongsTo(Ordonnance, { foreignKey: 'ordonnance_papier_id', as: 'ordonnance_papier' });
 
 OrdonnanceElectronique.hasMany(OrdonnanceAuditLog, { foreignKey: 'ordonnance_id', as: 'audit_logs' });
 OrdonnanceAuditLog.belongsTo(OrdonnanceElectronique, { foreignKey: 'ordonnance_id', as: 'ordonnance' });

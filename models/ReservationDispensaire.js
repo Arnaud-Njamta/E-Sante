@@ -24,6 +24,10 @@ const ReservationDispensaire = sequelize.define('ReservationDispensaire', {
     type: DataTypes.UUID,
     allowNull: true,
   },
+  ordonnance_papier_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+  },
   lignes: {
     type: DataTypes.JSON,
     allowNull: false,

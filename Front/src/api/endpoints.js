@@ -57,6 +57,8 @@ const ENDPOINTS = {
     ordonnances: {
         base: '/ordonnances',
         scan: '/ordonnances/scan',
+        pharmacie: '/ordonnances/pharmacie',
+        byId: (id) => `/ordonnances/${id}`,
         valider: (id) => `/ordonnances/${id}/valider`,
     },
     ordonnancesElec: {
@@ -68,6 +70,7 @@ const ENDPOINTS = {
         delivrer: (id) => `/ordonnances-electroniques/${id}/delivrer`,
         audit: (id) => `/ordonnances-electroniques/${id}/audit`,
         document: (id) => `/ordonnances-electroniques/${id}/document`,
+        telecharger: (id) => `/ordonnances-electroniques/${id}/telecharger`,
         disponibilite: (id, etabId) => `/ordonnances-electroniques/${id}/disponibilite?etablissement_id=${etabId}`,
         reserver: (id) => `/ordonnances-electroniques/${id}/reserver`,
     },

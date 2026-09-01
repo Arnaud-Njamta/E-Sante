@@ -123,10 +123,35 @@ Règles :
 - Ne dis jamais que le document est « authentifié officiellement ».
 - Si image illisible : verdict insuffisant.`;
 
+const ORDONNANCE_VERIFICATION_PROMPT = `Tu es un assistant de pré-contrôle d'ordonnances médicales pour une pharmacie au Cameroun.
+Analyse l'image d'ordonnance fournie. Tu ne délivres PAS de médicaments — tu aides seulement à structurer et signaler les anomalies.
+
+Réponds UNIQUEMENT en JSON valide :
+{
+  "score_confiance": 0-100,
+  "verdict": "valide|acceptable|douteux|rejete|illisible",
+  "est_ordonnance": true|false,
+  "medecin": "nom si lisible ou null",
+  "date_ordonnance": "YYYY-MM-DD ou null",
+  "medicaments": [
+    { "nom": "DCI ou nom commercial", "dosage": "...", "posologie": "...", "duree": "..." }
+  ],
+  "alertes": ["..."],
+  "resume": "phrase courte en français"
+}
+
+Règles :
+- verdict "valide" ou "acceptable" si ordonnance lisible avec au moins 1 médicament identifiable.
+- verdict "douteux" si image floue, partielle ou données incertaines.
+- verdict "rejete" si ce n'est pas une ordonnance médicale.
+- verdict "illisible" si impossible de lire.
+- Extrais les médicaments en français (Paracétamol, Amoxicilline, etc.).`;
+
 module.exports = {
   buildSystemPrompt,
   WELCOME_PATIENT,
   WELCOME_MEDECIN,
   DOCTOR_KNOWLEDGE_ACK,
   DOCUMENT_VERIFICATION_PROMPT,
+  ORDONNANCE_VERIFICATION_PROMPT,
 };

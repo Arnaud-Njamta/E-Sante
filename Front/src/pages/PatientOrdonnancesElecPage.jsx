@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, Pill, Search, CheckCircle, AlertCircle, Shield } from 'lucide-react';
+import { FileText, Pill, Search, CheckCircle, AlertCircle, Shield, Download } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Spinner from '../components/ui/Spinner';
@@ -9,6 +9,7 @@ import {
   useReserverDepuisOrdonnance,
 } from '../hooks/useReservations';
 import { useOrdonnanceDocument } from '../hooks/useCarnetMedical';
+import { useDownloadOrdonnanceElec } from '../hooks/useOrdonnances';
 import { useEtablissements } from '../hooks/useEtablissements';
 import { authenticatedFileUrl } from '../utils/fileUrl';
 import toast from 'react-hot-toast';
@@ -22,8 +23,19 @@ export default function PatientOrdonnancesElecPage() {
   const { data: dispo, isLoading: dispoLoading } = useDisponibiliteOrdonnance(selectedOrdo, etabId);
   const { data: docOrdo, isLoading: docLoading } = useOrdonnanceDocument(selectedOrdo);
   const reserver = useReserverDepuisOrdonnance();
+  const downloadOrdo = useDownloadOrdonnanceElec();
 
   const structures = (etabs?.etablissements || []).filter((e) => ['pharmacie', 'hopital', 'clinique'].includes(e.type));
+
+  const handleDownload = async () => {
+    if (!selectedOrdo) return;
+    try {
+      await downloadOrdo.mutateAsync(selectedOrdo);
+      toast.success('Ordonnance téléchargée — ouvrez le fichier et imprimez-le si besoin');
+    } catch {
+      toast.error('Erreur lors du téléchargement');
+    }
+  };
 
   const handleReserver = async () => {
     try {
@@ -88,6 +100,15 @@ export default function PatientOrdonnancesElecPage() {
                     </div>
                     <span style={{ fontSize: '0.72rem', color: '#059669', fontWeight: 600 }}>SIGNÉE</span>
                   </div>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleDownload}
+                    disabled={downloadOrdo.isPending}
+                    style={{ marginBottom: 12 }}
+                  >
+                    <Download size={14} /> Télécharger l&apos;ordonnance
+                  </Button>
                   <ul style={{ margin: '12px 0', paddingLeft: 18, fontSize: '0.9rem' }}>
                     {(docOrdo.medicaments || []).map((m, i) => (
                       <li key={i}>{m.nom || m} {m.posologie ? `— ${m.posologie}` : ''}</li>

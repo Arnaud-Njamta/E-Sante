@@ -13,7 +13,9 @@ import ENDPOINTS from '../api/endpoints';
 import { useEtablissement, useEtablissementHoraires, useEtablissementPublications } from '../hooks/useEtablissements';
 import { useAvis, useCreerAvis } from '../hooks/useMessagerie';
 import { useDemarrerConversation } from '../hooks/useMessagerie';
-import { useCreerReservation } from '../hooks/useReservations';
+import { useCreerReservation, useOrdonnancesElecPatient } from '../hooks/useReservations';
+import { useOrdonnancesPharmacie } from '../hooks/useOrdonnances';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -202,6 +204,8 @@ export default function EtablissementDetailPage() {
   const creerAvis = useCreerAvis();
   const demarrerConv = useDemarrerConversation();
   const creerReservation = useCreerReservation();
+  const { data: ordonnancesElec } = useOrdonnancesElecPatient();
+  const { data: ordonnancesPapier } = useOrdonnancesPharmacie();
   const { isPatient } = useAuth();
 
   const [note, setNote] = useState(5);
@@ -209,6 +213,8 @@ export default function EtablissementDetailPage() {
   const [panier, setPanier] = useState([]);
   const [commissionPanier, setCommissionPanier] = useState(null);
   const [msgReservation, setMsgReservation] = useState('');
+  const [ordonnanceElecId, setOrdonnanceElecId] = useState('');
+  const [ordonnancePapierId, setOrdonnancePapierId] = useState('');
 
   useEffect(() => {
     if (!panier.length) {
@@ -227,6 +233,7 @@ export default function EtablissementDetailPage() {
 
   const horaires = horairesInfo?.horaires_ouverture || etab.horaires_ouverture || {};
   const produits = (etab.produits || []).filter((p) => p.actif !== false && p.stock_disponible > 0);
+  const panierNeedsOrdonnance = panier.some((l) => l.necessite_ordonnance);
   const heroUrl = resolveFileUrl(etab.image_url, etab.fichier_photo_id);
   const modesPaiement = (() => {
     if (Array.isArray(etab.modes_paiement)) return etab.modes_paiement;
@@ -252,18 +259,30 @@ export default function EtablissementDetailPage() {
     setPanier((prev) => {
       const exist = prev.find((x) => x.produit_id === p.id);
       if (exist) return prev.map((x) => x.produit_id === p.id ? { ...x, quantite: x.quantite + 1 } : x);
-      return [...prev, { produit_id: p.id, nom: p.nom, quantite: 1, prix_fcfa_unitaire: p.prix_fcfa }];
+      return [...prev, {
+        produit_id: p.id,
+        nom: p.nom,
+        quantite: 1,
+        prix_fcfa_unitaire: p.prix_fcfa,
+        necessite_ordonnance: !!p.necessite_ordonnance,
+      }];
     });
     toast.success(`${p.nom} ajouté`);
   };
 
   const handleReserver = async () => {
     if (!panier.length) return;
+    if (panierNeedsOrdonnance && !ordonnanceElecId && !ordonnancePapierId) {
+      toast.error('Sélectionnez ou scannez une ordonnance pour les médicaments sur prescription');
+      return;
+    }
     try {
       await creerReservation.mutateAsync({
         etablissement_id: id,
         lignes: panier,
         message_patient: msgReservation || undefined,
+        ordonnance_electronique_id: ordonnanceElecId || undefined,
+        ordonnance_papier_id: ordonnancePapierId || undefined,
       });
       toast.success('Demande de réservation envoyée !');
       setPanier([]);
@@ -398,6 +417,46 @@ export default function EtablissementDetailPage() {
                 rows={2}
                 style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #E2E8F0', marginBottom: 12 }}
               />
+              {panierNeedsOrdonnance && (
+                <div style={{ marginBottom: 12, padding: 12, background: '#FFFBEB', borderRadius: 8, border: '1px solid #FDE68A' }}>
+                  <p style={{ margin: '0 0 8px', fontSize: '0.85rem', fontWeight: 600, color: '#92400E' }}>
+                    Ordonnance requise pour certains médicaments
+                  </p>
+                  {(ordonnancesElec || []).length > 0 && (
+                    <label style={{ display: 'block', fontSize: '0.8rem', marginBottom: 6 }}>
+                      Ordonnance électronique
+                      <select
+                        value={ordonnanceElecId}
+                        onChange={(e) => { setOrdonnanceElecId(e.target.value); setOrdonnancePapierId(''); }}
+                        style={{ width: '100%', padding: 8, marginTop: 4, borderRadius: 8, border: '1px solid #E2E8F0' }}
+                      >
+                        <option value="">— Choisir —</option>
+                        {(ordonnancesElec || []).map((o) => (
+                          <option key={o.id} value={o.id}>{o.numero_unique} — Dr {o.medecin?.nom}</option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                  {(ordonnancesPapier || []).length > 0 && (
+                    <label style={{ display: 'block', fontSize: '0.8rem', marginBottom: 6 }}>
+                      Ordonnance scannée / photographiée
+                      <select
+                        value={ordonnancePapierId}
+                        onChange={(e) => { setOrdonnancePapierId(e.target.value); setOrdonnanceElecId(''); }}
+                        style={{ width: '100%', padding: 8, marginTop: 4, borderRadius: 8, border: '1px solid #E2E8F0' }}
+                      >
+                        <option value="">— Choisir —</option>
+                        {(ordonnancesPapier || []).map((o) => (
+                          <option key={o.id} value={o.id}>{o.nom_fichier || `Scan ${new Date(o.date_scan).toLocaleDateString('fr-FR')}`}</option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                  <p style={{ margin: '8px 0 0', fontSize: '0.75rem', color: '#64748B' }}>
+                    Pas d&apos;ordonnance ? <Link to="/ordonnances">Filmer ou scanner votre ordonnance</Link>
+                  </p>
+                </div>
+              )}
               <CommissionSummary breakdown={commissionPanier} label="Récapitulatif réservation" />
               <Button onClick={handleReserver} disabled={creerReservation.isPending}>
                 Envoyer la demande de réservation

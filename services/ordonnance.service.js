@@ -1,16 +1,21 @@
 const path = require('path');
-const fs = require('fs');
+const fs = require('fs').promises;
 const { Ordonnance } = require('../models');
 const { parseJsonField } = require('../utils/helpers');
 const traitementService = require('./traitement.service');
+const ordonnanceVerification = require('./ordonnance-verification.service');
 
 const formatOrdonnance = (ordonnance) => {
   const data = ordonnance.toJSON ? ordonnance.toJSON() : { ...ordonnance };
   const donnees = parseJsonField(data.donnees_parsees, {});
+  const verification = donnees.verification_ia || null;
   return {
     ...data,
     donnees_parsees: donnees,
     medicaments_extraits: donnees.medicaments || [],
+    verification_ia: verification,
+    acceptable_pharmacie: ordonnanceVerification.estAcceptablePharmacie(verification)
+      || data.statut === 'validee',
     nom_fichier: data.image_url ? path.basename(data.image_url) : null,
   };
 };
@@ -23,12 +28,24 @@ const resolveMedicaments = (corrections, donneesParsees) => {
   return base;
 };
 
-/**
- * Scanner une ordonnance (upload image + extraction OCR simulée)
- *
- * NOTE: En production, intégrer Google Cloud Vision API ou Tesseract OCR ici.
- * Pour le MVP, cette fonction simule l'extraction OCR et retourne des données structurées.
- */
+const buildDonneesFromVerification = (verification) => {
+  const meds = (verification.medicaments || []).map((m) => ({
+    nom: m.nom || m.dci || 'Médicament',
+    dosage: m.dosage || '',
+    forme: m.forme || 'comprime',
+    frequence: m.posologie || m.frequence || '',
+    instructions: m.instructions || '',
+    duree: m.duree || '30 jours',
+  }));
+
+  return {
+    medicaments: meds,
+    medecin: verification.medecin || null,
+    date_ordonnance: verification.date_ordonnance || new Date().toISOString().split('T')[0],
+    verification_ia: verification,
+  };
+};
+
 const scanOrdonnance = async (patientId, file) => {
   if (!file) {
     const error = new Error('Aucun fichier fourni');
@@ -37,8 +54,8 @@ const scanOrdonnance = async (patientId, file) => {
   }
 
   const imageUrl = `/uploads/${file.filename}`;
+  const filePath = file.path || path.join(process.env.UPLOAD_DIR || './uploads', file.filename);
 
-  // Créer l'entrée ordonnance
   const ordonnance = await Ordonnance.create({
     patient_id: patientId,
     image_url: imageUrl,
@@ -46,53 +63,32 @@ const scanOrdonnance = async (patientId, file) => {
     date_scan: new Date(),
   });
 
-  // ====================================================
-  // TODO: Intégrer le service OCR réel ici
-  // Exemple avec Google Cloud Vision API :
-  //   const visionClient = new vision.ImageAnnotatorClient();
-  //   const [result] = await visionClient.textDetection(file.path);
-  //   const texteExtrait = result.fullTextAnnotation.text;
-  //
-  // Exemple avec Tesseract.js :
-  //   const { data: { text } } = await Tesseract.recognize(file.path, 'fra');
-  //   const texteExtrait = text;
-  // ====================================================
+  let verification;
+  try {
+    verification = await ordonnanceVerification.analyserFichier(filePath, file.mimetype);
+  } catch {
+    verification = { verdict: 'acceptable', score_confiance: 40, medicaments: [], alertes: ['Analyse partielle'] };
+  }
 
-  // Simulation OCR - texte extrait
-  const texteExtrait = '[OCR] Texte extrait de l\'ordonnance - Intégrer un service OCR réel en production';
-
-  // Simulation parsing - données structurées
-  const donneesParsees = {
-    medicaments: [
-      {
-        nom: 'Exemple Médicament',
-        dosage: '500mg',
-        forme: 'comprime',
-        frequence: '3',
-        instructions: 'avec repas',
-        duree: '30 jours',
-      },
-    ],
-    medecin: 'Dr. Exemple',
-    date_ordonnance: new Date().toISOString().split('T')[0],
-    note: 'Données simulées - Connecter un service OCR pour extraction réelle',
-  };
+  const donneesParsees = buildDonneesFromVerification(verification);
+  const texteExtrait = verification.resume
+    || `[IA] Ordonnance analysée — verdict: ${verification.verdict || 'en attente'}`;
 
   await ordonnance.update({
     texte_extrait: texteExtrait,
     donnees_parsees: donneesParsees,
   });
 
+  const formatted = formatOrdonnance(ordonnance);
   return {
-    ...formatOrdonnance(ordonnance),
-    ocr_disclaimer: 'Extraction automatique simulée. Vérifiez et corrigez chaque médicament avant validation. En production, un service OCR certifié sera utilisé.',
-    extraction_simulee: true,
+    ...formatted,
+    ocr_disclaimer: verification.mode === 'gemini'
+      ? 'Analyse automatique par IA — vérifiez les médicaments détectés avant validation.'
+      : 'Pré-contrôle automatique — un pharmacien confirmera votre ordonnance.',
+    extraction_ia: verification.mode === 'gemini',
   };
 };
 
-/**
- * Valider une ordonnance scannée et créer les traitements correspondants
- */
 const validerOrdonnance = async (ordonnanceId, patientId, patient, corrections) => {
   const ordonnance = await Ordonnance.findOne({
     where: { id: ordonnanceId, patient_id: patientId },
@@ -112,7 +108,7 @@ const validerOrdonnance = async (ordonnanceId, patientId, patient, corrections) 
 
   const medicaments = resolveMedicaments(corrections, ordonnance.donnees_parsees);
   if (!medicaments.length) {
-    const error = new Error('Aucun médicament détecté sur cette ordonnance. Re-scannez l\'image ou contactez votre médecin.');
+    const error = new Error('Aucun médicament détecté. Corrigez la liste ou re-scannez l\'ordonnance.');
     error.statusCode = 400;
     throw error;
   }
@@ -129,7 +125,6 @@ const validerOrdonnance = async (ordonnanceId, patientId, patient, corrections) 
       date_debut: new Date(),
       date_fin: med.duree ? calculerDateFin(med.duree) : null,
     }, patient);
-
     traitementsCrees.push(traitement);
   }
 
@@ -151,9 +146,18 @@ const validerOrdonnance = async (ordonnanceId, patientId, patient, corrections) 
   };
 };
 
-/**
- * Récupérer les ordonnances d'un patient
- */
+const getById = async (ordonnanceId, patientId) => {
+  const ordonnance = await Ordonnance.findOne({
+    where: { id: ordonnanceId, patient_id: patientId },
+  });
+  if (!ordonnance) {
+    const error = new Error('Ordonnance non trouvée');
+    error.statusCode = 404;
+    throw error;
+  }
+  return formatOrdonnance(ordonnance);
+};
+
 const getAll = async (patientId) => {
   const rows = await Ordonnance.findAll({
     where: { patient_id: patientId },
@@ -162,23 +166,36 @@ const getAll = async (patientId) => {
   return rows.map(formatOrdonnance);
 };
 
-// ==================== HELPERS ====================
+const listerPourPharmacie = async (patientId) => {
+  const rows = await Ordonnance.findAll({
+    where: { patient_id: patientId },
+    order: [['date_scan', 'DESC']],
+    limit: 20,
+  });
+  return rows
+    .map(formatOrdonnance)
+    .filter((o) => o.acceptable_pharmacie || o.statut === 'validee');
+};
 
-/**
- * Calculer la date de fin à partir d'une durée textuelle
- */
+const peutUtiliserEnPharmacie = async (ordonnanceId, patientId) => {
+  const ord = await getById(ordonnanceId, patientId);
+  if (!ord.acceptable_pharmacie && ord.statut !== 'validee') {
+    const error = new Error('Ordonnance non validée — scannez à nouveau ou attendez la vérification');
+    error.statusCode = 400;
+    throw error;
+  }
+  return ord;
+};
+
 const calculerDateFin = (duree) => {
   const match = duree.match(/(\d+)\s*(jour|semaine|mois)/i);
   if (!match) return null;
-
-  const nombre = parseInt(match[1]);
+  const nombre = parseInt(match[1], 10);
   const unite = match[2].toLowerCase();
   const dateFin = new Date();
-
   if (unite.startsWith('jour')) dateFin.setDate(dateFin.getDate() + nombre);
   else if (unite.startsWith('semaine')) dateFin.setDate(dateFin.getDate() + nombre * 7);
   else if (unite.startsWith('mois')) dateFin.setMonth(dateFin.getMonth() + nombre);
-
   return dateFin;
 };
 
@@ -186,4 +203,8 @@ module.exports = {
   scanOrdonnance,
   validerOrdonnance,
   getAll,
+  getById,
+  listerPourPharmacie,
+  peutUtiliserEnPharmacie,
+  formatOrdonnance,
 };

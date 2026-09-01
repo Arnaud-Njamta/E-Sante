@@ -15,7 +15,7 @@ const validerOrdonnance = async (req, res, next) => {
       req.params.id,
       req.patient.id,
       req.patient,
-      req.body
+      req.body,
     );
     res.json({ success: true, data: result });
   } catch (error) {
@@ -32,4 +32,24 @@ const getAll = async (req, res, next) => {
   }
 };
 
-module.exports = { scanOrdonnance, validerOrdonnance, getAll };
+const getById = async (req, res, next) => {
+  try {
+    const ordonnance = await ordonnanceService.getById(req.params.id, req.patient.id);
+    res.json({ success: true, data: ordonnance });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const listerPourPharmacie = async (req, res, next) => {
+  try {
+    const ordonnances = await ordonnanceService.listerPourPharmacie(req.patient.id);
+    res.json({ success: true, data: ordonnances });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = {
+  scanOrdonnance, validerOrdonnance, getAll, getById, listerPourPharmacie,
+};

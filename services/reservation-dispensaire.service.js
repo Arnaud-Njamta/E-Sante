@@ -2,7 +2,7 @@ const crypto = require('crypto');
 const { Op } = require('sequelize');
 const {
   ReservationDispensaire, Patient, Etablissement, ProduitPharmacie,
-  OrdonnanceElectronique,
+  OrdonnanceElectronique, Ordonnance,
 } = require('../models');
 const { STATUT_RESERVATION, STATUT_ORDONNANCE_ELEC, TYPE_ETABLISSEMENT } = require('../utils/constants');
 const { parseJsonField } = require('../utils/helpers');
@@ -59,7 +59,8 @@ const formatReservation = async (r) => {
 };
 
 const creer = async (patientId, {
-  etablissement_id, lignes, message_patient, ordonnance_electronique_id, date_retrait_souhaitee,
+  etablissement_id, lignes, message_patient, ordonnance_electronique_id,
+  ordonnance_papier_id, date_retrait_souhaitee,
 }) => {
   if (!lignes?.length) {
     const error = new Error('Ajoutez au moins un produit à réserver');
@@ -91,6 +92,11 @@ const creer = async (patientId, {
     }
   }
 
+  if (ordonnance_papier_id) {
+    const ordonnanceService = require('./ordonnance.service');
+    await ordonnanceService.peutUtiliserEnPharmacie(ordonnance_papier_id, patientId);
+  }
+
   const lignesValidees = [];
   for (const ligne of lignes) {
     const produit = await ProduitPharmacie.findOne({
@@ -101,8 +107,8 @@ const creer = async (patientId, {
       error.statusCode = 400;
       throw error;
     }
-    if (produit.necessite_ordonnance && !ordonnance_electronique_id) {
-      const error = new Error(`${produit.nom} nécessite une ordonnance électronique`);
+    if (produit.necessite_ordonnance && !ordonnance_electronique_id && !ordonnance_papier_id) {
+      const error = new Error(`${produit.nom} nécessite une ordonnance — scannez ou sélectionnez votre ordonnance`);
       error.statusCode = 400;
       throw error;
     }
@@ -128,6 +134,7 @@ const creer = async (patientId, {
     patient_id: patientId,
     etablissement_id,
     ordonnance_electronique_id: ordonnance_electronique_id || null,
+    ordonnance_papier_id: ordonnance_papier_id || null,
     lignes: lignesValidees,
     message_patient,
     date_retrait_souhaitee: date_retrait_souhaitee || null,
@@ -165,6 +172,7 @@ const listerPatient = async (patientId) => {
     include: [
       { model: Etablissement, as: 'etablissement', attributes: ['id', 'nom', 'type', 'ville', 'telephone', 'adresse'] },
       { model: OrdonnanceElectronique, as: 'ordonnance', attributes: ['id', 'numero_unique'], required: false },
+      { model: Ordonnance, as: 'ordonnance_papier', attributes: ['id', 'image_url', 'statut'], required: false },
     ],
     order: [['createdAt', 'DESC']],
     limit: 50,
@@ -180,6 +188,7 @@ const listerEtablissement = async (etablissementId, { statut } = {}) => {
     include: [
       { model: Patient, as: 'patient', attributes: ['id', 'nom', 'prenom', 'telephone', 'email'] },
       { model: OrdonnanceElectronique, as: 'ordonnance', attributes: ['id', 'numero_unique'], required: false },
+      { model: Ordonnance, as: 'ordonnance_papier', attributes: ['id', 'image_url', 'statut'], required: false },
     ],
     order: [['createdAt', 'DESC']],
     limit: 100,

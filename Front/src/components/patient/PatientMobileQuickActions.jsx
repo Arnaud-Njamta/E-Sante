@@ -2,7 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import {
-  Calendar, ScanLine, Heart, Wallet, Package, BarChart3,
+  Calendar, ScanLine, Heart, Wallet, Package, BarChart3, BookHeart,
 } from 'lucide-react';
 
 const Scroll = styled.div`
@@ -68,6 +68,7 @@ const TileLabel = styled.span`
 
 const ACTIONS = [
   { to: '/rendez-vous', icon: Calendar, label: 'RDV', bg: '#ECFDF5', color: '#007A5E' },
+  { to: '/carnet-medical', icon: BookHeart, label: 'Carnet', bg: '#FDF2F8', color: '#DB2777' },
   { to: '/ordonnances', icon: ScanLine, label: 'Scanner', bg: '#F0FDF4', color: '#16A34A' },
   { to: '/medications', icon: Heart, label: 'Médicaments', bg: '#FFF7ED', color: '#EA580C' },
   { to: '/reservations', icon: Package, label: 'Réservations', bg: '#EFF6FF', color: '#2563EB' },

@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Clock, Building2, MessageCircle, LayoutGrid,
   Heart, Calendar, Package, Wallet, FileText, ScanLine,
-  BarChart3, Newspaper, User, Stethoscope,
+  BarChart3, Newspaper, User, Stethoscope, BookHeart,
 } from 'lucide-react';
 
 /** Barre de navigation bas — mobile patient */
@@ -30,6 +30,7 @@ export const PATIENT_MORE_SECTIONS = [
     items: [
       { to: '/medications', icon: Heart, label: 'Médicaments', desc: 'Votre traitement' },
       { to: '/rendez-vous', icon: Calendar, label: 'Rendez-vous', desc: 'Consultations & téléconsult.' },
+      { to: '/carnet-medical', icon: BookHeart, label: 'Carnet médical', desc: 'Allergies & antécédents' },
       { to: '/reservations', icon: Package, label: 'Réservations', desc: 'Pharmacies & dispensaires' },
       { to: '/ordonnances', icon: ScanLine, label: 'Scanner ordonnance', desc: 'Ajout rapide' },
       { to: '/ordonnances-electroniques', icon: FileText, label: 'Ordonnances élec.', desc: 'Documents signés' },
@@ -64,6 +65,7 @@ export const PATIENT_ROUTE_TITLES = [
   { path: '/sante/etablissement', title: 'Établissement', subtitle: 'Fiche détaillée' },
   { path: '/sante/medecin', title: 'Médecin', subtitle: 'Profil & prise de RDV' },
   { path: '/rendez-vous', title: 'Mes rendez-vous', subtitle: 'Consultations & téléconsult.' },
+  { path: '/carnet-medical', title: 'Carnet médical', subtitle: 'Allergies, antécédents & vaccinations' },
   { path: '/reservations', title: 'Mes réservations', subtitle: 'Pharmacies & dispensaires' },
   { path: '/paiements', title: 'Mes paiements', subtitle: 'Historique & reçus' },
   { path: '/pharmacie/chat', title: 'Pharmacie en ligne', subtitle: 'Disponibilité & horaires' },

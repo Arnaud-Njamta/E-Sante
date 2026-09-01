@@ -19,13 +19,21 @@ const haversineKm = (lat1, lon1, lat2, lon2) => {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
-const fetchRows = async (where, order, limit, offset = 0) => Etablissement.findAll({
-  where,
-  include: [serviceInclude],
-  order,
-  limit,
-  offset,
-});
+const fetchRows = async (where, order, limit, offset = 0) => {
+  const cap = Math.max(1, Math.min(parseInt(limit, 10) || 20, 500));
+  const skip = Math.max(parseInt(offset, 10) || 0, 0);
+  return Etablissement.findAll({
+    where,
+    include: [{
+      ...serviceInclude,
+      separate: true,
+    }],
+    order,
+    limit: cap,
+    offset: skip,
+    subQuery: false,
+  });
+};
 
 const buildWhere = ({ type, recherche, ville, useGeo }) => {
   const where = { actif: true, statut_validation: STATUT_VALIDATION.VALIDE };

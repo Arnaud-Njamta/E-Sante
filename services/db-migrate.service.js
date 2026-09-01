@@ -296,14 +296,21 @@ const runPendingMigrations = async () => {
   }
 
   const addIndexIfMissing = async (table, indexName, columnsSql) => {
-    const [rows] = await sequelize.query(
-      `SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS
-       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?`,
-      { replacements: [table, indexName] },
-    );
-    if (rows.length === 0) {
-      await sequelize.query(`CREATE INDEX \`${indexName}\` ON \`${table}\` (${columnsSql})`);
-      console.log(`Migration: index ${indexName} sur ${table}.`);
+    try {
+      const [rows] = await sequelize.query(
+        `SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?`,
+        { replacements: [table, indexName] },
+      );
+      if (rows.length === 0) {
+        await sequelize.query(`CREATE INDEX \`${indexName}\` ON \`${table}\` (${columnsSql})`);
+        console.log(`Migration: index ${indexName} sur ${table}.`);
+      }
+    } catch (err) {
+      const msg = String(err.message || err);
+      if (!msg.includes('Duplicate') && !msg.includes('already exists')) {
+        console.warn(`Migration index ${indexName} (${table}):`, msg);
+      }
     }
   };
 

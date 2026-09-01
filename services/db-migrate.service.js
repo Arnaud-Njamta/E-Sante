@@ -333,6 +333,17 @@ const runPendingMigrations = async () => {
   await addColumnIfMissing('medecins', 'fichier_signature_id', '`fichier_signature_id` CHAR(36) NULL');
   await addColumnIfMissing('ordonnances_electroniques', 'fichier_signature_id', '`fichier_signature_id` CHAR(36) NULL');
 
+  try {
+    await sequelize.query(
+      "ALTER TABLE `fichiers` MODIFY COLUMN `type_fichier` "
+      + "ENUM('photo_profil','cachet','signature','document','produit','ordonnance_pdf',"
+      + "'diplome','carte_ordre','agrement','autorisation') NOT NULL",
+    );
+    console.log('Migration: fichiers.type_fichier inclut signature.');
+  } catch (err) {
+    console.warn('Migration fichiers.type_fichier signature:', err.message);
+  }
+
   const [consentTables] = await sequelize.query(
     "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'consentements_patients'",
   );

@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { prepareImageForUpload } from '../../utils/prepareImageUpload';
 import styled from 'styled-components';
 import { Camera, Loader2 } from 'lucide-react';
 import Card from './Card';
@@ -48,10 +49,15 @@ export default function PhotoUploadCard({
 
   const handleChange = async (e) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
-    if (!file.type.startsWith('image/')) return;
-    setPreview(URL.createObjectURL(file));
-    await onUpload(file);
+    try {
+      const prepared = await prepareImageForUpload(file);
+      setPreview(URL.createObjectURL(prepared));
+      await onUpload(prepared);
+    } catch {
+      setPreview(null);
+    }
   };
 
   return (

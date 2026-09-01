@@ -17,7 +17,7 @@ const Fichier = sequelize.define('Fichier', {
   },
   type_fichier: {
     type: DataTypes.ENUM(
-      'photo_profil', 'cachet', 'document', 'produit', 'ordonnance_pdf',
+      'photo_profil', 'cachet', 'signature', 'document', 'produit', 'ordonnance_pdf',
       'diplome', 'carte_ordre', 'agrement', 'autorisation'
     ),
     allowNull: false,

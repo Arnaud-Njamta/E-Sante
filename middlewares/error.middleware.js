@@ -2,9 +2,12 @@ const errorMiddleware = (err, req, res, next) => {
   console.error('Erreur:', err.message);
 
   if (err.name === 'MulterError') {
-    const message = err.code === 'LIMIT_FILE_SIZE'
-      ? 'Fichier trop volumineux (max 10 Mo)'
-      : err.message;
+    const messages = {
+      LIMIT_FILE_SIZE: 'Fichier trop volumineux (max 10 Mo)',
+      LIMIT_UNEXPECTED_FILE: 'Champ fichier incorrect — réessayez',
+      LIMIT_FILE_COUNT: 'Un seul fichier à la fois',
+    };
+    const message = messages[err.code] || err.message;
     return res.status(400).json({ success: false, message });
   }
 

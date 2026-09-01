@@ -27,6 +27,7 @@ const MIME_EXT = {
   'image/jpeg': '.jpg',
   'image/jpg': '.jpg',
   'image/png': '.png',
+  'image/x-png': '.png',
   'image/webp': '.webp',
   'application/pdf': '.pdf',
 };

@@ -4,7 +4,8 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Spinner from '../components/ui/Spinner';
 import PhotoUploadCard from '../components/ui/PhotoUploadCard';
-import { authenticatedFileUrl } from '../utils/fileUrl';
+import ImageUploadField from '../components/ui/ImageUploadField';
+import { getUploadErrorMessage } from '../utils/prepareImageUpload';
 import { useMedecinDashboard } from '../hooks/useDashboards';
 import { useUploadMedecinPhoto, useUploadMedecinCachet, useUploadMedecinSignature, useUpdateMedecinHoraires, useUpdateMedecinProfil } from '../hooks/useProfessionnel';
 import toast from 'react-hot-toast';
@@ -43,47 +44,40 @@ export default function MedecinParametresPage() {
   if (isLoading) return <Spinner />;
   const profil = data?.profil;
 
-  const cachetUrl = profil?.fichier_cachet_id
-    ? authenticatedFileUrl(profil.fichier_cachet_id, photoKey)
-    : null;
-  const signatureUrl = profil?.fichier_signature_id
-    ? authenticatedFileUrl(profil.fichier_signature_id, photoKey)
-    : null;
+  const bumpPreview = () => setPhotoKey((k) => k + 1);
 
   const handlePhoto = async (file) => {
     try {
       await uploadPhoto.mutateAsync(file);
-      setPhotoKey((k) => k + 1);
+      bumpPreview();
       await refetch();
       toast.success('Photo mise à jour');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Erreur lors de l\'upload de la photo');
+      toast.error(getUploadErrorMessage(err));
     }
   };
 
-  const handleCachet = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const handleCachet = async (file) => {
     try {
       await uploadCachet.mutateAsync(file);
-      setPhotoKey((k) => k + 1);
+      bumpPreview();
       await refetch();
       toast.success('Cachet électronique enregistré');
-    } catch {
-      toast.error('Erreur upload');
+    } catch (err) {
+      toast.error(getUploadErrorMessage(err));
+      throw err;
     }
   };
 
-  const handleSignature = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const handleSignature = async (file) => {
     try {
       await uploadSignature.mutateAsync(file);
-      setPhotoKey((k) => k + 1);
+      bumpPreview();
       await refetch();
       toast.success('Signature électronique enregistrée');
-    } catch {
-      toast.error('Erreur upload signature');
+    } catch (err) {
+      toast.error(getUploadErrorMessage(err));
+      throw err;
     }
   };
 
@@ -124,23 +118,29 @@ export default function MedecinParametresPage() {
           isUploading={uploadPhoto.isPending}
         />
 
-        <Card style={{ padding: 24 }}>
-          <h3><Stamp size={18} /> Cachet électronique</h3>
-          <p style={{ fontSize: '0.85rem', color: '#64748B' }}>
-            Obligatoire pour signer des ordonnances électroniques (ONMC).
-          </p>
-          {cachetUrl && <img src={cachetUrl} alt="Cachet" style={{ maxWidth: 120, marginBottom: 12 }} />}
-          <input type="file" accept="image/*" onChange={handleCachet} />
-        </Card>
+        <ImageUploadField
+          title="Cachet électronique"
+          subtitle="Obligatoire pour signer des ordonnances électroniques (ONMC)."
+          icon={Stamp}
+          photoUrl={profil?.cachet_url}
+          fichierId={profil?.fichier_cachet_id}
+          cacheBust={photoKey}
+          onUpload={handleCachet}
+          onError={(err) => toast.error(getUploadErrorMessage(err))}
+          isUploading={uploadCachet.isPending}
+        />
 
-        <Card style={{ padding: 24 }}>
-          <h3><PenLine size={18} /> Signature électronique</h3>
-          <p style={{ fontSize: '0.85rem', color: '#64748B' }}>
-            Votre signature manuscrite scannée — affichée avec le cachet sur les ordonnances signées.
-          </p>
-          {signatureUrl && <img src={signatureUrl} alt="Signature" style={{ maxWidth: 160, marginBottom: 12 }} />}
-          <input type="file" accept="image/*" onChange={handleSignature} />
-        </Card>
+        <ImageUploadField
+          title="Signature électronique"
+          subtitle="Votre signature manuscrite scannée — affichée avec le cachet sur les ordonnances signées."
+          icon={PenLine}
+          photoUrl={profil?.signature_url}
+          fichierId={profil?.fichier_signature_id}
+          cacheBust={photoKey}
+          onUpload={handleSignature}
+          onError={(err) => toast.error(getUploadErrorMessage(err))}
+          isUploading={uploadSignature.isPending}
+        />
       </div>
 
       <Card style={{ padding: 24, marginTop: 24 }}>

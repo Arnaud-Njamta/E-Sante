@@ -4,16 +4,16 @@ const medecinController = require('../controllers/medecin.controller');
 const carnetController = require('../controllers/carnet-medical.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const { requireRole } = require('../middlewares/auth.middleware');
-const { uploadImage } = require('../middlewares/upload.middleware');
+const { uploadImage, handleUpload } = require('../middlewares/upload.middleware');
 
 router.get('/', authMiddleware, requireRole('patient'), medecinController.lister);
 router.get('/me/profile', authMiddleware, requireRole('medecin'), medecinController.getProfile);
 router.get('/me/dashboard', authMiddleware, requireRole('medecin'), medecinController.getDashboard);
 router.put('/me/profile', authMiddleware, requireRole('medecin'), medecinController.updateProfil);
 router.put('/me/horaires', authMiddleware, requireRole('medecin'), medecinController.updateHoraires);
-router.post('/me/photo', authMiddleware, requireRole('medecin'), uploadImage.single('photo'), medecinController.uploadPhoto);
-router.post('/me/cachet', authMiddleware, requireRole('medecin'), uploadImage.single('cachet'), medecinController.uploadCachet);
-router.post('/me/signature', authMiddleware, requireRole('medecin'), uploadImage.single('signature'), medecinController.uploadSignature);
+router.post('/me/photo', authMiddleware, requireRole('medecin'), handleUpload(uploadImage.single('photo')), medecinController.uploadPhoto);
+router.post('/me/cachet', authMiddleware, requireRole('medecin'), handleUpload(uploadImage.single('cachet')), medecinController.uploadCachet);
+router.post('/me/signature', authMiddleware, requireRole('medecin'), handleUpload(uploadImage.single('signature')), medecinController.uploadSignature);
 router.get('/patients/:patientId/carnet', authMiddleware, requireRole('medecin'), carnetController.getCarnetPatient);
 router.put('/patients/:patientId/carnet', authMiddleware, requireRole('medecin'), carnetController.updateCarnetPatient);
 

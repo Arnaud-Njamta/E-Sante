@@ -4,7 +4,7 @@ const etablissementController = require('../controllers/etablissement.controller
 const structureController = require('../controllers/structure.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const { requireRole } = require('../middlewares/auth.middleware');
-const { uploadImage } = require('../middlewares/upload.middleware');
+const { uploadImage, handleUpload } = require('../middlewares/upload.middleware');
 
 const structureRoles = ['pharmacie', 'hopital', 'clinique'];
 const hopitalCliniqueRoles = ['hopital', 'clinique'];
@@ -14,7 +14,7 @@ router.get('/structure/dashboard', authMiddleware, requireRole(...structureRoles
 router.put('/me/profil', authMiddleware, requireRole(...structureRoles), etablissementController.updateProfil);
 router.put('/me/horaires', authMiddleware, requireRole(...structureRoles), etablissementController.updateHoraires);
 router.put('/me/localisation', authMiddleware, requireRole(...structureRoles), etablissementController.updateLocalisation);
-router.post('/me/photo', authMiddleware, requireRole(...structureRoles), uploadImage.single('photo'), etablissementController.uploadPhoto);
+router.post('/me/photo', authMiddleware, requireRole(...structureRoles), handleUpload(uploadImage.single('photo')), etablissementController.uploadPhoto);
 
 router.get('/me/medecins', authMiddleware, requireRole(...hopitalCliniqueRoles), structureController.listMedecins);
 router.post('/me/medecins', authMiddleware, requireRole(...hopitalCliniqueRoles), structureController.addMedecin);

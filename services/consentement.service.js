@@ -1,7 +1,10 @@
 const { ConsentementPatient } = require('../models');
+const { Op } = require('sequelize');
+const { RendezVous } = require('../models');
 const {
   CONSENTEMENT_TYPES,
   POLITIQUE_CONFIDENTIALITE_VERSION,
+  STATUT_RDV,
 } = require('../utils/constants');
 
 const enregistrer = async ({
@@ -49,15 +52,23 @@ const aConsentementActif = async ({
   return !!row;
 };
 
-const peutMedecinVoirCarnet = async (medecinId, patientId) => aConsentementActif({
-  patient_id: patientId,
-  medecin_id: medecinId,
-  type: CONSENTEMENT_TYPES.PARTAGE_CARNET_RDV,
-}) || aConsentementActif({
-  patient_id: patientId,
-  medecin_id: medecinId,
-  type: CONSENTEMENT_TYPES.PARTAGE_CARNET_MEDECIN,
-});
+const peutMedecinVoirCarnet = async (medecinId, patientId) => {
+  const rdvValide = await RendezVous.findOne({
+    where: {
+      medecin_id: medecinId,
+      patient_id: patientId,
+      statut: { [Op.in]: [STATUT_RDV.CONFIRME, STATUT_RDV.TERMINE] },
+    },
+    order: [['updatedAt', 'DESC']],
+  });
+  if (!rdvValide) return false;
+
+  return aConsentementActif({
+    patient_id: patientId,
+    medecin_id: medecinId,
+    type: CONSENTEMENT_TYPES.PARTAGE_CARNET_RDV,
+  });
+};
 
 const listerPourPatient = async (patientId) => {
   const rows = await ConsentementPatient.findAll({

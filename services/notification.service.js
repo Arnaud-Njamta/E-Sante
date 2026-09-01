@@ -64,17 +64,24 @@ const getPatientNotifications = async (patientId) => {
   });
 
   const rdv = await RendezVous.findAll({
-    where: { patient_id: patientId, statut: { [Op.in]: [STATUT_RDV.CONFIRME, STATUT_RDV.EN_ATTENTE] } },
-    include: [{ model: Etablissement, as: 'etablissement', attributes: ['nom'], required: false }],
+    where: { patient_id: patientId, statut: { [Op.in]: [STATUT_RDV.CONFIRME, STATUT_RDV.EN_ATTENTE, STATUT_RDV.CONTRE_PROPOSITION] } },
+    include: [
+      { model: Etablissement, as: 'etablissement', attributes: ['nom'], required: false },
+      { model: Medecin, as: 'medecin', attributes: ['prenom', 'nom'], required: false },
+    ],
     order: [['date_rdv', 'ASC']],
-    limit: 5,
+    limit: 8,
   });
   rdv.forEach((r) => {
+    const medLabel = r.medecin ? `Dr. ${r.medecin.prenom} ${r.medecin.nom}` : 'Consultation';
+    let title = 'RDV en attente';
+    if (r.statut === STATUT_RDV.CONFIRME) title = 'RDV confirmé ✓';
+    if (r.statut === STATUT_RDV.CONTRE_PROPOSITION) title = 'Nouveau créneau proposé';
     items.push({
-      id: `rdv-${r.id}`,
+      id: `rdv-${r.id}-${r.statut}`,
       type: 'rendez_vous',
-      title: r.statut === STATUT_RDV.CONFIRME ? 'RDV confirmé' : 'RDV en attente',
-      message: `${r.date_rdv} ${r.heure_debut} — ${r.etablissement?.nom || 'Consultation'}`,
+      title,
+      message: `${r.date_rdv} ${r.heure_debut} — ${medLabel}`,
       link: '/rendez-vous',
       createdAt: r.updatedAt,
     });

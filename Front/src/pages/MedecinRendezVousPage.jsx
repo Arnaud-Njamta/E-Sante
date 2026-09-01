@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Check, X, Clock, Video, MapPin, RefreshCw, BookHeart, MessageSquare } from 'lucide-react';
+import { Calendar, Check, X, Clock, Video, MapPin, RefreshCw, BookHeart, MessageSquare, FileText } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Spinner from '../components/ui/Spinner';
 import ErrorState from '../components/ui/ErrorState';
 import MedecinCarnetPatientModal from '../components/medecin/MedecinCarnetPatientModal';
+import MedecinOrdonnanceModal from '../components/medecin/MedecinOrdonnanceModal';
 import {
   useRendezVousMedecin, useUpdateRdvStatut, useProposerContreProposition, useCreneaux,
 } from '../hooks/useRendezVous';
@@ -82,6 +83,7 @@ export default function MedecinRendezVousPage() {
   const [notesPatient, setNotesPatient] = useState('');
 
   const [carnetPatient, setCarnetPatient] = useState(null);
+  const [ordonnanceRdv, setOrdonnanceRdv] = useState(null);
 
   const { data: creneauxData, isLoading: creneauxLoading } = useCreneaux(user?.id, dateProposee);
 
@@ -174,17 +176,23 @@ export default function MedecinRendezVousPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <Badge $s={rdv.statut}>{STATUT_LABELS[rdv.statut] || rdv.statut}</Badge>
 
-            {rdv.patient?.id && ['en_attente', 'confirme', 'termine'].includes(rdv.statut) && (
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setCarnetPatient({
-                  id: rdv.patient.id,
-                  name: `${rdv.patient.prenom} ${rdv.patient.nom}`,
-                })}
-              >
-                <BookHeart size={14} /> Carnet
-              </Button>
+            {rdv.patient?.id && ['confirme', 'termine'].includes(rdv.statut) && (
+              <>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setCarnetPatient({
+                    id: rdv.patient.id,
+                    name: `${rdv.patient.prenom} ${rdv.patient.nom}`,
+                    editable: true,
+                  })}
+                >
+                  <BookHeart size={14} /> Carnet
+                </Button>
+                <Button size="sm" variant="secondary" onClick={() => setOrdonnanceRdv(rdv)}>
+                  <FileText size={14} /> Ordonnance
+                </Button>
+              </>
             )}
 
             {rdv.statut === 'en_attente' && (
@@ -303,7 +311,15 @@ export default function MedecinRendezVousPage() {
         <MedecinCarnetPatientModal
           patientId={carnetPatient.id}
           patientName={carnetPatient.name}
+          editable={carnetPatient.editable}
           onClose={() => setCarnetPatient(null)}
+        />
+      )}
+
+      {ordonnanceRdv && (
+        <MedecinOrdonnanceModal
+          rdv={ordonnanceRdv}
+          onClose={() => setOrdonnanceRdv(null)}
         />
       )}
     </div>

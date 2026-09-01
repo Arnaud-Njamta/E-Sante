@@ -37,6 +37,19 @@ const getCarnetPatient = async (req, res, next) => {
   }
 };
 
+const updateCarnetPatient = async (req, res, next) => {
+  try {
+    const carnet = await carnetService.mettreAJourParMedecin(
+      req.medecin.id,
+      req.params.patientId,
+      req.body,
+    );
+    res.json({ success: true, data: carnet });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getTextes = async (_req, res) => {
   res.json({ success: true, data: consentementService.getTextesConsentement() });
 };
@@ -54,6 +67,7 @@ module.exports = {
   getMonCarnet,
   updateMonCarnet,
   getCarnetPatient,
+  updateCarnetPatient,
   getTextes,
   listerMesConsentements,
 };

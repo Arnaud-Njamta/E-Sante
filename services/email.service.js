@@ -156,8 +156,9 @@ const brandWrap = (title, bodyHtml) => `
 
 const sendMailSafe = async ({ to, subject, html, mockLabel }) => {
   if (!to) return { sent: false, reason: 'no_recipient' };
-  if (!process.env.SMTP_HOST) {
+    if (!process.env.SMTP_HOST) {
     console.log(`[EMAIL MOCK] ${mockLabel || subject} → ${to}`);
+    console.warn('[EMAIL] SMTP non configuré — configurez SMTP_HOST dans .env pour envoyer les e-mails');
     return { sent: false, mode: 'mock' };
   }
   try {
@@ -421,6 +422,34 @@ const sendRdvTermineEmail = async ({
   });
 };
 
+const sendOrdonnancePatientEmail = async ({
+  patientEmail, patientPrenom, numero, medecinLabel,
+}) => {
+  const frontUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const html = brandWrap(
+    'Nouvelle ordonnance électronique',
+    `
+      <p style="color:#555;font-size:15px;line-height:1.6;">Bonjour ${patientPrenom || ''},</p>
+      <p style="color:#555;font-size:15px;line-height:1.6;">
+        <strong>${medecinLabel}</strong> vous a délivré une ordonnance électronique
+        <strong>${numero}</strong>. Elle est disponible dans votre espace patient
+        et utilisable en pharmacie.
+      </p>
+      <div style="text-align:center;margin:24px 0;">
+        <a href="${frontUrl}/ordonnances-electroniques" style="display:inline-block;background:#0B3D30;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;">
+          Voir mon ordonnance
+        </a>
+      </div>
+    `,
+  );
+  return sendMailSafe({
+    to: patientEmail,
+    subject: `Ordonnance ${numero} disponible — DjamSanté`,
+    html,
+    mockLabel: `Ordonnance patient → ${patientEmail}`,
+  });
+};
+
 module.exports = {
   sendResetPasswordEmail,
   sendAffiliationInviteEmail,
@@ -433,4 +462,5 @@ module.exports = {
   sendRdvRefuseEmail,
   sendRdvContrePropositionEmail,
   sendRdvTermineEmail,
+  sendOrdonnancePatientEmail,
 };

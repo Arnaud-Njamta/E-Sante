@@ -15,6 +15,7 @@ router.post('/me/photo', authMiddleware, requireRole('medecin'), uploadImage.sin
 router.post('/me/cachet', authMiddleware, requireRole('medecin'), uploadImage.single('cachet'), medecinController.uploadCachet);
 router.post('/me/signature', authMiddleware, requireRole('medecin'), uploadImage.single('signature'), medecinController.uploadSignature);
 router.get('/patients/:patientId/carnet', authMiddleware, requireRole('medecin'), carnetController.getCarnetPatient);
+router.put('/patients/:patientId/carnet', authMiddleware, requireRole('medecin'), carnetController.updateCarnetPatient);
 
 const profilProController = require('../controllers/profil-pro.controller');
 router.get('/me/affiliations', authMiddleware, requireRole('medecin'), profilProController.listerAffiliationsMedecin);

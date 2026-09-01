@@ -37,6 +37,24 @@ const creer = async (medecinId, { patient_id, rendez_vous_id, diagnostic, medica
     throw error;
   }
 
+  if (rendez_vous_id) {
+    const { RendezVous } = require('../models');
+    const { STATUT_RDV } = require('../utils/constants');
+    const rdv = await RendezVous.findOne({
+      where: {
+        id: rendez_vous_id,
+        medecin_id: medecinId,
+        patient_id,
+        statut: { [require('sequelize').Op.in]: [STATUT_RDV.CONFIRME, STATUT_RDV.TERMINE] },
+      },
+    });
+    if (!rdv) {
+      const error = new Error('Rendez-vous invalide — confirmez ou terminez la consultation avant l\'ordonnance');
+      error.statusCode = 400;
+      throw error;
+    }
+  }
+
   const medecin = await Medecin.findByPk(medecinId);
   if (!medecin?.fichier_cachet_id) {
     const error = new Error('Veuillez d\'abord charger votre cachet électronique dans Paramètres');
@@ -94,6 +112,16 @@ const signer = async (medecinId, ordonnanceId) => {
   ord.statut = STATUT_ORDONNANCE_ELEC.SIGNEE;
   await ord.save();
   await auditLog.log(ord.id, 'signee', 'medecin', medecinId);
+
+  const patient = await Patient.findByPk(ord.patient_id, { attributes: ['email', 'prenom', 'nom'] });
+  const emailService = require('./email.service');
+  emailService.sendOrdonnancePatientEmail({
+    patientEmail: patient?.email,
+    patientPrenom: patient?.prenom,
+    numero: ord.numero_unique,
+    medecinLabel: medecin ? `Dr. ${medecin.prenom} ${medecin.nom}` : 'votre médecin',
+  }).catch(() => {});
+
   return formatOrdonnanceUrls(ord, medecin);
 };
 

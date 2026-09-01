@@ -9,7 +9,8 @@ import Spinner from '../components/ui/Spinner';
 import ErrorState from '../components/ui/ErrorState';
 import PaymentModal from '../components/ui/PaymentModal';
 import PatientPageHeader from '../components/patient/PatientPageHeader';
-import { useMesReservations, useAnnulerReservation } from '../hooks/useReservations';
+import CancelConfirmModal from '../components/patient/CancelConfirmModal';
+import { useMesReservations, useAnnulerReservation, usePreviewAnnulationReservation } from '../hooks/useReservations';
 import { getRecuUrl } from '../hooks/usePaiement';
 import toast from 'react-hot-toast';
 
@@ -103,15 +104,20 @@ export default function PatientReservationsPage() {
   const { data: reservations, isLoading, error, refetch } = useMesReservations();
   const annuler = useAnnulerReservation();
   const [paiement, setPaiement] = useState(null);
+  const [cancelTarget, setCancelTarget] = useState(null);
+  const { data: cancelPreview, isLoading: previewLoading } = usePreviewAnnulationReservation(cancelTarget, !!cancelTarget);
 
   const list = Array.isArray(reservations) ? reservations : [];
 
-  const handleAnnuler = async (id) => {
+  const handleConfirmAnnuler = async () => {
+    if (!cancelTarget) return;
     try {
-      await annuler.mutateAsync(id);
-      toast.success('Réservation annulée');
-    } catch {
-      toast.error('Impossible d\'annuler');
+      const res = await annuler.mutateAsync(cancelTarget);
+      toast.success(res.message || 'Réservation annulée');
+      setCancelTarget(null);
+      refetch();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Impossible d\'annuler');
     }
   };
 
@@ -165,7 +171,7 @@ export default function PatientReservationsPage() {
                 <Actions>
                   {r.transaction?.statut_paiement === 'en_attente' && r.transaction?.montant_brut_fcfa > 0 && (
                     <Button size="sm" onClick={() => setPaiement({
-                      referenceType: 'reservation',
+                      referenceType: 'reservation_dispensaire',
                       referenceId: r.id,
                       transaction: r.transaction,
                       titre: `Réservation ${r.numero_reference}`,
@@ -180,7 +186,7 @@ export default function PatientReservationsPage() {
                     </Button>
                   )}
                   {['en_attente', 'confirmee'].includes(r.statut) && (
-                    <Button size="sm" variant="secondary" onClick={() => handleAnnuler(r.id)}>
+                    <Button size="sm" variant="secondary" onClick={() => setCancelTarget(r.id)}>
                       <X size={14} /> Annuler
                     </Button>
                   )}
@@ -195,6 +201,17 @@ export default function PatientReservationsPage() {
           })}
         </List>
       )}
+
+      <CancelConfirmModal
+        open={!!cancelTarget}
+        onClose={() => setCancelTarget(null)}
+        onConfirm={handleConfirmAnnuler}
+        loading={annuler.isPending}
+        previewLoading={previewLoading}
+        preview={cancelPreview}
+        title="Annuler cette réservation ?"
+        confirmLabel="Oui, annuler la réservation"
+      />
 
       <PaymentModal
         open={!!paiement}

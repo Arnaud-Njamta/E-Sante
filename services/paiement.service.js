@@ -60,6 +60,41 @@ const marquerPaye = async (tx, { canal, provider, metadonnees = {} }) => {
   return tx;
 };
 
+/** Remboursement total ou partiel (simulation / enregistrement CinetPay manuel en prod). */
+const rembourserTransaction = async (tx, montantRembourseFcfa, meta = {}) => {
+  if (!tx) return null;
+  const montantBrut = Number(tx.montant_brut_fcfa) || 0;
+  const montant = Math.min(montantBrut, Math.max(0, Math.round(Number(montantRembourseFcfa) || 0)));
+
+  if (tx.statut_paiement === 'en_attente') {
+    tx.statut_paiement = 'annule';
+    await tx.save();
+    return formatTransaction(tx);
+  }
+  if (tx.statut_paiement !== 'paye') {
+    return formatTransaction(tx);
+  }
+
+  tx.statut_paiement = 'rembourse';
+  tx.metadonnees_paiement = {
+    ...(tx.metadonnees_paiement || {}),
+    remboursement: {
+      montant_fcfa: montant,
+      montant_brut_fcfa: montantBrut,
+      pourcent: meta.pourcent ?? (montantBrut ? Math.round((montant / montantBrut) * 100) : 0),
+      motif: meta.motif || 'annulation',
+      politique: meta.politique || null,
+      date: new Date().toISOString(),
+      mode: isCinetPayConfigured() ? 'cinetpay_manuel' : 'simulation',
+    },
+  };
+  if (tx.statut_reversement === 'en_attente') {
+    tx.statut_reversement = 'non_applicable';
+  }
+  await tx.save();
+  return formatTransaction(tx);
+};
+
 const appelerCinetPay = async (url, body) => {
   const res = await fetch(url, {
     method: 'POST',
@@ -292,4 +327,5 @@ module.exports = {
   getTransactionPatient,
   formatTransaction,
   enrichirAvecBeneficiaire,
+  rembourserTransaction,
 };

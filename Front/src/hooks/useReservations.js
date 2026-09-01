@@ -48,6 +48,18 @@ export function useAnnulerReservation() {
   });
 }
 
+export function usePreviewAnnulationReservation(id, enabled = false) {
+  return useQuery({
+    queryKey: ['reservations', 'annulation-preview', id],
+    queryFn: async () => {
+      const { data } = await client.get(ENDPOINTS.reservations.annulationPreview(id));
+      return data.data;
+    },
+    enabled: enabled && !!id,
+    staleTime: 10_000,
+  });
+}
+
 export function useUpdateReservationStatut() {
   const qc = useQueryClient();
   return useMutation({

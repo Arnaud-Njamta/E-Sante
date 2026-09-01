@@ -8,6 +8,7 @@ router.get('/medecins/:medecinId/creneaux', authMiddleware, requireRole('patient
 router.post('/', authMiddleware, requireRole('patient'), rendezvousController.creer);
 router.get('/mes-rdv', authMiddleware, requireRole('patient'), rendezvousController.listerPatient);
 router.get('/medecin', authMiddleware, requireRole('medecin'), rendezvousController.listerMedecin);
+router.get('/:id/annulation-preview', authMiddleware, requireRole('patient'), rendezvousController.previewAnnulation);
 router.get('/:id', authMiddleware, requireRole('patient', 'medecin'), rendezvousController.getById);
 router.delete('/:id', authMiddleware, requireRole('patient'), rendezvousController.annuler);
 router.patch('/:id/statut', authMiddleware, requireRole('medecin'), rendezvousController.mettreAJourStatut);

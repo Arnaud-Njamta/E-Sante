@@ -3,6 +3,8 @@ const { ProduitPharmacie, Fichier, sequelize: db } = require('../models');
 
 const sansAccent = (s) => (s || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
 
+const escapeLike = (s) => (s || '').replace(/[%_\\]/g, '\\$&');
+
 const ACCENT_PAIRS = [
   ['é', 'e'], ['è', 'e'], ['ê', 'e'], ['ë', 'e'],
   ['à', 'a'], ['â', 'a'], ['ä', 'a'],
@@ -21,22 +23,29 @@ const sqlSansAccent = (column) => {
 };
 
 const buildSearchOr = (recherche) => {
-  const term = recherche.trim();
-  const plain = sansAccent(term);
-  const terms = [...new Set([term, plain].filter(Boolean))];
+  const tokens = recherche.trim().split(/\s+/).filter((t) => t.length >= 1);
+  if (!tokens.length) return [];
+
   const fields = ['nom', 'description', 'categorie'];
-  const or = [];
-  terms.forEach((t) => {
-    fields.forEach((f) => {
-      or.push({ [f]: { [Op.like]: `%${t}%` } });
+  const tokenClauses = tokens.map((token) => {
+    const term = escapeLike(token);
+    const plain = escapeLike(sansAccent(token));
+    const or = [];
+    const terms = [...new Set([term, plain].filter(Boolean))];
+    terms.forEach((t) => {
+      fields.forEach((f) => {
+        or.push({ [f]: { [Op.like]: `%${t}%` } });
+      });
     });
+    if (plain) {
+      fields.forEach((f) => {
+        or.push(db.where(db.literal(sqlSansAccent(`\`ProduitPharmacie\`.\`${f}\``)), { [Op.like]: `%${plain}%` }));
+      });
+    }
+    return { [Op.or]: or };
   });
-  if (plain) {
-    fields.forEach((f) => {
-      or.push(db.where(db.literal(sqlSansAccent(`\`ProduitPharmacie\`.\`${f}\``)), { [Op.like]: `%${plain}%` }));
-    });
-  }
-  return or;
+
+  return tokenClauses.length === 1 ? tokenClauses[0][Op.or] : { [Op.and]: tokenClauses };
 };
 
 const mapProduit = (p) => ({
@@ -56,7 +65,14 @@ const listerPublic = async (pharmacieId, { recherche, categorie, page = 1, limit
   const where = { pharmacie_id: pharmacieId, actif: true };
   if (categorie) where.categorie = categorie;
   if (recherche && recherche.trim()) {
-    where[Op.or] = buildSearchOr(recherche);
+    const clause = buildSearchOr(recherche);
+    if (Array.isArray(clause)) {
+      where[Op.or] = clause;
+    } else if (clause[Op.and]) {
+      where[Op.and] = clause[Op.and];
+    } else {
+      Object.assign(where, clause);
+    }
   }
 
   const offset = (page - 1) * limit;
@@ -131,7 +147,14 @@ const rechercherDisponibilite = async ({ recherche, ville, type, type_etablissem
   if (typeEtab) etabWhere.type = typeEtab;
 
   if (recherche && recherche.trim().length >= 1) {
-    where[Op.or] = buildSearchOr(recherche);
+    const clause = buildSearchOr(recherche);
+    if (Array.isArray(clause)) {
+      where[Op.or] = clause;
+    } else if (clause[Op.and]) {
+      where[Op.and] = clause[Op.and];
+    } else {
+      Object.assign(where, clause);
+    }
   }
 
   const produits = await ProduitPharmacie.findAll({

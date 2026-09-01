@@ -332,6 +332,9 @@ const healthCheck = () => ({
   configured: !!process.env.GEMINI_API_KEY,
   model: MODEL,
   available: !!process.env.GEMINI_API_KEY,
+  message: process.env.GEMINI_API_KEY
+    ? 'Assistant IA opérationnel'
+    : 'Ajoutez GEMINI_API_KEY dans le fichier .env du serveur pour activer l\'IA complète',
 });
 
 const bookRdv = async (patientId, payload) => {
@@ -340,7 +343,14 @@ const bookRdv = async (patientId, payload) => {
     error.statusCode = 403;
     throw error;
   }
-  return rendezvousService.creerRdv(patientId, payload);
+  const { POLITIQUE_CONFIDENTIALITE_VERSION } = require('../utils/constants');
+  return rendezvousService.creerRdv(patientId, {
+    ...payload,
+    consentement_politique: true,
+    consentement_partage_carnet: true,
+    consentement_teleconsultation: payload.type_consultation === 'teleconsultation' ? true : undefined,
+    politique_version: POLITIQUE_CONFIDENTIALITE_VERSION,
+  });
 };
 
 module.exports = { chat, healthCheck, bookRdv };

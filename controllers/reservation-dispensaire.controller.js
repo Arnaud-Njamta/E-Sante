@@ -30,7 +30,19 @@ const listerPatient = async (req, res, next) => {
 const annuler = async (req, res, next) => {
   try {
     const data = await reservationService.annulerPatient(req.patient.id, req.params.id);
-    res.json({ success: true, data, message: 'Réservation annulée' });
+    const msg = data.annulation?.refund_fcfa > 0
+      ? `Réservation annulée — remboursement de ${data.annulation.refund_fcfa.toLocaleString('fr-FR')} FCFA prévu`
+      : 'Réservation annulée';
+    res.json({ success: true, data, message: msg });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const previewAnnulation = async (req, res, next) => {
+  try {
+    const data = await reservationService.previewAnnulationPatient(req.patient.id, req.params.id);
+    res.json({ success: true, data });
   } catch (error) {
     next(error);
   }
@@ -59,5 +71,5 @@ const mettreAJourStatut = async (req, res, next) => {
 };
 
 module.exports = {
-  estimer, creer, listerPatient, annuler, listerEtablissement, mettreAJourStatut,
+  estimer, creer, listerPatient, annuler, previewAnnulation, listerEtablissement, mettreAJourStatut,
 };

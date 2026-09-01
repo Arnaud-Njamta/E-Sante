@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import client from '../api/client';
 import ENDPOINTS from '../api/endpoints';
 
@@ -17,5 +17,18 @@ export function useAiBookRdv() {
       const { data } = await client.post(ENDPOINTS.ai.bookRdv, payload);
       return data.data;
     },
+  });
+}
+
+export function useAiStatus(enabled = true) {
+  return useQuery({
+    queryKey: ['ai', 'status'],
+    queryFn: async () => {
+      const { data } = await client.get(ENDPOINTS.ai.status);
+      return data.data;
+    },
+    enabled,
+    staleTime: 60_000,
+    retry: 1,
   });
 }

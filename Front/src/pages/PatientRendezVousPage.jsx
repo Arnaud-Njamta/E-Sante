@@ -10,7 +10,8 @@ import Spinner from '../components/ui/Spinner';
 import ErrorState from '../components/ui/ErrorState';
 import PaymentModal from '../components/ui/PaymentModal';
 import PatientPageHeader from '../components/patient/PatientPageHeader';
-import { useMesRendezVous, useAnnulerRdv, useRepondreContreProposition } from '../hooks/useRendezVous';
+import CancelConfirmModal from '../components/patient/CancelConfirmModal';
+import { useMesRendezVous, useAnnulerRdv, useRepondreContreProposition, usePreviewAnnulationRdv } from '../hooks/useRendezVous';
 import { useCreerAvis } from '../hooks/useMessagerie';
 import { getRecuUrl } from '../hooks/usePaiement';
 import { joinTeleconsultation } from '../utils/teleconsultation';
@@ -165,13 +166,18 @@ export default function PatientRendezVousPage() {
   const creerAvis = useCreerAvis();
   const [paiement, setPaiement] = useState(null);
   const [rateRdv, setRateRdv] = useState(null);
+  const [cancelTarget, setCancelTarget] = useState(null);
+  const { data: cancelPreview, isLoading: previewLoading } = usePreviewAnnulationRdv(cancelTarget, !!cancelTarget);
   const [note, setNote] = useState(5);
   const [commentaire, setCommentaire] = useState('');
 
-  const handleAnnuler = async (id) => {
+  const handleConfirmAnnuler = async () => {
+    if (!cancelTarget) return;
     try {
-      await annuler.mutateAsync(id);
-      toast.success('Rendez-vous annulé');
+      const res = await annuler.mutateAsync(cancelTarget);
+      toast.success(res.message || 'Rendez-vous annulé');
+      setCancelTarget(null);
+      refetch();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur');
     }
@@ -289,8 +295,8 @@ export default function PatientRendezVousPage() {
                         <Star size={14} /> Noter
                       </Button>
                     )}
-                    {['en_attente', 'confirme'].includes(rdv.statut) && (
-                      <Button variant="secondary" onClick={() => handleAnnuler(rdv.id)}>
+                    {['en_attente', 'confirme', 'contre_proposition'].includes(rdv.statut) && (
+                      <Button variant="secondary" onClick={() => setCancelTarget(rdv.id)}>
                         <X size={14} /> Annuler
                       </Button>
                     )}
@@ -320,6 +326,17 @@ export default function PatientRendezVousPage() {
           })}
         </List>
       )}
+
+      <CancelConfirmModal
+        open={!!cancelTarget}
+        onClose={() => setCancelTarget(null)}
+        onConfirm={handleConfirmAnnuler}
+        loading={annuler.isPending}
+        previewLoading={previewLoading}
+        preview={cancelPreview}
+        title="Annuler ce rendez-vous ?"
+        confirmLabel="Oui, annuler le rendez-vous"
+      />
 
       <PaymentModal
         open={!!paiement}

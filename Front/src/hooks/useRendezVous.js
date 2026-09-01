@@ -77,6 +77,18 @@ export function useAnnulerRdv() {
     });
 }
 
+export function usePreviewAnnulationRdv(id, enabled = false) {
+    return useQuery({
+        queryKey: ['rendez-vous', 'annulation-preview', id],
+        queryFn: async () => {
+            const { data } = await client.get(ENDPOINTS.rendezVous.annulationPreview(id));
+            return data.data;
+        },
+        enabled: enabled && !!id,
+        staleTime: 10_000,
+    });
+}
+
 export function useProposerContreProposition() {
     const qc = useQueryClient();
     return useMutation({

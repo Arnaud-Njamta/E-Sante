@@ -129,6 +129,7 @@ const ENDPOINTS = {
         contreProposition: (id) => `/rendez-vous/${id}/contre-proposition`,
         reponseProposition: (id) => `/rendez-vous/${id}/reponse-proposition`,
         annuler: (id) => `/rendez-vous/${id}`,
+        annulationPreview: (id) => `/rendez-vous/${id}/annulation-preview`,
         byId: (id) => `/rendez-vous/${id}`,
         video: (id) => `/rendez-vous/${id}/video`,
     },
@@ -166,6 +167,7 @@ const ENDPOINTS = {
         etablissement: '/reservations-dispensaire/etablissement',
         statut: (id) => `/reservations-dispensaire/${id}/statut`,
         annuler: (id) => `/reservations-dispensaire/${id}`,
+        annulationPreview: (id) => `/reservations-dispensaire/${id}/annulation-preview`,
     },
     ai: {
         chat: '/ai/chat',

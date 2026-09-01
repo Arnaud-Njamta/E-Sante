@@ -417,21 +417,41 @@ const getById = async (rdvId, userId, role) => {
   return rdv;
 };
 const annulerPatient = async (rdvId, patientId) => {
+  const cancellationService = require('./cancellation.service');
   const rdv = await RendezVous.findOne({ where: { id: rdvId, patient_id: patientId } });
   if (!rdv) {
     const error = new Error('Rendez-vous non trouvé');
     error.statusCode = 404;
     throw error;
   }
-  if (![STATUT_RDV.EN_ATTENTE, STATUT_RDV.CONFIRME, STATUT_RDV.CONTRE_PROPOSITION].includes(rdv.statut)) {
-    const error = new Error('Ce rendez-vous ne peut plus être annulé');
+
+  const evaluation = await cancellationService.evaluerRdv(rdv);
+  if (!evaluation.eligible) {
+    const error = new Error(evaluation.message);
     error.statusCode = 400;
+    error.details = evaluation;
     throw error;
   }
+
   rdv.statut = STATUT_RDV.ANNULE;
   await rdv.save();
-  await commissionService.annulerTransaction('rendez_vous', rdvId);
-  return rdv;
+  await cancellationService.appliquerRemboursement('rendez_vous', rdvId, evaluation);
+
+  return {
+    rendez_vous: rdv,
+    annulation: evaluation,
+  };
+};
+
+const previewAnnulationPatient = async (rdvId, patientId) => {
+  const rdv = await RendezVous.findOne({ where: { id: rdvId, patient_id: patientId } });
+  if (!rdv) {
+    const error = new Error('Rendez-vous non trouvé');
+    error.statusCode = 404;
+    throw error;
+  }
+  const cancellationService = require('./cancellation.service');
+  return cancellationService.evaluerRdv(rdv);
 };
 
 module.exports = {
@@ -443,6 +463,7 @@ module.exports = {
   proposerContreProposition,
   repondreContreProposition,
   annulerPatient,
+  previewAnnulationPatient,
   getById,
   DEFAULT_HORAIRES_MEDECIN,
 };

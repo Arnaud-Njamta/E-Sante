@@ -80,8 +80,20 @@ const repondreContreProposition = async (req, res, next) => {
 
 const annuler = async (req, res, next) => {
   try {
-    const rdv = await rendezvousService.annulerPatient(req.params.id, req.patient.id);
-    res.json({ success: true, data: rdv });
+    const data = await rendezvousService.annulerPatient(req.params.id, req.patient.id);
+    const msg = data.annulation?.refund_fcfa > 0
+      ? `Rendez-vous annulé — remboursement de ${data.annulation.refund_fcfa.toLocaleString('fr-FR')} FCFA prévu`
+      : 'Rendez-vous annulé';
+    res.json({ success: true, data, message: msg });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const previewAnnulation = async (req, res, next) => {
+  try {
+    const data = await rendezvousService.previewAnnulationPatient(req.params.id, req.patient.id);
+    res.json({ success: true, data });
   } catch (error) {
     next(error);
   }
@@ -98,5 +110,5 @@ const getById = async (req, res, next) => {
 
 module.exports = {
   getCreneaux, creer, listerPatient, listerMedecin, mettreAJourStatut,
-  proposerContreProposition, repondreContreProposition, annuler, getById,
+  proposerContreProposition, repondreContreProposition, annuler, previewAnnulation, getById,
 };

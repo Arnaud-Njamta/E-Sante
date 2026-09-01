@@ -5,7 +5,7 @@ import {
   Bot, X, Send, AlertTriangle, Loader2, Stethoscope,
   Shield, Video, UserRound, Calendar,
 } from 'lucide-react';
-import { useAiChat, useAiBookRdv } from '../../hooks/useAiAssistant';
+import { useAiChat, useAiBookRdv, useAiStatus } from '../../hooks/useAiAssistant';
 import useMediaQuery from '../../hooks/useMediaQuery';
 import { useTheme } from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
@@ -486,6 +486,7 @@ export default function AiAssistantWidget() {
   ]);
   const chat = useAiChat();
   const bookRdv = useAiBookRdv();
+  const { data: aiStatus } = useAiStatus(open);
   const bottomRef = useRef(null);
 
   const handleBookSlot = async (rec, slot, key) => {
@@ -583,6 +584,17 @@ export default function AiAssistantWidget() {
             <AlertTriangle size={13} style={{ flexShrink: 0, marginTop: 1 }} />
             <span>Premiers secours & orientation. Urgence vitale → <strong>{EMERGENCY.national.number}</strong> ou <strong>{EMERGENCY.medical.number}</strong></span>
           </Disclaimer>
+
+          {aiStatus && !aiStatus.configured && (
+            <div style={{
+              margin: '0 12px 8px', padding: '10px 12px', borderRadius: 8,
+              background: '#FEF3C7', border: '1px solid #FDE68A', fontSize: '0.75rem', color: '#92400E',
+            }}
+            >
+              <strong>IA limitée</strong> — La clé Gemini n&apos;est pas configurée sur le serveur.
+              L&apos;assistant fonctionne en mode basique. Contactez l&apos;administrateur pour activer l&apos;IA complète.
+            </div>
+          )}
 
           <Messages>
             {messages.map((m, i) => (

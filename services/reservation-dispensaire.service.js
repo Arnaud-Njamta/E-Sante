@@ -247,6 +247,7 @@ const mettreAJourStatut = async (etablissementId, reservationId, { statut, repon
 };
 
 const annulerPatient = async (patientId, reservationId) => {
+  const cancellationService = require('./cancellation.service');
   const reservation = await ReservationDispensaire.findOne({
     where: { id: reservationId, patient_id: patientId },
   });
@@ -255,15 +256,36 @@ const annulerPatient = async (patientId, reservationId) => {
     error.statusCode = 404;
     throw error;
   }
-  if (![STATUT_RESERVATION.EN_ATTENTE, STATUT_RESERVATION.CONFIRMEE].includes(reservation.statut)) {
-    const error = new Error('Cette réservation ne peut plus être annulée');
+
+  const evaluation = await cancellationService.evaluerReservation(reservation);
+  if (!evaluation.eligible) {
+    const error = new Error(evaluation.message);
     error.statusCode = 400;
+    error.details = evaluation;
     throw error;
   }
+
   reservation.statut = STATUT_RESERVATION.ANNULEE;
   await reservation.save();
-  await commissionService.annulerTransaction('reservation_dispensaire', reservationId);
-  return reservation;
+  await cancellationService.appliquerRemboursement('reservation_dispensaire', reservationId, evaluation);
+
+  return {
+    reservation,
+    annulation: evaluation,
+  };
+};
+
+const previewAnnulationPatient = async (patientId, reservationId) => {
+  const reservation = await ReservationDispensaire.findOne({
+    where: { id: reservationId, patient_id: patientId },
+  });
+  if (!reservation) {
+    const error = new Error('Réservation non trouvée');
+    error.statusCode = 404;
+    throw error;
+  }
+  const cancellationService = require('./cancellation.service');
+  return cancellationService.evaluerReservation(reservation);
 };
 
 const creerDepuisOrdonnance = async (patientId, ordonnanceId, etablissementId, { message_patient, date_retrait_souhaitee } = {}) => {
@@ -359,6 +381,7 @@ module.exports = {
   listerEtablissement,
   mettreAJourStatut,
   annulerPatient,
+  previewAnnulationPatient,
   creerDepuisOrdonnance,
   verifierDisponibiliteOrdonnance,
   trouverProduit,

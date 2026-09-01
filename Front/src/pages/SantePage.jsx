@@ -10,6 +10,7 @@ import ErrorState from '../components/ui/ErrorState';
 import { useEtablissements } from '../hooks/useEtablissements';
 import { useMedecins } from '../hooks/useMedecins';
 import { useRechercheProduits } from '../hooks/useProduits';
+import useDebounce from '../hooks/useDebounce';
 import useGeolocation from '../hooks/useGeolocation';
 import { parseJsonArray } from '../utils/helpers';
 import { resolveFileUrl } from '../components/ui/PhotoUploadCard';
@@ -202,6 +203,7 @@ export default function SantePage() {
 
   const [typeFilter, setTypeFilter] = useState('');
   const [search, setSearch] = useState(initialQ);
+  const debouncedSearch = useDebounce(search, 350);
   const [villeMed, setVilleMed] = useState('');
   const [typeMed, setTypeMed] = useState('');
   const [dispoOnly, setDispoOnly] = useState(false);
@@ -246,7 +248,7 @@ export default function SantePage() {
 
   const { data: produitsData, isLoading: prodLoading, error: prodError, refetch: refetchProd } = useRechercheProduits(
     {
-      recherche: tab === 'medicaments' ? search.trim() : '',
+      recherche: tab === 'medicaments' ? debouncedSearch.trim() : '',
       ville: villeMed || undefined,
       type_etablissement: typeMed || undefined,
     },
@@ -407,7 +409,7 @@ export default function SantePage() {
       )}
 
       {tab === 'medicaments' && (
-        prodLoading ? <Spinner /> :
+        prodLoading || (search.trim() !== debouncedSearch.trim()) ? <Spinner /> :
         prodError ? <ErrorState message="Impossible de charger les médicaments" onRetry={refetchProd} /> :
         (
           <>
@@ -442,8 +444,8 @@ export default function SantePage() {
             </Grid>
             {(produitsData || []).length === 0 && (
               <Card style={{ padding: 32, marginTop: 16, textAlign: 'center', color: '#94A3B8' }}>
-                {search.trim()
-                  ? <>Aucun médicament trouvé pour « {search} »{villeMed ? ` à ${villeMed}` : ''}.</>
+                {debouncedSearch.trim()
+                  ? <>Aucun médicament trouvé pour « {debouncedSearch} »{villeMed ? ` à ${villeMed}` : ''}. Essayez sans filtre ville.</>
                   : <>Aucun médicament en stock pour le moment. Les établissements peuvent alimenter leur dispensaire depuis leur espace pro.</>}
               </Card>
             )}

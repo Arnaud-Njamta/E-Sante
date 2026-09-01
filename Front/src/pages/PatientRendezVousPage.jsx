@@ -13,6 +13,8 @@ import PatientPageHeader from '../components/patient/PatientPageHeader';
 import { useMesRendezVous, useAnnulerRdv, useRepondreContreProposition } from '../hooks/useRendezVous';
 import { useCreerAvis } from '../hooks/useMessagerie';
 import { getRecuUrl } from '../hooks/usePaiement';
+import { joinTeleconsultation } from '../utils/teleconsultation';
+import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
 const TYPE_LABELS = { presentiel: 'Présentiel', teleconsultation: 'Téléconsultation' };
@@ -156,6 +158,7 @@ const EmptyCard = styled(Card)`
 
 export default function PatientRendezVousPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: rdvs, isLoading, error, refetch } = useMesRendezVous();
   const annuler = useAnnulerRdv();
   const repondre = useRepondreContreProposition();
@@ -271,7 +274,13 @@ export default function PatientRendezVousPage() {
                       </Button>
                     )}
                     {rdv.statut === 'confirme' && rdv.type_consultation === 'teleconsultation' && rdv.lien_video && (
-                      <Button onClick={() => navigate(`/rendez-vous/${rdv.id}/video`)}>
+                      <Button onClick={() => joinTeleconsultation({
+                        lienVideo: rdv.lien_video,
+                        displayName: `${user?.prenom || 'Patient'} ${user?.nom || ''}`.trim(),
+                        navigate,
+                        route: `/rendez-vous/${rdv.id}/video`,
+                      })}
+                      >
                         <Video size={14} /> Rejoindre
                       </Button>
                     )}

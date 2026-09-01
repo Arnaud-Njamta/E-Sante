@@ -12,6 +12,7 @@ import {
   useRendezVousMedecin, useUpdateRdvStatut, useProposerContreProposition, useCreneaux,
 } from '../hooks/useRendezVous';
 import { useAuth } from '../context/AuthContext';
+import { joinTeleconsultation } from '../utils/teleconsultation';
 import toast from 'react-hot-toast';
 
 const RdvCard = styled(Card)`
@@ -211,7 +212,13 @@ export default function MedecinRendezVousPage() {
             {rdv.statut === 'confirme' && (
               <>
                 {rdv.type_consultation === 'teleconsultation' && rdv.lien_video && (
-                  <Button size="sm" onClick={() => navigate(`/medecin/rendez-vous/${rdv.id}/video`)}>
+                  <Button size="sm" onClick={() => joinTeleconsultation({
+                    lienVideo: rdv.lien_video,
+                    displayName: `Dr. ${user?.prenom || ''} ${user?.nom || ''}`.trim(),
+                    navigate,
+                    route: `/medecin/rendez-vous/${rdv.id}/video`,
+                  })}
+                  >
                     <Video size={14} /> Rejoindre
                   </Button>
                 )}

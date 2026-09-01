@@ -30,7 +30,10 @@ export function useCreerReservation() {
       const { data } = await client.post(ENDPOINTS.reservations.base, payload);
       return data.data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['reservations'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['reservations'] });
+      qc.refetchQueries({ queryKey: ['reservations', 'patient'] });
+    },
   });
 }
 

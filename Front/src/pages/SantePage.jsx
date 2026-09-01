@@ -209,13 +209,7 @@ export default function SantePage() {
   const [etablissementFilter, setEtablissementFilter] = useState('');
   const {
     coords, cityLabel, loading: geoLoading, hasLocation,
-  } = useGeolocation({ enabled: true });
-
-  useEffect(() => {
-    if (cityLabel && tab === 'medicaments' && !villeMed) {
-      setVilleMed(cityLabel);
-    }
-  }, [cityLabel, tab, villeMed]);
+  } = useGeolocation({ enabled: tab === 'etablissements' });
 
   const etabFilters = {
     type: typeFilter || undefined,
@@ -331,12 +325,23 @@ export default function SantePage() {
           />
         </SearchWrap>
         {tab === 'medicaments' && (
-          <input
-            placeholder="Ville (ex. Douala)"
-            value={villeMed}
-            onChange={(e) => setVilleMed(e.target.value)}
-            style={{ width: 160, padding: '10px 14px', border: '1px solid #E2E8F0', borderRadius: 8 }}
-          />
+          <>
+            <input
+              placeholder={cityLabel ? `Ville (ex. ${cityLabel}) — optionnel` : 'Ville (ex. Douala) — optionnel'}
+              value={villeMed}
+              onChange={(e) => setVilleMed(e.target.value)}
+              style={{ width: 200, padding: '10px 14px', border: '1px solid #E2E8F0', borderRadius: 8 }}
+            />
+            {villeMed && (
+              <button
+                type="button"
+                onClick={() => setVilleMed('')}
+                style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', cursor: 'pointer', fontSize: '0.8rem' }}
+              >
+                Toutes villes
+              </button>
+            )}
+          </>
         )}
         {tab === 'medecins' && (
           <>
@@ -417,7 +422,7 @@ export default function SantePage() {
                 const Icon = TYPE_ICONS[etab?.type] || Pill;
                 const imgSrc = resolveFileUrl(p.image_url, p.fichier_image_id);
                 return (
-                  <ItemCard key={p.id} onClick={() => etab && navigate(`/sante/etablissement/${etab.id}`)}>
+                  <ItemCard key={p.id} onClick={() => etab && navigate(`/sante/etablissement/${etab.id}?ajouter=${p.id}`)}>
                     {imgSrc && (
                       <img src={imgSrc} alt={p.nom} style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 8, marginBottom: 8 }} />
                     )}

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, MapPin, Phone, Mail, Clock, MessageCircle, ShoppingBag, Pill, Shield, CreditCard, Video, Newspaper, Users } from 'lucide-react';
 import Card from '../components/ui/Card';
 import StarRating from '../components/ui/StarRating';
@@ -197,6 +197,8 @@ const MapEmbed = styled.iframe`
 export default function EtablissementDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const ajouterProduitId = searchParams.get('ajouter');
   const { data: etab, isLoading, error, refetch } = useEtablissement(id);
   const { data: horairesInfo } = useEtablissementHoraires(id);
   const { data: publications } = useEtablissementPublications(id);
@@ -215,6 +217,33 @@ export default function EtablissementDetailPage() {
   const [msgReservation, setMsgReservation] = useState('');
   const [ordonnanceElecId, setOrdonnanceElecId] = useState('');
   const [ordonnancePapierId, setOrdonnancePapierId] = useState('');
+  const panierRef = useRef(null);
+  const ajouteDepuisUrl = useRef(null);
+
+  useEffect(() => {
+    if (!ajouterProduitId || !etab?.produits?.length || !isPatient) return;
+    if (ajouteDepuisUrl.current === ajouterProduitId) return;
+    const p = etab.produits.find((x) => String(x.id) === String(ajouterProduitId));
+    if (!p || p.stock_disponible <= 0) return;
+    ajouteDepuisUrl.current = ajouterProduitId;
+    setPanier((prev) => {
+      if (prev.some((x) => String(x.produit_id) === String(p.id))) return prev;
+      return [...prev, {
+        produit_id: p.id,
+        nom: p.nom,
+        quantite: 1,
+        prix_fcfa_unitaire: p.prix_fcfa,
+        necessite_ordonnance: !!p.necessite_ordonnance,
+      }];
+    });
+    toast.success(`${p.nom} ajouté à votre réservation`);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('ajouter');
+      return next;
+    }, { replace: true });
+    setTimeout(() => panierRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+  }, [ajouterProduitId, etab?.produits, isPatient, setSearchParams]);
 
   useEffect(() => {
     if (!panier.length) {
@@ -277,17 +306,20 @@ export default function EtablissementDetailPage() {
       return;
     }
     try {
-      await creerReservation.mutateAsync({
+      const result = await creerReservation.mutateAsync({
         etablissement_id: id,
         lignes: panier,
         message_patient: msgReservation || undefined,
         ordonnance_electronique_id: ordonnanceElecId || undefined,
         ordonnance_papier_id: ordonnancePapierId || undefined,
       });
-      toast.success('Demande de réservation envoyée !');
+      const noms = panier.map((l) => l.nom).join(', ');
+      toast.success(`Réservation envoyée : ${noms}`);
       setPanier([]);
       setMsgReservation('');
-      navigate('/reservations');
+      setOrdonnanceElecId('');
+      setOrdonnancePapierId('');
+      navigate('/reservations', { state: { highlightId: result?.id } });
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur réservation');
     }
@@ -403,6 +435,7 @@ export default function EtablissementDetailPage() {
             })}
           </ProduitGrid>
           {isPatient && panier.length > 0 && (
+            <div ref={panierRef}>
             <Card style={{ padding: 20, marginTop: 16, background: '#F8FAFC' }}>
               <h4 style={{ margin: '0 0 12px' }}>Panier ({panier.length} article{panier.length > 1 ? 's' : ''})</h4>
               <ul style={{ margin: '0 0 12px', paddingLeft: 18, fontSize: '0.9rem' }}>
@@ -462,6 +495,7 @@ export default function EtablissementDetailPage() {
                 Envoyer la demande de réservation
               </Button>
             </Card>
+            </div>
           )}
           {etab.chat_actif && isPatient && (
             <Button onClick={handleChat} variant="secondary" style={{ marginTop: 16 }} disabled={demarrerConv.isPending}>

@@ -87,7 +87,14 @@ const EmptyCard = styled(Card)`
 const parseLignes = (lignes) => {
   if (Array.isArray(lignes)) return lignes;
   if (typeof lignes === 'string') {
-    try { return JSON.parse(lignes); } catch { return []; }
+    try {
+      const parsed = JSON.parse(lignes);
+      if (Array.isArray(parsed)) return parsed;
+      if (parsed && typeof parsed === 'object') return [parsed];
+    } catch { /* ignore */ }
+  }
+  if (lignes && typeof lignes === 'object') {
+    return Array.isArray(lignes) ? lignes : [lignes];
   }
   return [];
 };
@@ -140,12 +147,21 @@ export default function PatientReservationsPage() {
                   <StatusBadge $color={st.color}>{st.label}</StatusBadge>
                 </ResTop>
                 <ProductList>
-                  {lignes.map((l, i) => (
-                    <li key={i}>
-                      {l.nom || l.medicament} × {l.quantite || 1}
+                  {lignes.length > 0 ? lignes.map((l, i) => (
+                    <li key={l.produit_id || i}>
+                      <strong>{l.nom || l.medicament || 'Médicament'}</strong>
+                      {' '}× {l.quantite || 1}
+                      {l.prix_fcfa_unitaire ? ` — ${(l.prix_fcfa_unitaire * (l.quantite || 1)).toLocaleString()} FCFA` : ''}
                     </li>
-                  ))}
+                  )) : (
+                    <li style={{ color: '#94A3B8' }}>Détail des produits indisponible</li>
+                  )}
                 </ProductList>
+                {r.montant_total_fcfa > 0 && (
+                  <p style={{ margin: '0 0 12px', fontSize: '0.9rem', fontWeight: 600, color: '#059669' }}>
+                    Total : {Number(r.montant_total_fcfa).toLocaleString()} FCFA
+                  </p>
+                )}
                 <Actions>
                   {r.transaction?.statut_paiement === 'en_attente' && r.transaction?.montant_brut_fcfa > 0 && (
                     <Button size="sm" onClick={() => setPaiement({

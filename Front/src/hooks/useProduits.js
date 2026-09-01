@@ -29,16 +29,18 @@ export function useProduitsPublic(etablissementId) {
 }
 
 export function useRechercheProduits(params, { enabled = true } = {}) {
-  const onMedicamentsTab = enabled;
   return useQuery({
         queryKey: ['produits', 'recherche', params],
         queryFn: async () => {
             const queryParams = { ...params };
             if (!queryParams.recherche?.trim()) delete queryParams.recherche;
+            if (!queryParams.ville?.trim()) delete queryParams.ville;
+            if (!queryParams.type_etablissement?.trim()) delete queryParams.type_etablissement;
             const { data } = await client.get(ENDPOINTS.produits.recherche, { params: queryParams });
             return data.data;
         },
-        enabled: onMedicamentsTab,
+        enabled,
+        staleTime: 15_000,
     });
 }
 

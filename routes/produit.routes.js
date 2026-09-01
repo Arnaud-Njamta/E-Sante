@@ -7,9 +7,9 @@ const { uploadImage } = require('../middlewares/upload.middleware');
 
 const dispensaireRoles = ['pharmacie', 'hopital', 'clinique'];
 
-router.get('/recherche', authMiddleware, requireRole('patient'), produitController.rechercher);
-router.get('/etablissement/:etablissementId', authMiddleware, requireRole('patient'), produitController.listerPublic);
-router.get('/pharmacie/:pharmacieId', authMiddleware, requireRole('patient'), produitController.listerPublic);
+router.get('/recherche', authMiddleware, requireRole('patient', 'medecin'), produitController.rechercher);
+router.get('/etablissement/:etablissementId', authMiddleware, requireRole('patient', 'medecin'), produitController.listerPublic);
+router.get('/pharmacie/:pharmacieId', authMiddleware, requireRole('patient', 'medecin'), produitController.listerPublic);
 router.get('/mes-produits', authMiddleware, requireRole(...dispensaireRoles), produitController.listerPharmacie);
 router.post('/', authMiddleware, requireRole(...dispensaireRoles), uploadImage.single('image'), produitController.creer);
 router.put('/:id', authMiddleware, requireRole(...dispensaireRoles), uploadImage.single('image'), produitController.mettreAJour);

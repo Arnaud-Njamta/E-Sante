@@ -55,11 +55,8 @@ const etabInclude = (etabWhere = {}) => ({
 const listerPublic = async (pharmacieId, { recherche, categorie, page = 1, limit = 50 }) => {
   const where = { pharmacie_id: pharmacieId, actif: true };
   if (categorie) where.categorie = categorie;
-  if (recherche) {
-    where[Op.or] = [
-      { nom: { [Op.like]: `%${recherche}%` } },
-      { description: { [Op.like]: `%${recherche}%` } },
-    ];
+  if (recherche && recherche.trim()) {
+    where[Op.or] = buildSearchOr(recherche);
   }
 
   const offset = (page - 1) * limit;
@@ -123,7 +120,14 @@ const rechercherDisponibilite = async ({ recherche, ville, type, type_etablissem
   const where = { actif: true, stock_disponible: { [Op.gt]: 0 } };
 
   const etabWhere = {};
-  if (ville) etabWhere.ville = { [Op.like]: `%${ville}%` };
+  if (ville && ville.trim()) {
+    const v = ville.trim();
+    const plain = sansAccent(v);
+    etabWhere[Op.or] = [
+      { ville: { [Op.like]: `%${v}%` } },
+      ...(plain !== v.toLowerCase() ? [db.where(db.literal(sqlSansAccent('`pharmacie`.`ville`')), { [Op.like]: `%${plain}%` })] : []),
+    ];
+  }
   if (typeEtab) etabWhere.type = typeEtab;
 
   if (recherche && recherche.trim().length >= 1) {

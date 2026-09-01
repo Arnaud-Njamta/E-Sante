@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import UserAvatar from '../ui/UserAvatar';
 import {
-  Calendar, Heart, Wallet, FileText, BarChart3, Package,
+  Calendar, Heart, Wallet, FileText, Package, BookHeart,
 } from 'lucide-react';
 
 const Hero = styled.div`
@@ -82,12 +82,12 @@ const QuickItem = styled.button`
 `;
 
 const LINKS = [
+  { to: '/carnet-medical', icon: BookHeart, label: 'Carnet' },
   { to: '/rendez-vous', icon: Calendar, label: 'RDV' },
   { to: '/medications', icon: Heart, label: 'Médicaments' },
   { to: '/paiements', icon: Wallet, label: 'Paiements' },
   { to: '/ordonnances-electroniques', icon: FileText, label: 'Ordonnances' },
   { to: '/reservations', icon: Package, label: 'Réservations' },
-  { to: '/analytics', icon: BarChart3, label: 'Stats' },
 ];
 
 export default function PatientMobileProfileHero() {

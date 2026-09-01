@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { NavLink, useLocation } from 'react-router-dom';
-import { PATIENT_MOBILE_NAV, isPatientNavActive } from '../../config/patientMobileNav';
+import { PATIENT_MOBILE_NAV, PATIENT_MORE_SECTIONS, isPatientNavActive } from '../../config/patientMobileNav';
 import PatientMoreSheet from '../patient/PatientMoreSheet';
 import { LayoutGrid } from 'lucide-react';
 
@@ -152,6 +152,9 @@ export default function PatientBottomNav() {
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
   const pathname = location.pathname;
+  const isMoreRoute = PATIENT_MORE_SECTIONS.some((section) =>
+    section.items.some((item) => isPatientNavActive(pathname, item)),
+  );
 
   return (
     <>
@@ -189,7 +192,7 @@ export default function PatientBottomNav() {
 
         <MoreBtn
           type="button"
-          $open={moreOpen}
+          $open={moreOpen || isMoreRoute}
           onClick={() => setMoreOpen(true)}
           aria-label="Plus d'options"
           aria-expanded={moreOpen}

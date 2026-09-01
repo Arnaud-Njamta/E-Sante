@@ -20,6 +20,7 @@ import {
 import PatientPageHeader from '../components/patient/PatientPageHeader';
 import PatientMobileProfileHero from '../components/patient/PatientMobileProfileHero';
 import PatientMobileQuickActions from '../components/patient/PatientMobileQuickActions';
+import PatientCarnetTeaser from '../components/patient/PatientCarnetTeaser';
 
 /* ─── Keyframes ─── */
 const drawCircle = keyframes`
@@ -337,6 +338,8 @@ export default function DashboardPage() {
   return (
     <>
       <PatientMobileProfileHero />
+
+      <PatientCarnetTeaser />
 
       <PatientPageHeader
         title={`Bonjour, ${user?.prenom || 'Patient'}`}

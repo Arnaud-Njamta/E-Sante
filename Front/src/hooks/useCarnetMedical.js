@@ -30,7 +30,10 @@ export function useUpdateCarnetMedical() {
       const { data } = await client.put(ENDPOINTS.carnetMedical.me, payload);
       return data.data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['carnet-medical'] }),
+    onSuccess: (data) => {
+      qc.setQueryData(['carnet-medical', 'me'], data);
+      qc.invalidateQueries({ queryKey: ['carnet-medical'] });
+    },
   });
 }
 

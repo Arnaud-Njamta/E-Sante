@@ -69,13 +69,19 @@ const CompetenceTag = styled.span`
 const StarSelect = styled.div`
   display: flex;
   gap: 4px;
-  button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 1.5rem;
-    color: ${({ $active }) => ($active ? '#F59E0B' : '#D1D5DB')};
-  }
+`;
+
+const StarBtn = styled.button`
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.75rem;
+  line-height: 1;
+  padding: 2px;
+  color: ${({ $filled }) => ($filled ? '#F59E0B' : '#D1D5DB')};
+  transition: transform 0.1s ease, color 0.15s ease;
+
+  &:hover { transform: scale(1.1); }
 `;
 
 const SlotGrid = styled.div`
@@ -101,7 +107,7 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
   const id = overrideId || paramId;
   const navigate = useNavigate();
   const { data: medecin, isLoading, error, refetch } = useMedecin(id);
-  const { data: avisData } = useAvis('medecin', id);
+  const { data: avisData, refetch: refetchAvis } = useAvis('medecin', id);
   const creerAvis = useCreerAvis();
   const { isPatient, isMedecin, user } = useAuth();
   const [note, setNote] = useState(5);
@@ -156,6 +162,7 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
       toast.success('Avis publié !');
       setCommentaire('');
       refetch();
+      refetchAvis();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur lors de la publication');
     }
@@ -455,7 +462,7 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
           <p style={{ fontWeight: 600 }}>Laisser un avis</p>
           <StarSelect>
             {[1, 2, 3, 4, 5].map((s) => (
-              <button key={s} type="button" $active={s <= note} onClick={() => setNote(s)}>★</button>
+              <StarBtn key={s} type="button" $filled={s <= note} onClick={() => setNote(s)} aria-label={`${s} étoile${s > 1 ? 's' : ''}`}>★</StarBtn>
             ))}
           </StarSelect>
           <textarea

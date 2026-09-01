@@ -2,6 +2,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import client from '../api/client';
 import ENDPOINTS from '../api/endpoints';
 
+const invalidateRdvQueries = (qc) => {
+    qc.invalidateQueries({ queryKey: ['rendez-vous'] });
+    qc.invalidateQueries({ queryKey: ['notifications', 'me'] });
+};
+
 export function useCreneaux(medecinId, date, affiliationId = null) {
     return useQuery({
         queryKey: ['creneaux', medecinId, date, affiliationId],
@@ -22,6 +27,8 @@ export function useMesRendezVous() {
             const { data } = await client.get(ENDPOINTS.rendezVous.mesRdv);
             return data.data.rendez_vous;
         },
+        refetchInterval: 30_000,
+        refetchIntervalInBackground: false,
     });
 }
 
@@ -32,6 +39,8 @@ export function useRendezVousMedecin(params = {}) {
             const { data } = await client.get(ENDPOINTS.rendezVous.medecin, { params });
             return data.data;
         },
+        refetchInterval: 30_000,
+        refetchIntervalInBackground: false,
     });
 }
 
@@ -42,7 +51,7 @@ export function useCreerRdv() {
             const { data } = await client.post(ENDPOINTS.rendezVous.base, payload);
             return data;
         },
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['rendez-vous'] }),
+        onSuccess: () => invalidateRdvQueries(qc),
     });
 }
 
@@ -53,7 +62,7 @@ export function useUpdateRdvStatut() {
             const { data } = await client.patch(ENDPOINTS.rendezVous.statut(id), body);
             return data;
         },
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['rendez-vous'] }),
+        onSuccess: () => invalidateRdvQueries(qc),
     });
 }
 
@@ -64,7 +73,7 @@ export function useAnnulerRdv() {
             const { data } = await client.delete(ENDPOINTS.rendezVous.annuler(id));
             return data;
         },
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['rendez-vous'] }),
+        onSuccess: () => invalidateRdvQueries(qc),
     });
 }
 
@@ -75,7 +84,7 @@ export function useProposerContreProposition() {
             const { data } = await client.post(ENDPOINTS.rendezVous.contreProposition(id), body);
             return data;
         },
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['rendez-vous'] }),
+        onSuccess: () => invalidateRdvQueries(qc),
     });
 }
 
@@ -86,7 +95,7 @@ export function useRepondreContreProposition() {
             const { data } = await client.post(ENDPOINTS.rendezVous.reponseProposition(id), { accepter });
             return data;
         },
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['rendez-vous'] }),
+        onSuccess: () => invalidateRdvQueries(qc),
     });
 }
 

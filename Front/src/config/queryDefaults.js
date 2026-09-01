@@ -17,6 +17,6 @@ export const adminQueryOptions = {
 
 export const messageriePollOptions = pollingWhenVisible(15_000);
 
-export const notificationsPollOptions = pollingWhenVisible(120_000);
+export const notificationsPollOptions = pollingWhenVisible(30_000);
 
 export const paiementPollOptions = pollingWhenVisible(5_000);

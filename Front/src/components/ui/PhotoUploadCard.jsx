@@ -21,11 +21,12 @@ const AvatarWrap = styled.div`
 
 const HiddenInput = styled.input` display: none; `;
 
-export function resolveFileUrl(url, fichierId) {
-  if (fichierId) return authenticatedFileUrl(fichierId, Date.now());
+export function resolveFileUrl(url, fichierId, cacheBust) {
+  if (fichierId) return authenticatedFileUrl(fichierId, cacheBust ?? fichierId);
   if (url) {
     const full = url.startsWith('http') ? url : `${API_BASE}${url}`;
-    return `${full}${full.includes('?') ? '&' : '?'}t=${Date.now()}`;
+    if (!cacheBust) return full;
+    return `${full}${full.includes('?') ? '&' : '?'}t=${cacheBust}`;
   }
   return null;
 }

@@ -4,6 +4,7 @@ const { STATUT_RDV, JOURS_SEMAINE } = require('../utils/constants');
 const { parseJsonField } = require('../utils/helpers');
 const commissionService = require('./commission.service');
 const paiementService = require('./paiement.service');
+const { notifyAfterRdv } = require('./rdv-notification.service');
 
 const JOUR_INDEX = { dimanche: 0, lundi: 1, mardi: 2, mercredi: 3, jeudi: 4, vendredi: 5, samedi: 6 };
 
@@ -228,6 +229,7 @@ const creerRdv = async (patientId, payload, meta = {}) => {
   });
 
   const json = rdv.toJSON();
+  notifyAfterRdv(rdv, 'demande').catch(() => {});
   return {
     ...json,
     commission: commissionService.previewConsultation(medecin.tarif_consultation_fcfa),
@@ -309,6 +311,13 @@ const mettreAJourStatut = async (rdvId, medecinId, { statut, notes_medecin }) =>
     await commissionService.annulerTransaction('rendez_vous', rdvId);
   }
   await rdv.save();
+  if (statut === STATUT_RDV.CONFIRME) {
+    notifyAfterRdv(rdv, 'confirme').catch(() => {});
+  } else if (statut === STATUT_RDV.ANNULE) {
+    notifyAfterRdv(rdv, 'refuse').catch(() => {});
+  } else if (statut === STATUT_RDV.TERMINE) {
+    notifyAfterRdv(rdv, 'termine').catch(() => {});
+  }
   return rdv;
 };
 
@@ -346,6 +355,7 @@ const proposerContreProposition = async (rdvId, medecinId, {
   rdv.heure_fin_proposee = slot.fin;
   rdv.message_contre_proposition = message_contre_proposition || null;
   await rdv.save();
+  notifyAfterRdv(rdv, 'contre_proposition').catch(() => {});
   return rdv;
 };
 
@@ -379,6 +389,11 @@ const repondreContreProposition = async (rdvId, patientId, { accepter }) => {
   rdv.heure_debut_proposee = null;
   rdv.heure_fin_proposee = null;
   await rdv.save();
+  if (accepter) {
+    notifyAfterRdv(rdv, 'confirme').catch(() => {});
+  } else {
+    notifyAfterRdv(rdv, 'refuse').catch(() => {});
+  }
   return rdv;
 };
 

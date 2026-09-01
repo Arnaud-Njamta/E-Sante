@@ -120,13 +120,16 @@ const AvisForm = styled.div`
 const StarSelect = styled.div`
   display: flex;
   gap: 4px;
-  button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 1.5rem;
-    color: ${({ $active }) => ($active ? '#F59E0B' : '#D1D5DB')};
-  }
+`;
+
+const StarBtn = styled.button`
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.75rem;
+  line-height: 1;
+  padding: 2px;
+  color: ${({ $filled }) => ($filled ? '#F59E0B' : '#D1D5DB')};
 `;
 
 const JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
@@ -498,7 +501,7 @@ export default function EtablissementDetailPage() {
           <p style={{ fontWeight: 600, margin: '16px 0 4px' }}>Laisser un avis</p>
           <StarSelect>
             {[1, 2, 3, 4, 5].map((s) => (
-              <button key={s} type="button" $active={s <= note} onClick={() => setNote(s)}>★</button>
+              <StarBtn key={s} type="button" $filled={s <= note} onClick={() => setNote(s)}>★</StarBtn>
             ))}
           </StarSelect>
           <textarea

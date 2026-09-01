@@ -1,6 +1,6 @@
 const { Op } = require('sequelize');
-const { Avis, Patient, Etablissement, Medecin } = require('../models');
-const { TYPE_CIBLE_AVIS } = require('../utils/constants');
+const { Avis, Patient, Etablissement, Medecin, RendezVous } = require('../models');
+const { TYPE_CIBLE_AVIS, STATUT_RDV } = require('../utils/constants');
 
 const recalculerNote = async (cibleType, cibleId) => {
   const avis = await Avis.findAll({
@@ -46,6 +46,17 @@ const lister = async ({ cible_type, cible_id, page = 1, limit = 10 }) => {
   };
 };
 
+const patientPeutNoterMedecin = async (patientId, medecinId) => {
+  const rdv = await RendezVous.findOne({
+    where: {
+      patient_id: patientId,
+      medecin_id: medecinId,
+      statut: { [Op.in]: [STATUT_RDV.CONFIRME, STATUT_RDV.TERMINE] },
+    },
+  });
+  return !!rdv;
+};
+
 const creer = async (patientId, { cible_type, cible_id, note, commentaire }) => {
   if (cible_type === TYPE_CIBLE_AVIS.ETABLISSEMENT) {
     const etab = await Etablissement.findByPk(cible_id);
@@ -61,29 +72,37 @@ const creer = async (patientId, { cible_type, cible_id, note, commentaire }) => 
       error.statusCode = 404;
       throw error;
     }
+    const eligible = await patientPeutNoterMedecin(patientId, cible_id);
+    if (!eligible) {
+      const error = new Error(
+        'Vous devez avoir eu au moins un rendez-vous confirmé avec ce médecin pour laisser un avis',
+      );
+      error.statusCode = 403;
+      throw error;
+    }
   }
 
   const existant = await Avis.findOne({
     where: { patient_id: patientId, cible_type, cible_id },
   });
 
+  let avis;
   if (existant) {
-    const error = new Error('Vous avez déjà laissé un avis');
-    error.statusCode = 409;
-    throw error;
+    await existant.update({ note, commentaire: commentaire || '' });
+    avis = existant;
+  } else {
+    avis = await Avis.create({
+      patient_id: patientId,
+      cible_type,
+      cible_id,
+      note,
+      commentaire: commentaire || '',
+    });
   }
-
-  const avis = await Avis.create({
-    patient_id: patientId,
-    cible_type,
-    cible_id,
-    note,
-    commentaire,
-  });
 
   const stats = await recalculerNote(cible_type, cible_id);
 
-  return { avis, stats };
+  return { avis, stats, updated: !!existant };
 };
 
-module.exports = { lister, creer, recalculerNote };
+module.exports = { lister, creer, recalculerNote, patientPeutNoterMedecin };

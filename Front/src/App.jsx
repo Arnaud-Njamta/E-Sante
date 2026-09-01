@@ -27,6 +27,7 @@ const EtablissementDetailPage = React.lazy(() => import('./pages/EtablissementDe
 const MedecinDetailPage = React.lazy(() => import('./pages/MedecinDetailPage'));
 const PharmacieChatPage = React.lazy(() => import('./pages/PharmacieChatPage'));
 const MedecinDashboardPage = React.lazy(() => import('./pages/MedecinDashboardPage'));
+const MedecinAvisPage = React.lazy(() => import('./pages/MedecinAvisPage'));
 const PharmacieDashboardPage = React.lazy(() => import('./pages/PharmacieDashboardPage'));
 const MedecinProfilPage = React.lazy(() => import('./pages/MedecinProfilPage'));
 const MedecinRendezVousPage = React.lazy(() => import('./pages/MedecinRendezVousPage'));
@@ -121,7 +122,7 @@ export default function App() {
                                     <Route path="/medecin/parametres" element={<MedecinParametresPage />} />
                                     <Route path="/medecin/carriere" element={<MedecinProfilProPage />} />
                                     <Route path="/medecin/ordonnances" element={<MedecinOrdonnancesPage />} />
-                                    <Route path="/medecin/avis" element={<MedecinDashboardPage />} />
+                                    <Route path="/medecin/avis" element={<MedecinAvisPage />} />
                                     <Route path="/medecin/actualites" element={<ActualitesPage />} />
                                     <Route path="/sante/medecin/:id" element={<MedecinDetailPage />} />
                                     </Route>

@@ -191,9 +191,11 @@ export default function CarnetMedicalView({ data, onEdit }) {
       )}
 
       <Actions>
-        <Button onClick={onEdit}>
-          <Pencil size={16} /> Modifier mon carnet
-        </Button>
+        {onEdit && (
+          <Button onClick={onEdit}>
+            <Pencil size={16} /> Modifier mon carnet
+          </Button>
+        )}
       </Actions>
     </div>
   );

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import {
-  Calendar, X, Video, MapPin, Check, RefreshCw, CreditCard, CheckCircle, Download,
+  Calendar, X, Video, MapPin, Check, RefreshCw, CreditCard, CheckCircle, Download, Star, MessageSquare,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Card from '../components/ui/Card';
@@ -11,6 +11,7 @@ import ErrorState from '../components/ui/ErrorState';
 import PaymentModal from '../components/ui/PaymentModal';
 import PatientPageHeader from '../components/patient/PatientPageHeader';
 import { useMesRendezVous, useAnnulerRdv, useRepondreContreProposition } from '../hooks/useRendezVous';
+import { useCreerAvis } from '../hooks/useMessagerie';
 import { getRecuUrl } from '../hooks/usePaiement';
 import toast from 'react-hot-toast';
 
@@ -158,7 +159,11 @@ export default function PatientRendezVousPage() {
   const { data: rdvs, isLoading, error, refetch } = useMesRendezVous();
   const annuler = useAnnulerRdv();
   const repondre = useRepondreContreProposition();
+  const creerAvis = useCreerAvis();
   const [paiement, setPaiement] = useState(null);
+  const [rateRdv, setRateRdv] = useState(null);
+  const [note, setNote] = useState(5);
+  const [commentaire, setCommentaire] = useState('');
 
   const handleAnnuler = async (id) => {
     try {
@@ -175,6 +180,24 @@ export default function PatientRendezVousPage() {
       toast.success(accepter ? 'Nouveau créneau confirmé !' : 'Contre-proposition refusée');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur');
+    }
+  };
+
+  const handleRate = async () => {
+    if (!rateRdv?.medecin?.id) return;
+    try {
+      await creerAvis.mutateAsync({
+        cible_type: 'medecin',
+        cible_id: rateRdv.medecin.id,
+        note,
+        commentaire,
+      });
+      toast.success('Merci pour votre avis !');
+      setRateRdv(null);
+      setCommentaire('');
+      setNote(5);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Impossible de publier l\'avis');
     }
   };
 
@@ -223,6 +246,11 @@ export default function PatientRendezVousPage() {
                         ) : null}
                       </PaymentNote>
                     )}
+                    {rdv.notes_medecin && (
+                      <p style={{ margin: '8px 0 0', fontSize: '0.82rem', padding: '8px 10px', background: '#F0FDF4', borderRadius: 8, color: '#065F46' }}>
+                        <MessageSquare size={12} style={{ verticalAlign: 'middle' }} /> {rdv.notes_medecin}
+                      </p>
+                    )}
                   </RdvInfo>
 
                   <Actions>
@@ -245,6 +273,11 @@ export default function PatientRendezVousPage() {
                     {rdv.statut === 'confirme' && rdv.type_consultation === 'teleconsultation' && rdv.lien_video && (
                       <Button onClick={() => navigate(`/rendez-vous/${rdv.id}/video`)}>
                         <Video size={14} /> Rejoindre
+                      </Button>
+                    )}
+                    {['confirme', 'termine'].includes(rdv.statut) && rdv.medecin?.id && (
+                      <Button size="sm" variant="secondary" onClick={() => setRateRdv(rdv)}>
+                        <Star size={14} /> Noter
                       </Button>
                     )}
                     {['en_attente', 'confirme'].includes(rdv.statut) && (
@@ -288,6 +321,45 @@ export default function PatientRendezVousPage() {
         titre={paiement?.titre}
         onPaid={refetch}
       />
+
+      {rateRdv && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.45)', zIndex: 1000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+        }}
+        >
+          <Card style={{ padding: 24, maxWidth: 400, width: '100%' }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 8px' }}>Noter Dr. {rateRdv.medecin?.prenom} {rateRdv.medecin?.nom}</h3>
+            <p style={{ fontSize: '0.85rem', color: '#64748B', marginBottom: 12 }}>Votre avis aide les autres patients.</p>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+              {[1, 2, 3, 4, 5].map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setNote(s)}
+                  style={{
+                    background: 'none', border: 'none', fontSize: '1.75rem', cursor: 'pointer',
+                    color: s <= note ? '#F59E0B' : '#D1D5DB',
+                  }}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+            <textarea
+              value={commentaire}
+              onChange={(e) => setCommentaire(e.target.value)}
+              placeholder="Commentaire (optionnel)"
+              rows={3}
+              style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #E2E8F0', marginBottom: 12 }}
+            />
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <Button variant="secondary" onClick={() => setRateRdv(null)}>Annuler</Button>
+              <Button onClick={handleRate} disabled={creerAvis.isPending}>Publier</Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

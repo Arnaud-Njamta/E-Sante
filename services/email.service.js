@@ -256,10 +256,181 @@ const sendPriseReminderEmail = async ({
   });
 };
 
+const sendRdvDemandeEmail = async ({
+  medecinEmail, medecinPrenom, patientLabel, rdvLabel, motif,
+}) => {
+  const frontUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const html = brandWrap(
+    'Nouvelle demande de rendez-vous',
+    `
+      <p style="color:#555;font-size:15px;line-height:1.6;">Bonjour Dr. ${medecinPrenom || ''},</p>
+      <p style="color:#555;font-size:15px;line-height:1.6;">
+        <strong>${patientLabel}</strong> demande un rendez-vous le <strong>${rdvLabel}</strong>.
+      </p>
+      ${motif ? `<p style="color:#64748B;font-size:14px;"><em>Motif : ${motif}</em></p>` : ''}
+      <div style="text-align:center;margin:24px 0;">
+        <a href="${frontUrl}/medecin/rendez-vous" style="display:inline-block;background:#0B3D30;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;">
+          Gérer mes rendez-vous
+        </a>
+      </div>
+    `,
+  );
+  return sendMailSafe({
+    to: medecinEmail,
+    subject: `Nouvelle demande RDV — ${patientLabel}`,
+    html,
+    mockLabel: `RDV demande médecin → ${medecinEmail}`,
+  });
+};
+
+const sendRdvDemandePatientEmail = async ({
+  patientEmail, patientPrenom, medecinLabel, rdvLabel,
+}) => {
+  const frontUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const html = brandWrap(
+    'Demande de rendez-vous envoyée',
+    `
+      <p style="color:#555;font-size:15px;line-height:1.6;">Bonjour ${patientPrenom || ''},</p>
+      <p style="color:#555;font-size:15px;line-height:1.6;">
+        Votre demande de rendez-vous avec <strong>${medecinLabel}</strong> le <strong>${rdvLabel}</strong> a bien été envoyée.
+        Vous recevrez un e-mail dès que le médecin aura répondu.
+      </p>
+      <div style="text-align:center;margin:24px 0;">
+        <a href="${frontUrl}/rendez-vous" style="display:inline-block;background:#0B3D30;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;">
+          Suivre mon rendez-vous
+        </a>
+      </div>
+    `,
+  );
+  return sendMailSafe({
+    to: patientEmail,
+    subject: `Demande RDV envoyée — ${rdvLabel}`,
+    html,
+    mockLabel: `RDV demande patient → ${patientEmail}`,
+  });
+};
+
+const sendRdvConfirmeEmail = async ({
+  patientEmail, patientPrenom, medecinLabel, rdvLabel, typeConsultation, lienVideo, notesMedecin,
+}) => {
+  const frontUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const html = brandWrap(
+    'Rendez-vous confirmé',
+    `
+      <p style="color:#555;font-size:15px;line-height:1.6;">Bonjour ${patientPrenom || ''},</p>
+      <p style="color:#555;font-size:15px;line-height:1.6;">
+        Votre rendez-vous avec <strong>${medecinLabel}</strong> est confirmé pour le <strong>${rdvLabel}</strong>.
+      </p>
+      ${typeConsultation === 'teleconsultation' && lienVideo
+    ? `<p style="color:#047857;font-size:14px;">Téléconsultation — rejoignez depuis l'application au moment du RDV.</p>`
+    : '<p style="color:#64748B;font-size:14px;">Consultation en présentiel — présentez-vous à l\'heure convenue.</p>'}
+      ${notesMedecin ? `<p style="background:#F0FDF4;padding:12px;border-radius:8px;font-size:14px;color:#065F46;"><strong>Message du médecin :</strong> ${notesMedecin}</p>` : ''}
+      <div style="text-align:center;margin:24px 0;">
+        <a href="${frontUrl}/rendez-vous" style="display:inline-block;background:#0B3D30;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;">
+          Voir mon rendez-vous
+        </a>
+      </div>
+    `,
+  );
+  return sendMailSafe({
+    to: patientEmail,
+    subject: `RDV confirmé — ${rdvLabel}`,
+    html,
+    mockLabel: `RDV confirmé → ${patientEmail}`,
+  });
+};
+
+const sendRdvRefuseEmail = async ({
+  patientEmail, patientPrenom, medecinLabel, rdvLabel, notesMedecin,
+}) => {
+  const frontUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const html = brandWrap(
+    'Rendez-vous refusé',
+    `
+      <p style="color:#555;font-size:15px;line-height:1.6;">Bonjour ${patientPrenom || ''},</p>
+      <p style="color:#555;font-size:15px;line-height:1.6;">
+        Votre demande de rendez-vous avec <strong>${medecinLabel}</strong> (${rdvLabel}) n'a pas pu être acceptée.
+      </p>
+      ${notesMedecin ? `<p style="font-size:14px;color:#64748B;"><strong>Message :</strong> ${notesMedecin}</p>` : ''}
+      <div style="text-align:center;margin:24px 0;">
+        <a href="${frontUrl}/sante?tab=medecins" style="display:inline-block;background:#0B3D30;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;">
+          Trouver un autre médecin
+        </a>
+      </div>
+    `,
+  );
+  return sendMailSafe({
+    to: patientEmail,
+    subject: `RDV non accepté — ${rdvLabel}`,
+    html,
+    mockLabel: `RDV refusé → ${patientEmail}`,
+  });
+};
+
+const sendRdvContrePropositionEmail = async ({
+  patientEmail, patientPrenom, medecinLabel, rdvLabel, message,
+}) => {
+  const frontUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const html = brandWrap(
+    'Nouveau créneau proposé',
+    `
+      <p style="color:#555;font-size:15px;line-height:1.6;">Bonjour ${patientPrenom || ''},</p>
+      <p style="color:#555;font-size:15px;line-height:1.6;">
+        <strong>${medecinLabel}</strong> vous propose un autre créneau : <strong>${rdvLabel}</strong>.
+      </p>
+      ${message ? `<p style="font-style:italic;color:#64748B;font-size:14px;">« ${message} »</p>` : ''}
+      <div style="text-align:center;margin:24px 0;">
+        <a href="${frontUrl}/rendez-vous" style="display:inline-block;background:#0B3D30;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;">
+          Accepter ou refuser
+        </a>
+      </div>
+    `,
+  );
+  return sendMailSafe({
+    to: patientEmail,
+    subject: `Nouveau créneau proposé — ${rdvLabel}`,
+    html,
+    mockLabel: `RDV contre-prop → ${patientEmail}`,
+  });
+};
+
+const sendRdvTermineEmail = async ({
+  patientEmail, patientPrenom, medecinLabel, medecinId,
+}) => {
+  const frontUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const html = brandWrap(
+    'Consultation terminée',
+    `
+      <p style="color:#555;font-size:15px;line-height:1.6;">Bonjour ${patientPrenom || ''},</p>
+      <p style="color:#555;font-size:15px;line-height:1.6;">
+        Votre consultation avec <strong>${medecinLabel}</strong> est terminée.
+        N'hésitez pas à laisser un avis pour aider d'autres patients.
+      </p>
+      <div style="text-align:center;margin:24px 0;">
+        <a href="${frontUrl}/sante/medecin/${medecinId}" style="display:inline-block;background:#0B3D30;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;">
+          Noter le médecin
+        </a>
+      </div>
+    `,
+  );
+  return sendMailSafe({
+    to: patientEmail,
+    subject: `Consultation terminée — laissez un avis`,
+    html,
+    mockLabel: `RDV terminé → ${patientEmail}`,
+  });
+};
+
 module.exports = {
   sendResetPasswordEmail,
   sendAffiliationInviteEmail,
   sendWelcomeEmail,
   sendRdvReminderEmail,
   sendPriseReminderEmail,
+  sendRdvDemandeEmail,
+  sendRdvDemandePatientEmail,
+  sendRdvConfirmeEmail,
+  sendRdvRefuseEmail,
+  sendRdvContrePropositionEmail,
+  sendRdvTermineEmail,
 };

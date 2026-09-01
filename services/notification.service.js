@@ -1,6 +1,6 @@
 const { Op, Sequelize } = require('sequelize');
 const {
-  ReservationDispensaire, Conversation, Message, RendezVous, Etablissement, Patient,
+  ReservationDispensaire, Conversation, Message, RendezVous, Etablissement, Patient, Medecin,
 } = require('../models');
 const { STATUT_RESERVATION, STATUT_RDV } = require('../utils/constants');
 const { MemoryCache } = require('../utils/memory-cache');
@@ -170,6 +170,50 @@ const getStructureNotifications = async (etablissementId, role) => {
   return items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 15);
 };
 
+const getMedecinNotifications = async (medecinId) => {
+  const items = [];
+
+  const enAttente = await RendezVous.findAll({
+    where: { medecin_id: medecinId, statut: STATUT_RDV.EN_ATTENTE },
+    include: [{ model: Patient, as: 'patient', attributes: ['prenom', 'nom'] }],
+    order: [['createdAt', 'DESC']],
+    limit: 8,
+  });
+  enAttente.forEach((r) => {
+    items.push({
+      id: `rdv-wait-${r.id}`,
+      type: 'rendez_vous',
+      title: 'Nouvelle demande RDV',
+      message: `${r.patient?.prenom} ${r.patient?.nom} — ${r.date_rdv} ${r.heure_debut}`,
+      link: '/medecin/rendez-vous',
+      createdAt: r.updatedAt || r.createdAt,
+    });
+  });
+
+  const confirmes = await RendezVous.findAll({
+    where: { medecin_id: medecinId, statut: STATUT_RDV.CONFIRME },
+    include: [{ model: Patient, as: 'patient', attributes: ['prenom', 'nom'] }],
+    order: [['date_rdv', 'ASC']],
+    limit: 5,
+  });
+  confirmes.forEach((r) => {
+    items.push({
+      id: `rdv-ok-${r.id}`,
+      type: 'rendez_vous',
+      title: 'RDV confirmé à venir',
+      message: `${r.patient?.prenom} ${r.patient?.nom} — ${r.date_rdv} ${r.heure_debut}`,
+      link: '/medecin/rendez-vous',
+      createdAt: r.updatedAt,
+    });
+  });
+
+  return items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 15);
+};
+
+const bustNotificationCache = (role, userId) => {
+  notifCache.delete(`${role}:${userId}`);
+};
+
 const lister = async (userId, role) => {
   const cacheKey = `${role}:${userId}`;
   const cached = notifCache.get(cacheKey);
@@ -177,6 +221,7 @@ const lister = async (userId, role) => {
 
   let items = [];
   if (role === 'patient') items = await getPatientNotifications(userId);
+  else if (role === 'medecin') items = await getMedecinNotifications(userId);
   else if (['pharmacie', 'hopital', 'clinique'].includes(role)) {
     items = await getStructureNotifications(userId, role);
   }
@@ -185,4 +230,4 @@ const lister = async (userId, role) => {
   return items;
 };
 
-module.exports = { lister };
+module.exports = { lister, bustNotificationCache };

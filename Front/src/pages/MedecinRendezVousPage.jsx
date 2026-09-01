@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Check, X, Clock, Video, MapPin, RefreshCw } from 'lucide-react';
+import { Calendar, Check, X, Clock, Video, MapPin, RefreshCw, BookHeart, MessageSquare } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Spinner from '../components/ui/Spinner';
 import ErrorState from '../components/ui/ErrorState';
+import MedecinCarnetPatientModal from '../components/medecin/MedecinCarnetPatientModal';
 import {
   useRendezVousMedecin, useUpdateRdvStatut, useProposerContreProposition, useCreneaux,
 } from '../hooks/useRendezVous';
@@ -77,16 +78,27 @@ export default function MedecinRendezVousPage() {
   const [heureProposee, setHeureProposee] = useState('');
   const [messageProposition, setMessageProposition] = useState('');
 
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [notesPatient, setNotesPatient] = useState('');
+
+  const [carnetPatient, setCarnetPatient] = useState(null);
+
   const { data: creneauxData, isLoading: creneauxLoading } = useCreneaux(user?.id, dateProposee);
 
   useEffect(() => {
     setHeureProposee('');
   }, [dateProposee]);
 
-  const handleStatut = async (id, statut, notes) => {
+  const submitStatut = async (id, statut, notes) => {
     try {
-      await updateStatut.mutateAsync({ id, statut, notes_medecin: notes });
-      toast.success(statut === 'confirme' ? 'RDV validé' : 'Demande refusée');
+      await updateStatut.mutateAsync({ id, statut, notes_medecin: notes || undefined });
+      toast.success(
+        statut === 'confirme' ? 'RDV validé — le patient est notifié par e-mail'
+          : statut === 'termine' ? 'Consultation terminée'
+            : 'Demande refusée',
+      );
+      setConfirmAction(null);
+      setNotesPatient('');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur');
     }
@@ -111,7 +123,7 @@ export default function MedecinRendezVousPage() {
         heure_debut_proposee: heureProposee,
         message_contre_proposition: messageProposition || undefined,
       });
-      toast.success('Contre-proposition envoyée au patient');
+      toast.success('Contre-proposition envoyée — le patient est notifié');
       setModalRdv(null);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur');
@@ -126,7 +138,9 @@ export default function MedecinRendezVousPage() {
   return (
     <div>
       <h1 style={{ margin: '0 0 8px' }}><Calendar size={24} style={{ verticalAlign: 'middle' }} /> Mes rendez-vous</h1>
-      <p style={{ color: '#64748B', marginBottom: 24 }}>Validez, refusez ou proposez un autre créneau à vos patients.</p>
+      <p style={{ color: '#64748B', marginBottom: 24 }}>
+        Validez, consultez le carnet patient (avec consentement) et communiquez par message.
+      </p>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
         {['', 'en_attente', 'contre_proposition', 'confirme', 'termine', 'annule'].map((s) => (
@@ -159,15 +173,29 @@ export default function MedecinRendezVousPage() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <Badge $s={rdv.statut}>{STATUT_LABELS[rdv.statut] || rdv.statut}</Badge>
+
+            {rdv.patient?.id && ['en_attente', 'confirme', 'termine'].includes(rdv.statut) && (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setCarnetPatient({
+                  id: rdv.patient.id,
+                  name: `${rdv.patient.prenom} ${rdv.patient.nom}`,
+                })}
+              >
+                <BookHeart size={14} /> Carnet
+              </Button>
+            )}
+
             {rdv.statut === 'en_attente' && (
               <>
-                <Button size="sm" onClick={() => handleStatut(rdv.id, 'confirme')}>
+                <Button size="sm" onClick={() => setConfirmAction({ rdv, statut: 'confirme' })}>
                   <Check size={14} /> Valider
                 </Button>
                 <Button size="sm" variant="secondary" onClick={() => openContreProposition(rdv)}>
                   <RefreshCw size={14} /> Contre-proposer
                 </Button>
-                <Button size="sm" variant="secondary" onClick={() => handleStatut(rdv.id, 'annule')}>
+                <Button size="sm" variant="secondary" onClick={() => setConfirmAction({ rdv, statut: 'annule' })}>
                   <X size={14} /> Refuser
                 </Button>
               </>
@@ -179,12 +207,44 @@ export default function MedecinRendezVousPage() {
                     <Video size={14} /> Rejoindre
                   </Button>
                 )}
-                <Button size="sm" onClick={() => handleStatut(rdv.id, 'termine')}>Terminer</Button>
+                <Button size="sm" onClick={() => submitStatut(rdv.id, 'termine')}>Terminer</Button>
               </>
             )}
           </div>
         </RdvCard>
       ))}
+
+      {confirmAction && (
+        <Modal onClick={() => setConfirmAction(null)}>
+          <ModalBox onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 8px' }}>
+              {confirmAction.statut === 'confirme' ? 'Confirmer le rendez-vous' : 'Refuser le rendez-vous'}
+            </h3>
+            <p style={{ fontSize: '0.85rem', color: '#64748B', marginBottom: 12 }}>
+              {confirmAction.rdv.patient?.prenom} {confirmAction.rdv.patient?.nom} — {confirmAction.rdv.date_rdv} {confirmAction.rdv.heure_debut}
+            </p>
+            <label style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+              <MessageSquare size={14} /> Message au patient (e-mail + notification)
+            </label>
+            <textarea
+              value={notesPatient}
+              onChange={(e) => setNotesPatient(e.target.value)}
+              placeholder="Ex. Préparez vos derniers examens, arrivez 10 min avant..."
+              rows={3}
+              style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #E2E8F0', marginBottom: 16 }}
+            />
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <Button variant="secondary" onClick={() => setConfirmAction(null)}>Annuler</Button>
+              <Button
+                onClick={() => submitStatut(confirmAction.rdv.id, confirmAction.statut, notesPatient)}
+                disabled={updateStatut.isPending}
+              >
+                Confirmer
+              </Button>
+            </div>
+          </ModalBox>
+        </Modal>
+      )}
 
       {modalRdv && (
         <Modal onClick={() => setModalRdv(null)}>
@@ -237,6 +297,14 @@ export default function MedecinRendezVousPage() {
             </div>
           </ModalBox>
         </Modal>
+      )}
+
+      {carnetPatient && (
+        <MedecinCarnetPatientModal
+          patientId={carnetPatient.id}
+          patientName={carnetPatient.name}
+          onClose={() => setCarnetPatient(null)}
+        />
       )}
     </div>
   );

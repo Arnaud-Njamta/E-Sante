@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { getBranding, getHomeRoute } from '../config/branding';
 import toast from 'react-hot-toast';
@@ -23,6 +24,7 @@ const TextLink = styled(Link)`
 `;
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { login, isAuthenticated, role, loading } = useAuth();
   const [submitting, setSubmitting] = useState(false);
@@ -36,7 +38,7 @@ export default function LoginPage() {
   }, [loading, isAuthenticated, role, navigate]);
 
   if (loading) {
-    return <Spinner fullPage text="Chargement..." />;
+    return <Spinner fullPage text={t('auth.loading')} />;
   }
 
   if (isAuthenticated) {
@@ -47,15 +49,15 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       const result = await login(formData.email, formData.password);
-      toast.success(`Bienvenue sur ${getBranding(result.role).appName} !`);
+      toast.success(t('auth.welcome', { appName: getBranding(result.role).appName }));
       navigate(getHomeRoute(result.role), { replace: true });
     } catch (err) {
       if (!err.response) {
-        toast.error('Impossible de joindre le serveur. Vérifiez votre connexion ou que l\'API est démarrée.');
+        toast.error(t('auth.error_network'));
       } else if (err.response.status >= 500) {
-        toast.error('Serveur indisponible (erreur 502/500). Réessayez dans quelques instants.');
+        toast.error(t('auth.error_server'));
       } else {
-        toast.error(err.response?.data?.message || 'Email ou mot de passe incorrect');
+        toast.error(err.response?.data?.message || t('auth.error_credentials'));
       }
     } finally {
       setSubmitting(false);
@@ -68,51 +70,49 @@ export default function LoginPage() {
         <BrandLogo variant="compact" tagline={branding.tagline} emblemSize={52} />
       </Wordmark>
 
-      <SectionTitle>Connexion</SectionTitle>
-      <SectionHint>
-        Patient, professionnel ou administrateur — un seul accès pour tous les espaces.
-      </SectionHint>
+      <SectionTitle>{t('auth.login_title')}</SectionTitle>
+      <SectionHint>{t('auth.login_hint')}</SectionHint>
 
       <AuthForm onSubmit={handleSubmit(onSubmit)}>
         <Field>
-          <FieldLabel htmlFor="email">E-mail</FieldLabel>
+          <FieldLabel htmlFor="email">{t('auth.email')}</FieldLabel>
           <FieldInput
             id="email"
             type="email"
-            placeholder="vous@exemple.com"
+            placeholder={t('auth.email_placeholder')}
             autoComplete="email"
             $error={!!errors.email}
-            {...register('email', { required: 'Email requis' })}
+            {...register('email', { required: t('auth.email_required') })}
           />
           {errors.email && <FieldError>{errors.email.message}</FieldError>}
         </Field>
 
         <Field>
-          <FieldLabel htmlFor="password">Mot de passe</FieldLabel>
+          <FieldLabel htmlFor="password">{t('auth.password')}</FieldLabel>
           <FieldInput
             id="password"
             type="password"
-            placeholder="8 caractères minimum"
+            placeholder={t('auth.password_placeholder')}
             autoComplete="current-password"
             $error={!!errors.password}
             {...register('password', {
-              required: 'Mot de passe requis',
-              minLength: { value: 8, message: 'Min. 8 caractères' },
+              required: t('auth.password_required'),
+              minLength: { value: 8, message: t('auth.password_min') },
             })}
           />
           {errors.password && <FieldError>{errors.password.message}</FieldError>}
         </Field>
 
-        <TextLink to="/mot-de-passe-oublie">Mot de passe oublié</TextLink>
+        <TextLink to="/mot-de-passe-oublie">{t('auth.forgot_password')}</TextLink>
 
         <AuthSubmit type="submit" disabled={submitting}>
-          {submitting ? 'Connexion en cours…' : 'Entrer'}
+          {submitting ? t('auth.submitting_login') : t('auth.enter')}
         </AuthSubmit>
       </AuthForm>
 
       <Footnotes>
-        <p>Nouveau sur la plateforme ? <Link to="/register">Créer un compte patient</Link></p>
-        <p>Médecin, pharmacie ou établissement ? <Link to="/register/professionnel">Demander un accès pro</Link></p>
+        <p>{t('auth.no_account')} <Link to="/register">{t('auth.create_account')}</Link></p>
+        <p>{t('auth.pro_access')} <Link to="/register/professionnel">{t('auth.request_pro')}</Link></p>
       </Footnotes>
     </AuthShell>
   );

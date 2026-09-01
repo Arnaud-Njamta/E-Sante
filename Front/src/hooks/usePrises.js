@@ -27,15 +27,27 @@ export function useConfirmerPrise() {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ id, statut = 'pris', date_heure_reelle = null }) => {
+            if (!navigator.onLine) {
+                const { enqueueOfflineAction } = await import('../utils/offlineQueue');
+                enqueueOfflineAction({
+                    type: 'confirmer_prise',
+                    priseId: id,
+                    statut,
+                    date_heure_reelle,
+                });
+                return { offline: true };
+            }
             const { data } = await client.post(ENDPOINTS.prises.confirmer(id), {
                 statut,
                 ...(date_heure_reelle ? { date_heure_reelle } : {}),
             });
             return data;
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['prises'] });
-            queryClient.invalidateQueries({ queryKey: ['stats'] });
+        onSuccess: (data) => {
+            if (!data?.offline) {
+                queryClient.invalidateQueries({ queryKey: ['prises'] });
+                queryClient.invalidateQueries({ queryKey: ['stats'] });
+            }
         },
     });
 }

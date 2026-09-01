@@ -76,7 +76,10 @@ const seedDemoData = async () => {
   });
 
   await ServiceEtablissement.bulkCreate([
-    { etablissement_id: hopital.id, nom: 'Urgences', categorie: 'Urgence', description: 'Prise en charge des urgences médicales', duree_minutes: null, disponible: true },
+    { etablissement_id: hopital.id, nom: 'Urgences adultes', categorie: 'Urgence', description: 'Prise en charge des urgences médicales 24h/24', duree_minutes: null, disponible: true },
+    { etablissement_id: hopital.id, nom: 'Maternité', categorie: 'Maternité', description: 'Suivi grossesse et accouchement', disponible: true },
+    { etablissement_id: hopital.id, nom: 'Pédiatrie', categorie: 'Pédiatrie', description: 'Urgences et consultations enfants', disponible: true },
+    { etablissement_id: hopital.id, nom: 'Bloc opératoire', categorie: 'Chirurgie', description: 'Chirurgie programmée et urgente', disponible: true },
     { etablissement_id: hopital.id, nom: 'Consultation générale', categorie: 'Consultation', description: 'Consultation avec médecin généraliste', prix_indicatif: 5000, duree_minutes: 30, disponible: true },
     { etablissement_id: hopital.id, nom: 'Radiologie', categorie: 'Imagerie', description: 'Scanner, IRM, radiographie', prix_indicatif: 35000, duree_minutes: 45, disponible: true },
     { etablissement_id: hopital.id, nom: 'Laboratoire d\'analyses', categorie: 'Analyses', description: 'Prises de sang et analyses biologiques', prix_indicatif: 7500, duree_minutes: 15, disponible: true },

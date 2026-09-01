@@ -24,6 +24,7 @@ const ENDPOINTS = {
     },
     publications: {
         featured: '/publications/featured',
+        alertes: '/publications/alertes',
         base: '/publications',
         like: (id) => `/publications/${id}/like`,
         comments: (id) => `/publications/${id}/comments`,
@@ -43,6 +44,7 @@ const ENDPOINTS = {
         me: '/carnet-medical/me',
         textes: '/carnet-medical/textes-consentement',
         consentements: '/carnet-medical/me/consentements',
+        observations: '/carnet-medical/me/observations',
     },
     traitements: {
         base: '/traitements',
@@ -159,6 +161,9 @@ const ENDPOINTS = {
     },
     notifications: {
         me: '/notifications/me',
+        pushVapidKey: '/notifications/push/vapid-public-key',
+        pushSubscribe: '/notifications/push/subscribe',
+        pushUnsubscribe: '/notifications/push/unsubscribe',
     },
     reservations: {
         base: '/reservations-dispensaire',
@@ -182,6 +187,18 @@ const ENDPOINTS = {
         adminTransactions: '/commissions/admin/transactions',
         adminReversements: '/commissions/admin/reversements/traiter',
     },
+    urgence: {
+        types: '/urgence/types',
+        protocole: (type) => `/urgence/protocole/${type}`,
+        etablissements: '/urgence/etablissements',
+    },
+    demandes: {
+        base: '/demandes-prise-en-charge',
+        mesDemandes: '/demandes-prise-en-charge/mes-demandes',
+        etablissement: '/demandes-prise-en-charge/etablissement',
+        reponse: (id) => `/demandes-prise-en-charge/${id}/reponse`,
+        annuler: (id) => `/demandes-prise-en-charge/${id}`,
+    },
     paiements: {
         config: '/paiements/config',
         initier: '/paiements/initier',
@@ -195,6 +212,18 @@ const ENDPOINTS = {
         overview: '/admin/overview',
         comptes: '/admin/comptes',
         etablissements: '/admin/etablissements',
+        alertes: '/admin/alertes-sanitaires',
+        regions: '/admin/regions',
+        santePublique: '/admin/sante-publique',
+    },
+    famille: {
+        base: '/famille',
+        detail: (id) => `/famille/${id}`,
+    },
+    qrMedical: {
+        me: '/qr-medical/me/qr',
+        regenerer: '/qr-medical/me/regenerer',
+        public: (token) => `/qr-medical/${token}`,
     },
 };
 

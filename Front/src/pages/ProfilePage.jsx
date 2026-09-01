@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Card from '../components/ui/Card';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
@@ -13,10 +14,13 @@ import ENDPOINTS from '../api/endpoints';
 import {
   User, Mail, Phone, CalendarDays, Clock, Save,
   Shield, Bell, Sun, Sunset, Moon,
-  Camera, Download, Lock, Info, Trash2,
+  Camera, Download, Lock, Info, Trash2, MapPin,
 } from 'lucide-react';
+import { CAMEROON_REGIONS, VILLES_PAR_REGION } from '../config/cameroonRegions';
 import PatientMobileProfileHero from '../components/patient/PatientMobileProfileHero';
 import UserAvatar from '../components/ui/UserAvatar';
+import LanguageSwitcher from '../components/ui/LanguageSwitcher';
+import { PushNotificationToggle } from '../components/patient/PushNotificationPrompt';
 import { useUploadPatientPhoto } from '../hooks/usePatientProfile';
 
 /* ─── Styles ─── */
@@ -96,6 +100,26 @@ const FormGrid = styled.div`
   gap: ${({ theme }) => theme.spacing[3]};
   @media (max-width: 600px) { grid-template-columns: 1fr; }
 `;
+
+const FieldLabel = styled.label`
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  margin-bottom: 6px;
+`;
+
+const FieldSelect = styled.select`
+  width: 100%;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.colors.text};
+`;
+
+const FieldWrap = styled.div``;
 
 /* Middle Grid: Notifications + Time Windows */
 const MiddleGrid = styled.div`
@@ -273,6 +297,7 @@ const ModalCard = styled(Card)`
 /* ─── Component ─── */
 export default function ProfilePage() {
   const { user, role, updateProfile, logout } = useAuth();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const uploadPhoto = useUploadPatientPhoto();
   const photoInputRef = React.useRef(null);
@@ -286,6 +311,8 @@ export default function ProfilePage() {
     reminders: true, refill: true, reports: false,
     sharing: !!user?.consentement_recherche,
   });
+  const [region, setRegion] = useState(user?.region || '');
+  const [ville, setVille] = useState(user?.ville || '');
   const { register, handleSubmit } = useForm({
     defaultValues: {
       prenom: user?.prenom || '',
@@ -302,6 +329,13 @@ export default function ProfilePage() {
     }
   }, [user?.consentement_recherche]);
 
+  useEffect(() => {
+    setRegion(user?.region || '');
+    setVille(user?.ville || '');
+  }, [user?.region, user?.ville]);
+
+  const villesOptions = region ? (VILLES_PAR_REGION[region] || []) : [];
+
   const onSubmit = async (formData) => {
     setSaving(true);
     try {
@@ -310,10 +344,13 @@ export default function ProfilePage() {
         nom: formData.nom,
         telephone: formData.telephone,
         date_naissance: formData.dateNaissance,
+        region: region || null,
+        ville: ville || null,
+        langue: i18n.language?.split('-')[0] || 'fr',
       });
-      toast.success('Profil mis à jour avec succès');
+      toast.success(t('toasts.profile_saved'));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Erreur lors de la mise à jour');
+      toast.error(err.response?.data?.message || t('errors.update'));
     } finally {
       setSaving(false);
     }
@@ -325,10 +362,10 @@ export default function ProfilePage() {
       setToggles((p) => ({ ...p, sharing: next }));
       try {
         await updateProfile({ consentement_recherche: next });
-        toast.success(next ? 'Consentement enregistré' : 'Consentement retiré');
+        toast.success(next ? t('toasts.consent_on') : t('toasts.consent_off'));
       } catch (err) {
         setToggles((p) => ({ ...p, sharing: !next }));
-        toast.error(err.response?.data?.message || 'Erreur');
+        toast.error(err.response?.data?.message || t('errors.generic'));
       }
       return;
     }
@@ -345,15 +382,15 @@ export default function ProfilePage() {
       a.download = `medisante-export-${Date.now()}.json`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success('Export téléchargé');
+      toast.success(t('toasts.export_done'));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Export impossible');
+      toast.error(err.response?.data?.message || t('errors.export'));
     }
   };
 
   const handleChangePassword = async () => {
     if (pwForm.next !== pwForm.confirm) {
-      toast.error('Les mots de passe ne correspondent pas');
+      toast.error(t('errors.password_mismatch'));
       return;
     }
     try {
@@ -361,11 +398,11 @@ export default function ProfilePage() {
         current_password: pwForm.current,
         new_password: pwForm.next,
       });
-      toast.success('Mot de passe modifié');
+      toast.success(t('toasts.password_changed'));
       setShowPasswordModal(false);
       setPwForm({ current: '', next: '', confirm: '' });
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Erreur');
+      toast.error(err.response?.data?.message || t('errors.generic'));
     }
   };
 
@@ -374,11 +411,11 @@ export default function ProfilePage() {
       await client.delete(ENDPOINTS.patients.account, {
         data: { password: deleteForm.password, confirmation: deleteForm.confirmation },
       });
-      toast.success('Compte supprimé');
+      toast.success(t('toasts.account_deleted'));
       logout();
       navigate('/login', { replace: true });
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Suppression impossible');
+      toast.error(err.response?.data?.message || t('errors.delete_account'));
     }
   };
 
@@ -388,9 +425,9 @@ export default function ProfilePage() {
     try {
       await uploadPhoto.mutateAsync(file);
       setPhotoVersion(Date.now());
-      toast.success('Photo de profil mise à jour');
+      toast.success(t('toasts.photo_updated'));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Impossible d\'envoyer la photo');
+      toast.error(err.response?.data?.message || t('errors.photo_upload'));
     } finally {
       e.target.value = '';
     }
@@ -402,18 +439,21 @@ export default function ProfilePage() {
 
       <PageHeader>
         <div>
-          <h1>Profil & Paramètres</h1>
-          <p>Gérez votre compte personnel et vos préférences.</p>
+          <h1>{t('profile.title')}</h1>
+          <p>{t('profile.subtitle')}</p>
         </div>
-        <Button icon={Save} onClick={handleSubmit(onSubmit)} disabled={saving}>
-          {saving ? 'Enregistrement…' : 'Enregistrer'}
-        </Button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <LanguageSwitcher />
+          <PushNotificationToggle />
+          <Button icon={Save} onClick={handleSubmit(onSubmit)} disabled={saving}>
+          {saving ? t('profile.saving') : t('profile.save')}
+          </Button>
+        </div>
       </PageHeader>
 
       <form onSubmit={handleSubmit(onSubmit)}>
-        {/* Personal Info */}
         <PersonalCard delay="0.05s">
-          <SectionHead><User /> <h3>Informations personnelles</h3></SectionHead>
+          <SectionHead><User /> <h3>{t('profile.personal_info')}</h3></SectionHead>
           <AvatarRow>
             <AvatarWrap>
               <UserAvatar user={user} role={role} size={80} photoVersion={photoVersion} />
@@ -428,67 +468,104 @@ export default function ProfilePage() {
               />
             </AvatarWrap>
             <AvatarInfo>
-              <h2>{user?.prenom || 'Patient'} {user?.nom || ''}</h2>
-              <p>{uploadPhoto.isPending ? 'Envoi de la photo…' : 'Mettez à jour votre photo et vos détails personnels.'}</p>
+              <h2>{user?.prenom || t('common.patient')} {user?.nom || ''}</h2>
+              <p>{uploadPhoto.isPending ? t('profile.photo_uploading') : t('profile.photo_hint')}</p>
             </AvatarInfo>
           </AvatarRow>
 
           <FormGrid>
-            <Input label="Prénom" icon={User} {...register('prenom')} />
-            <Input label="Nom" icon={User} {...register('nom')} />
-            <Input label="Adresse e-mail" type="email" icon={Mail} {...register('email')} disabled />
-            <Input label="Numéro de téléphone" type="tel" icon={Phone} {...register('telephone')} />
-            <Input label="Date de naissance" type="date" icon={CalendarDays} {...register('dateNaissance')} />
+            <Input label={t('profile.firstname')} icon={User} {...register('prenom')} />
+            <Input label={t('profile.lastname')} icon={User} {...register('nom')} />
+            <Input label={t('profile.email')} type="email" icon={Mail} {...register('email')} disabled />
+            <Input label={t('profile.phone')} type="tel" icon={Phone} {...register('telephone')} />
+            <Input label={t('profile.birthdate')} type="date" icon={CalendarDays} {...register('dateNaissance')} />
+          </FormGrid>
+        </PersonalCard>
+
+        <PersonalCard delay="0.08s">
+          <SectionHead><MapPin /> <h3>{t('profile.localisation')}</h3></SectionHead>
+          <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0 0 16px' }}>
+            {t('profile.localisation_hint')}
+          </p>
+          <FormGrid>
+            <FieldWrap>
+              <FieldLabel>{t('profile.region')}</FieldLabel>
+              <FieldSelect
+                value={region}
+                onChange={(e) => {
+                  setRegion(e.target.value);
+                  setVille('');
+                }}
+              >
+                <option value="">—</option>
+                {CAMEROON_REGIONS.map((r) => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </FieldSelect>
+            </FieldWrap>
+            <FieldWrap>
+              <FieldLabel>{t('profile.ville')}</FieldLabel>
+              <FieldSelect
+                value={ville}
+                onChange={(e) => setVille(e.target.value)}
+                disabled={!region}
+              >
+                <option value="">—</option>
+                {villesOptions.map((v) => (
+                  <option key={v} value={v}>{v}</option>
+                ))}
+              </FieldSelect>
+            </FieldWrap>
           </FormGrid>
         </PersonalCard>
 
         {/* Notifications + Time Windows */}
         <MiddleGrid>
           <Card delay="0.1s" style={{ padding: '1.5rem' }}>
-            <SectionHead><Bell /> <h3>Notifications</h3></SectionHead>
+            <SectionHead><Bell /> <h3>{t('profile.notifications')}</h3></SectionHead>
             <ToggleRow>
               <ToggleInfo>
-                <h4>Rappels de médicaments</h4>
-                <p>Alertes quotidiennes pour les prises programmées</p>
+                <h4>{t('profile.reminders_title')}</h4>
+                <p>{t('profile.reminders_desc')}</p>
               </ToggleInfo>
               <Toggle $on={toggles.reminders} onClick={() => toggle('reminders')} />
             </ToggleRow>
             <ToggleRow>
               <ToggleInfo>
-                <h4>Alertes de renouvellement</h4>
-                <p>Quand vos médicaments arrivent à épuisement</p>
+                <h4>{t('profile.refill_title')}</h4>
+                <p>{t('profile.refill_desc')}</p>
               </ToggleInfo>
               <Toggle $on={toggles.refill} onClick={() => toggle('refill')} />
             </ToggleRow>
             <ToggleRow>
               <ToggleInfo>
-                <h4>Rapports hebdomadaires</h4>
-                <p>Résumé de votre observance par e-mail</p>
+                <h4>{t('profile.reports_title')}</h4>
+                <p>{t('profile.reports_desc')}</p>
               </ToggleInfo>
               <Toggle $on={toggles.reports} onClick={() => toggle('reports')} />
             </ToggleRow>
           </Card>
 
           <Card delay="0.15s" style={{ padding: '1.5rem' }}>
-            <SectionHead><Clock /> <h3>Fenêtres de prise</h3></SectionHead>
+            <SectionHead><Clock /> <h3>{t('profile.time_windows')}</h3></SectionHead>
             <WindowItem>
               <WindowIcon $bg="#FEF3C7" $color="#F59E0B"><Sun /></WindowIcon>
               <div>
-                <WindowLabel>Matin</WindowLabel>
+                <WindowLabel>{t('profile.window_morning')}</WindowLabel>
                 <WindowTimes>08h00 <Clock /> — 10h00 <Clock /></WindowTimes>
               </div>
             </WindowItem>
             <WindowItem>
               <WindowIcon $bg="#DBEAFE" $color="#2D7FF9"><Sunset /></WindowIcon>
               <div>
-                <WindowLabel>Après-midi</WindowLabel>
+                <WindowLabel>{t('profile.window_afternoon')}</WindowLabel>
                 <WindowTimes>12h00 <Clock /> — 14h00 <Clock /></WindowTimes>
               </div>
             </WindowItem>
             <WindowItem>
               <WindowIcon $bg="#EDE9FE" $color="#7C3AED"><Moon /></WindowIcon>
               <div>
-                <WindowLabel>Soir</WindowLabel>
+                <WindowLabel>{t('profile.window_evening')}</WindowLabel>
                 <WindowTimes>19h00 <Clock /> — 21h00 <Clock /></WindowTimes>
               </div>
             </WindowItem>
@@ -497,35 +574,31 @@ export default function ProfilePage() {
 
         {/* Security */}
         <SecurityCard delay="0.2s">
-          <SectionHead><Shield /> <h3>Sécurité</h3></SectionHead>
+          <SectionHead><Shield /> <h3>{t('profile.security')}</h3></SectionHead>
           <SecurityGrid>
             <div>
               <div style={{ marginTop: '0.5rem' }}>
-                <h4 style={{ fontWeight: 600, fontSize: '0.9rem', margin: '0 0 8px' }}>Gestion du mot de passe</h4>
+                <h4 style={{ fontWeight: 600, fontSize: '0.9rem', margin: '0 0 8px' }}>{t('profile.password_mgmt')}</h4>
                 <Button variant="outline" size="sm" icon={Lock} type="button" onClick={() => setShowPasswordModal(true)}>
-                  Changer le mot de passe
+                  {t('profile.change_password')}
                 </Button>
               </div>
             </div>
             <RecommendBox>
               <Info />
               <div>
-                <h4>Recommandation sécurité</h4>
-                <p>Nous suggérons de changer votre mot de passe régulièrement. Utilisez une combinaison de lettres, chiffres et symboles.</p>
+                <h4>{t('profile.security_tip_title')}</h4>
+                <p>{t('profile.security_tip')}</p>
               </div>
             </RecommendBox>
           </SecurityGrid>
         </SecurityCard>
 
-        {/* GDPR */}
         <GDPRCard>
           <GDPRContent>
             <GDPRText>
-              <h3><Shield /> Confidentialité & données personnelles</h3>
-              <p>
-                Vous contrôlez vos données de santé : export, rectification et suppression depuis cette page.
-                DjamSanté applique les principes du RGPD et de la législation camerounaise sur les données personnelles.
-              </p>
+              <h3><Shield /> {t('profile.privacy_title')}</h3>
+              <p>{t('profile.privacy_desc')}</p>
             </GDPRText>
             <Button
               variant="secondary"
@@ -534,23 +607,23 @@ export default function ProfilePage() {
               onClick={handleExport}
               style={{ background: 'rgba(255,255,255,0.15)', color: 'white', borderColor: 'rgba(255,255,255,0.3)' }}
             >
-              Télécharger mes données
+              {t('profile.download_data')}
             </Button>
           </GDPRContent>
 
           <GDPRConsent>
             <Toggle $on={toggles.sharing} onClick={() => toggle('sharing')} />
             <div>
-              <strong>Partage de données anonymisées</strong>
-              <p style={{ margin: '2px 0 0', fontSize: '0.8rem', opacity: 0.7 }}>Recherche médicale — consentement révocable à tout moment.</p>
+              <strong>{t('profile.sharing_title')}</strong>
+              <p style={{ margin: '2px 0 0', fontSize: '0.8rem', opacity: 0.7 }}>{t('profile.sharing_desc')}</p>
             </div>
           </GDPRConsent>
-          <GDPRLink as={Link} to="/confidentialite">Lire notre Politique de Confidentialité</GDPRLink>
+          <GDPRLink as={Link} to="/confidentialite">{t('profile.privacy_policy')}</GDPRLink>
           <div style={{ marginTop: 16 }}>
             <Button variant="outline" size="sm" icon={Trash2} type="button"
               onClick={() => setShowDeleteModal(true)}
               style={{ color: '#FCA5A5', borderColor: 'rgba(252,165,165,0.5)' }}>
-              Supprimer mon compte
+              {t('profile.delete_account')}
             </Button>
           </div>
         </GDPRCard>
@@ -558,17 +631,17 @@ export default function ProfilePage() {
         {showPasswordModal && (
           <Modal onClick={() => setShowPasswordModal(false)}>
             <ModalCard onClick={(e) => e.stopPropagation()}>
-              <h3>Changer le mot de passe</h3>
+              <h3>{t('profile.modal_change_pw')}</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <Input label="Mot de passe actuel" type="password" value={pwForm.current}
+                <Input label={t('profile.current_password')} type="password" value={pwForm.current}
                   onChange={(e) => setPwForm((p) => ({ ...p, current: e.target.value }))} />
-                <Input label="Nouveau mot de passe" type="password" value={pwForm.next}
+                <Input label={t('profile.new_password')} type="password" value={pwForm.next}
                   onChange={(e) => setPwForm((p) => ({ ...p, next: e.target.value }))} />
-                <Input label="Confirmer" type="password" value={pwForm.confirm}
+                <Input label={t('profile.confirm_password')} type="password" value={pwForm.confirm}
                   onChange={(e) => setPwForm((p) => ({ ...p, confirm: e.target.value }))} />
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                  <Button variant="outline" type="button" onClick={() => setShowPasswordModal(false)}>Annuler</Button>
-                  <Button type="button" onClick={handleChangePassword}>Enregistrer</Button>
+                  <Button variant="outline" type="button" onClick={() => setShowPasswordModal(false)}>{t('common.cancel')}</Button>
+                  <Button type="button" onClick={handleChangePassword}>{t('common.save')}</Button>
                 </div>
               </div>
             </ModalCard>
@@ -578,18 +651,18 @@ export default function ProfilePage() {
         {showDeleteModal && (
           <Modal onClick={() => setShowDeleteModal(false)}>
             <ModalCard onClick={(e) => e.stopPropagation()}>
-              <h3>Supprimer définitivement mon compte</h3>
+              <h3>{t('profile.modal_delete_title')}</h3>
               <p style={{ fontSize: '0.85rem', color: '#64748B', marginBottom: 16 }}>
-                Cette action est irréversible. Toutes vos données seront effacées.
+                {t('profile.modal_delete_desc')}
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <Input label="Mot de passe" type="password" value={deleteForm.password}
+                <Input label={t('profile.password')} type="password" value={deleteForm.password}
                   onChange={(e) => setDeleteForm((p) => ({ ...p, password: e.target.value }))} />
-                <Input label='Tapez "SUPPRIMER MON COMPTE"' value={deleteForm.confirmation}
+                <Input label={t('profile.delete_confirm_label')} value={deleteForm.confirmation}
                   onChange={(e) => setDeleteForm((p) => ({ ...p, confirmation: e.target.value }))} />
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                  <Button variant="outline" type="button" onClick={() => setShowDeleteModal(false)}>Annuler</Button>
-                  <Button type="button" onClick={handleDeleteAccount} style={{ background: '#DC2626' }}>Supprimer</Button>
+                  <Button variant="outline" type="button" onClick={() => setShowDeleteModal(false)}>{t('common.cancel')}</Button>
+                  <Button type="button" onClick={handleDeleteAccount} style={{ background: '#DC2626' }}>{t('common.delete')}</Button>
                 </div>
               </div>
             </ModalCard>
@@ -597,9 +670,9 @@ export default function ProfilePage() {
         )}
 
         <SaveBar>
-          <Button variant="outline" type="button">Annuler</Button>
+          <Button variant="outline" type="button">{t('common.cancel')}</Button>
           <Button type="submit" icon={Save} disabled={saving}>
-            {saving ? 'Enregistrement…' : 'Enregistrer les modifications'}
+            {saving ? t('profile.saving') : t('profile.save_all')}
           </Button>
         </SaveBar>
       </form>

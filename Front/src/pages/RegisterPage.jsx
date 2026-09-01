@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { getBranding } from '../config/branding';
 import toast from 'react-hot-toast';
@@ -31,12 +32,8 @@ const StepHint = styled.p`
   color: #6B6560;
 `;
 
-/**
- * Inscription patient allégée :
- * Étape 1 — compte (email, mdp, CGU)
- * Étape 2 — identité (nom, prénom, téléphone)
- */
 export default function RegisterPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { register: registerUser } = useAuth();
   const branding = getBranding('patient');
@@ -56,7 +53,7 @@ export default function RegisterPage() {
     const ok = await trigger(['email', 'password', 'confirmPassword', 'acceptCgu']);
     if (!ok) return;
     if (!acceptCgu) {
-      toast.error('Acceptez les CGU pour continuer');
+      toast.error(t('auth.accept_cgu_toast'));
       return;
     }
     setStep(2);
@@ -72,10 +69,10 @@ export default function RegisterPage() {
         password: formData.password,
         telephone: formData.telephone,
       });
-      toast.success('Bienvenue sur DjamSanté !');
+      toast.success(t('auth.welcome_app'));
       navigate('/dashboard', { replace: true });
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Erreur lors de la création du compte');
+      toast.error(err.response?.data?.message || t('auth.register_error'));
     } finally {
       setSubmitting(false);
     }
@@ -87,48 +84,48 @@ export default function RegisterPage() {
         <BrandLogo variant="compact" tagline={branding.tagline} emblemSize={52} />
       </Wordmark>
 
-      <SectionTitle>Créer un compte</SectionTitle>
-      <SectionHint>Deux étapes rapides — vous êtes soigné ensuite dans l&apos;app.</SectionHint>
+      <SectionTitle>{t('auth.register_title')}</SectionTitle>
+      <SectionHint>{t('auth.register_hint')}</SectionHint>
 
       <Steps aria-hidden>
         <StepDot $active={step >= 1} />
         <StepDot $active={step >= 2} />
       </Steps>
-      <StepHint>{step === 1 ? 'Étape 1/2 — Identifiants' : 'Étape 2/2 — Qui êtes-vous ?'}</StepHint>
+      <StepHint>{step === 1 ? t('auth.step1') : t('auth.step2')}</StepHint>
 
       <AuthForm onSubmit={handleSubmit(onSubmit)}>
         {step === 1 && (
           <>
             <Field>
-              <FieldLabel htmlFor="email">E-mail</FieldLabel>
+              <FieldLabel htmlFor="email">{t('auth.email')}</FieldLabel>
               <FieldInput
                 id="email"
                 type="email"
                 autoComplete="email"
-                placeholder="vous@exemple.com"
+                placeholder={t('auth.email_placeholder')}
                 $error={!!errors.email}
                 {...register('email', {
-                  required: 'L\'email est requis',
-                  pattern: { value: /^\S+@\S+$/i, message: 'Email invalide' },
+                  required: t('auth.email_required'),
+                  pattern: { value: /^\S+@\S+$/i, message: t('auth.email_invalid') },
                 })}
               />
               {errors.email && <FieldError>{errors.email.message}</FieldError>}
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="password">Mot de passe</FieldLabel>
+              <FieldLabel htmlFor="password">{t('auth.password')}</FieldLabel>
               <FieldInput
                 id="password"
                 type="password"
                 autoComplete="new-password"
-                placeholder="8 caractères minimum"
+                placeholder={t('auth.password_placeholder')}
                 $error={!!errors.password}
                 {...register('password', {
-                  required: 'Le mot de passe est requis',
-                  minLength: { value: 8, message: 'Minimum 8 caractères' },
+                  required: t('auth.password_required'),
+                  minLength: { value: 8, message: t('auth.password_min') },
                   validate: (val) => {
                     const s = scorePassword(val);
-                    return s.isAcceptable || 'Mot de passe trop faible (ajoutez majuscules, chiffres…)';
+                    return s.isAcceptable || t('auth.password_weak');
                   },
                 })}
               />
@@ -137,16 +134,16 @@ export default function RegisterPage() {
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="confirmPassword">Confirmer</FieldLabel>
+              <FieldLabel htmlFor="confirmPassword">{t('auth.confirm_password')}</FieldLabel>
               <FieldInput
                 id="confirmPassword"
                 type="password"
                 autoComplete="new-password"
-                placeholder="Retapez le mot de passe"
+                placeholder={t('auth.confirm_placeholder')}
                 $error={!!errors.confirmPassword}
                 {...register('confirmPassword', {
-                  required: 'Confirmez le mot de passe',
-                  validate: (val) => val === watch('password') || 'Les mots de passe ne correspondent pas',
+                  required: t('auth.confirm_required'),
+                  validate: (val) => val === watch('password') || t('auth.password_mismatch'),
                 })}
               />
               {errors.confirmPassword && <FieldError>{errors.confirmPassword.message}</FieldError>}
@@ -154,19 +151,19 @@ export default function RegisterPage() {
 
             <Field>
               <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: '0.84rem', color: '#6B6560', lineHeight: 1.45 }}>
-                <input type="checkbox" {...register('acceptCgu', { required: 'Acceptation des CGU obligatoire' })} style={{ marginTop: 3 }} />
+                <input type="checkbox" {...register('acceptCgu', { required: t('auth.cgu_required') })} style={{ marginTop: 3 }} />
                 <span>
-                  J&apos;accepte les{' '}
-                  <Link to="/cgu" target="_blank">CGU</Link>
-                  {' '}et la{' '}
-                  <Link to="/confidentialite" target="_blank">confidentialité</Link>.
+                  {t('auth.cgu_prefix')}{' '}
+                  <Link to="/cgu" target="_blank">{t('auth.terms_link')}</Link>
+                  {' '}{t('auth.cgu_and')}{' '}
+                  <Link to="/confidentialite" target="_blank">{t('auth.privacy_link')}</Link>.
                 </span>
               </label>
               {errors.acceptCgu && <FieldError>{errors.acceptCgu.message}</FieldError>}
             </Field>
 
             <AuthSubmit type="button" onClick={goNext}>
-              Continuer
+              {t('auth.continue')}
             </AuthSubmit>
           </>
         )}
@@ -175,29 +172,29 @@ export default function RegisterPage() {
           <>
             <FormGrid>
               <Field>
-                <FieldLabel htmlFor="prenom">Prénom</FieldLabel>
+                <FieldLabel htmlFor="prenom">{t('auth.firstname')}</FieldLabel>
                 <FieldInput
                   id="prenom"
                   autoComplete="given-name"
                   $error={!!errors.prenom}
-                  {...register('prenom', { required: 'Le prénom est requis' })}
+                  {...register('prenom', { required: t('auth.firstname_required') })}
                 />
                 {errors.prenom && <FieldError>{errors.prenom.message}</FieldError>}
               </Field>
               <Field>
-                <FieldLabel htmlFor="nom">Nom</FieldLabel>
+                <FieldLabel htmlFor="nom">{t('auth.lastname')}</FieldLabel>
                 <FieldInput
                   id="nom"
                   autoComplete="family-name"
                   $error={!!errors.nom}
-                  {...register('nom', { required: 'Le nom est requis' })}
+                  {...register('nom', { required: t('auth.lastname_required') })}
                 />
                 {errors.nom && <FieldError>{errors.nom.message}</FieldError>}
               </Field>
             </FormGrid>
 
             <Field>
-              <FieldLabel htmlFor="telephone">Téléphone (optionnel)</FieldLabel>
+              <FieldLabel htmlFor="telephone">{t('auth.phone_optional')}</FieldLabel>
               <FieldInput
                 id="telephone"
                 type="tel"
@@ -205,7 +202,7 @@ export default function RegisterPage() {
                 placeholder="+237 6XX XX XX XX"
                 $error={!!errors.telephone}
                 {...register('telephone', {
-                  minLength: { value: 9, message: 'Numéro invalide' },
+                  minLength: { value: 9, message: t('auth.phone_invalid') },
                 })}
               />
               {errors.telephone && <FieldError>{errors.telephone.message}</FieldError>}
@@ -213,10 +210,10 @@ export default function RegisterPage() {
 
             <div style={{ display: 'flex', gap: 10 }}>
               <AuthSubmit type="button" onClick={() => setStep(1)} style={{ flex: 1, background: '#E8E4DC', color: '#1C1917' }}>
-                Retour
+                {t('common.back')}
               </AuthSubmit>
               <AuthSubmit type="submit" disabled={submitting} style={{ flex: 1.4 }}>
-                {submitting ? 'Création…' : 'Créer mon compte'}
+                {submitting ? t('auth.creating') : t('auth.create_my_account')}
               </AuthSubmit>
             </div>
           </>
@@ -224,11 +221,11 @@ export default function RegisterPage() {
       </AuthForm>
 
       <Footnotes>
-        <p>Déjà un compte ? <Link to="/login">Se connecter</Link></p>
+        <p>{t('auth.already_account')} <Link to="/login">{t('auth.sign_in')}</Link></p>
         <p>
-          <Link to="/register-professionnel">Compte professionnel</Link>
+          <Link to="/register-professionnel">{t('auth.pro_account')}</Link>
           {' · '}
-          <Link to="/cgu">CGU</Link>
+          <Link to="/cgu">{t('auth.terms_link')}</Link>
         </p>
       </Footnotes>
     </AuthShell>

@@ -1,5 +1,6 @@
 import React from 'react';
 import styled, { keyframes } from 'styled-components';
+import { useTranslation } from 'react-i18next';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
@@ -9,6 +10,7 @@ import Button from '../components/ui/Button';
 import Spinner from '../components/ui/Spinner';
 import ErrorState from '../components/ui/ErrorState';
 import { useObservanceStats, useRisques, useTendances } from '../hooks/useStats';
+import { getActiveLocale } from '../i18n/syncLanguage';
 import {
   TrendingUp, TrendingDown, BarChart3, Pill, CalendarDays,
   AlertTriangle, Lightbulb, CheckCircle, XCircle, Shield,
@@ -243,12 +245,12 @@ const PerfValue = styled.span`
 `;
 
 /* ─── Helpers ─── */
-function getRiskInfo(risqueData) {
+function getRiskInfo(risqueData, t) {
   if (!risqueData) return { score: 0, color: '#94A3B8', label: '—' };
   const score = risqueData.score_observance ?? 0;
-  let color = '#F59E0B', label = 'Moyen';
-  if (score >= 90) { color = '#22C55E'; label = 'Faible'; }
-  else if (score < 70) { color = '#EF4444'; label = 'Élevé'; }
+  let color = '#F59E0B', label = t('analytics.risk_label_medium');
+  if (score >= 90) { color = '#22C55E'; label = t('analytics.risk_label_low'); }
+  else if (score < 70) { color = '#EF4444'; label = t('analytics.risk_label_high'); }
   return { score, color, label };
 }
 
@@ -260,11 +262,13 @@ function getMedPerfColor(taux) {
 
 /* ─── Component ─── */
 export default function AnalyticsPage() {
+  const { t } = useTranslation();
+  const locale = getActiveLocale();
   const { data: obsData, isLoading: obsLoading, error: obsError } = useObservanceStats({ jours: 30 });
   const { data: risqueData, isLoading: risqueLoading } = useRisques();
   const { data: tendancesData, isLoading: tendancesLoading } = useTendances();
 
-  const riskInfo = getRiskInfo(risqueData);
+  const riskInfo = getRiskInfo(risqueData, t);
 
   // Build stats cards from observance data
   const totalPrises = obsData?.total_prises ?? 0;
@@ -273,9 +277,9 @@ export default function AnalyticsPage() {
   const score = obsData?.score ?? 0;
 
   const statsCards = [
-    { label: 'Doses confirmées', value: prisesConfirmees, Icon: CheckCircle, iconBg: '#EFF6FF', iconColor: '#2D7FF9' },
-    { label: 'Doses manquées', value: prisesOubliees, Icon: XCircle, iconBg: '#FEF2F2', iconColor: '#EF4444' },
-    { label: "Taux d'adhérence", value: `${score}%`, Icon: Shield, iconBg: '#F0FDF4', iconColor: '#22C55E' },
+    { label: t('analytics.doses_confirmed'), value: prisesConfirmees, Icon: CheckCircle, iconBg: '#EFF6FF', iconColor: '#2D7FF9' },
+    { label: t('analytics.doses_missed'), value: prisesOubliees, Icon: XCircle, iconBg: '#FEF2F2', iconColor: '#EF4444' },
+    { label: t('analytics.adherence_rate'), value: `${score}%`, Icon: Shield, iconBg: '#F0FDF4', iconColor: '#22C55E' },
   ];
 
   // Trend chart data
@@ -289,20 +293,20 @@ export default function AnalyticsPage() {
   const recommendations = risqueData?.actions_recommandees || [];
 
   if (obsLoading && risqueLoading && tendancesLoading) {
-    return <Spinner text="Chargement des statistiques…" />;
+    return <Spinner text={t('analytics.loading')} />;
   }
 
   if (obsError) {
-    return <ErrorState title="Erreur" message="Impossible de charger les statistiques." onRetry={() => window.location.reload()} />;
+    return <ErrorState title={t('errors.generic')} message={t('analytics.error_load')} onRetry={() => window.location.reload()} />;
   }
 
   const now = new Date();
-  const currentMonth = now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  const currentMonth = now.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
 
   return (
     <>
       <PageHeader>
-        <h1>Statistiques d'adhérence</h1>
+        <h1>{t('analytics.title')}</h1>
         <div style={{ display: 'flex', gap: '10px' }}>
           <MonthPicker><CalendarDays /> {currentMonth}</MonthPicker>
         </div>
@@ -324,7 +328,7 @@ export default function AnalyticsPage() {
       {/* Risk Gauge + Tips */}
       <MainGrid>
         <GaugeCard delay="0.2s">
-          <h3 style={{ fontWeight: 700, fontSize: '1rem', margin: '0 0 12px' }}>Classification de risque</h3>
+          <h3 style={{ fontWeight: 700, fontSize: '1rem', margin: '0 0 12px' }}>{t('analytics.risk_classification')}</h3>
           <GaugeWrap>
             <GaugeSVG viewBox="0 0 160 80">
               <path d="M 10 75 A 70 70 0 0 1 150 75" fill="none" stroke="#E2E8F0" strokeWidth="10" strokeLinecap="round" />
@@ -336,41 +340,41 @@ export default function AnalyticsPage() {
             </GaugeSVG>
           </GaugeWrap>
           <GaugeLabel $c={riskInfo.color}>{riskInfo.label}</GaugeLabel>
-          <GaugeScore>SCORE: {riskInfo.score}/100</GaugeScore>
+          <GaugeScore>{t('analytics.score', { score: riskInfo.score })}</GaugeScore>
           <GaugeLegend>
-            <span style={{ color: '#22C55E' }}>FAIBLE</span>
-            <span style={{ color: '#F59E0B' }}>MOYEN</span>
-            <span style={{ color: '#EF4444' }}>ÉLEVÉ</span>
+            <span style={{ color: '#22C55E' }}>{t('analytics.risk_low')}</span>
+            <span style={{ color: '#F59E0B' }}>{t('analytics.risk_medium')}</span>
+            <span style={{ color: '#EF4444' }}>{t('analytics.risk_high')}</span>
           </GaugeLegend>
         </GaugeCard>
 
         <RiskCol>
           {patterns.heure_critique && (
             <TipCard $bg="#FEF3C7" $border="#F59E0B">
-              <TipTitle $c="#D97706"><AlertTriangle /> Observation</TipTitle>
+              <TipTitle $c="#D97706"><AlertTriangle /> {t('analytics.observation')}</TipTitle>
               <TipBody>
-                Vos doses manquées surviennent principalement autour de {patterns.heure_critique}.
-                {patterns.jour_critique && ` Le ${patterns.jour_critique} est le jour le plus à risque.`}
+                {t('analytics.pattern_hour', { hour: patterns.heure_critique })}
+                {patterns.jour_critique && t('analytics.pattern_day', { day: patterns.jour_critique })}
               </TipBody>
             </TipCard>
           )}
 
           {!patterns.heure_critique && (
             <TipCard $bg="#FEF3C7" $border="#F59E0B">
-              <TipTitle $c="#D97706"><AlertTriangle /> Observation</TipTitle>
-              <TipBody>Pas encore assez de données pour identifier des patterns d'oubli.</TipBody>
+              <TipTitle $c="#D97706"><AlertTriangle /> {t('analytics.observation')}</TipTitle>
+              <TipBody>{t('analytics.no_pattern')}</TipBody>
             </TipCard>
           )}
 
           {recommendations.length > 0 ? (
             <TipCard $bg="#EFF6FF" $border="#2D7FF9">
-              <TipTitle $c="#2D7FF9"><Lightbulb /> Recommandation</TipTitle>
+              <TipTitle $c="#2D7FF9"><Lightbulb /> {t('analytics.recommendation')}</TipTitle>
               <TipBody>{recommendations[0]}</TipBody>
             </TipCard>
           ) : (
             <TipCard $bg="#EFF6FF" $border="#2D7FF9">
-              <TipTitle $c="#2D7FF9"><Lightbulb /> Recommandation</TipTitle>
-              <TipBody>Continuez à prendre vos médicaments régulièrement et à programmer des rappels.</TipBody>
+              <TipTitle $c="#2D7FF9"><Lightbulb /> {t('analytics.recommendation')}</TipTitle>
+              <TipBody>{t('analytics.default_recommendation')}</TipBody>
             </TipCard>
           )}
         </RiskCol>
@@ -380,12 +384,12 @@ export default function AnalyticsPage() {
       <TrendSection>
         <Card delay="0.3s" style={{ padding: '1.5rem' }}>
           <TrendHeader>
-            <h3>Tendance d'adhérence</h3>
+            <h3>{t('analytics.trend_title')}</h3>
             <TrendValue>
               <span className="big">{score}%</span>
             </TrendValue>
           </TrendHeader>
-          <p style={{ fontSize: '0.8rem', color: '#94A3B8', margin: '0 0 8px' }}>Progression sur {obsData?.periode_jours || 30} jours</p>
+          <p style={{ fontSize: '0.8rem', color: '#94A3B8', margin: '0 0 8px' }}>{t('analytics.progress_days', { days: obsData?.periode_jours || 30 })}</p>
           <ChartWrap>
             {tendancesLoading ? (
               <Spinner size={24} />
@@ -401,31 +405,31 @@ export default function AnalyticsPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
                   <XAxis dataKey="jour" tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
                   <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '8px', fontSize: '13px' }} formatter={(v) => [`${v}%`, 'Adhérence']} />
+                  <Tooltip contentStyle={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '8px', fontSize: '13px' }} formatter={(v) => [`${v}%`, t('analytics.adherence_tooltip')]} />
                   <Area type="monotone" dataKey="taux" stroke="#2D7FF9" strokeWidth={2.5} fill="url(#gradA)"
                     dot={{ r: 4, fill: '#2D7FF9', strokeWidth: 2, stroke: '#fff' }} />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <p style={{ textAlign: 'center', color: '#94A3B8', fontSize: '0.85rem', paddingTop: '60px' }}>Pas encore de données de tendance</p>
+              <p style={{ textAlign: 'center', color: '#94A3B8', fontSize: '0.85rem', paddingTop: '60px' }}>{t('analytics.no_trend')}</p>
             )}
           </ChartWrap>
         </Card>
 
         <PerfCard delay="0.35s">
-          <PerfTitle>Résumé</PerfTitle>
+          <PerfTitle>{t('analytics.summary')}</PerfTitle>
           <PerfItem>
-            <PerfName>Confirmées</PerfName>
+            <PerfName>{t('analytics.confirmed')}</PerfName>
             <PerfBar><PerfFill $c="#22C55E" $w={totalPrises > 0 ? (prisesConfirmees / totalPrises * 100) : 0} /></PerfBar>
             <PerfValue $c="#22C55E">{prisesConfirmees}</PerfValue>
           </PerfItem>
           <PerfItem>
-            <PerfName>Oubliées</PerfName>
+            <PerfName>{t('analytics.forgotten')}</PerfName>
             <PerfBar><PerfFill $c="#EF4444" $w={totalPrises > 0 ? (prisesOubliees / totalPrises * 100) : 0} /></PerfBar>
             <PerfValue $c="#EF4444">{prisesOubliees}</PerfValue>
           </PerfItem>
           <PerfItem>
-            <PerfName>En retard</PerfName>
+            <PerfName>{t('analytics.late')}</PerfName>
             <PerfBar><PerfFill $c="#F59E0B" $w={totalPrises > 0 ? ((obsData?.prises_retard ?? 0) / totalPrises * 100) : 0} /></PerfBar>
             <PerfValue $c="#F59E0B">{obsData?.prises_retard ?? 0}</PerfValue>
           </PerfItem>

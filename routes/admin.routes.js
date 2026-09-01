@@ -18,5 +18,9 @@ router.get('/overview', adminController.getOverview);
 router.get('/comptes', adminController.listComptes);
 router.get('/etablissements', adminController.listEtablissements);
 router.get('/audit-logs', adminAuditController.lister);
+router.get('/alertes-sanitaires', adminController.listerAlertes);
+router.post('/alertes-sanitaires', adminController.creerAlerte);
+router.get('/regions', adminController.getRegions);
+router.get('/sante-publique', adminController.getSantePublique);
 
 module.exports = router;

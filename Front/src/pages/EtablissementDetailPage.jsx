@@ -14,6 +14,7 @@ import { useEtablissement, useEtablissementHoraires, useEtablissementPublication
 import { useAvis, useCreerAvis } from '../hooks/useMessagerie';
 import { useDemarrerConversation } from '../hooks/useMessagerie';
 import { useCreerReservation, useOrdonnancesElecPatient } from '../hooks/useReservations';
+import { useCreerDemandePriseEnCharge } from '../hooks/useUrgence';
 import { useOrdonnancesPharmacie } from '../hooks/useOrdonnances';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -206,6 +207,7 @@ export default function EtablissementDetailPage() {
   const creerAvis = useCreerAvis();
   const demarrerConv = useDemarrerConversation();
   const creerReservation = useCreerReservation();
+  const creerDemande = useCreerDemandePriseEnCharge();
   const { data: ordonnancesElec } = useOrdonnancesElecPatient();
   const { data: ordonnancesPapier } = useOrdonnancesPharmacie();
   const { isPatient } = useAuth();
@@ -322,6 +324,21 @@ export default function EtablissementDetailPage() {
       navigate('/reservations', { state: { highlightId: result?.id } });
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur réservation');
+    }
+  };
+
+  const handleDemandeService = async (service) => {
+    const msg = window.prompt(`Message pour ${etab.nom} (optionnel) :`, `Demande pour : ${service.nom}`);
+    if (msg === null) return;
+    try {
+      await creerDemande.mutateAsync({
+        etablissement_id: id,
+        service_id: service.id,
+        message_patient: msg || `Demande pour ${service.nom}`,
+      });
+      toast.success('Demande envoyée — l\'établissement vous répondra sous peu');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Erreur');
     }
   };
 
@@ -518,6 +535,11 @@ export default function EtablissementDetailPage() {
                   {s.prix_indicatif && <span>{Number(s.prix_indicatif).toLocaleString()} FCFA</span>}
                   {s.duree_minutes && <span>{s.duree_minutes} min</span>}
                 </ServiceMeta>
+                {isPatient && (etab.type === 'hopital' || etab.type === 'clinique') && (
+                  <Button size="sm" style={{ marginTop: 10 }} onClick={() => handleDemandeService(s)} disabled={creerDemande.isPending}>
+                    Demander une prise en charge
+                  </Button>
+                )}
               </ServiceCard>
             ))}
           </div>

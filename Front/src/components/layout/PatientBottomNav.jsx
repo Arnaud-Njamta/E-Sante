@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { PATIENT_MOBILE_NAV, PATIENT_MORE_SECTIONS, isPatientNavActive } from '../../config/patientMobileNav';
+import { prefetchRoute } from '../../utils/routePrefetch';
 import PatientMoreSheet from '../patient/PatientMoreSheet';
 import { LayoutGrid } from 'lucide-react';
 
@@ -149,6 +151,7 @@ const MoreBtn = styled.button`
 export { BOTTOM_NAV_HEIGHT };
 
 export default function PatientBottomNav() {
+  const { t } = useTranslation();
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
   const pathname = location.pathname;
@@ -168,9 +171,12 @@ export default function PatientBottomNav() {
                 to={item.to}
                 className={active ? 'active' : ''}
                 aria-current={active ? 'page' : undefined}
+                onMouseEnter={() => prefetchRoute(item.to)}
+                onFocus={() => prefetchRoute(item.to)}
+                onTouchStart={() => prefetchRoute(item.to)}
               >
                 <CenterFab><item.icon /></CenterFab>
-                {item.label}
+                {t(item.labelKey)}
               </CenterItem>
             );
           }
@@ -183,9 +189,12 @@ export default function PatientBottomNav() {
               end={item.to === '/dashboard'}
               className={active ? 'active' : ''}
               aria-current={active ? 'page' : undefined}
+              onMouseEnter={() => prefetchRoute(item.to)}
+              onFocus={() => prefetchRoute(item.to)}
+              onTouchStart={() => prefetchRoute(item.to)}
             >
               <item.icon />
-              {item.label}
+              {t(item.labelKey)}
             </NavItem>
           );
         })}
@@ -194,11 +203,11 @@ export default function PatientBottomNav() {
           type="button"
           $open={moreOpen || isMoreRoute}
           onClick={() => setMoreOpen(true)}
-          aria-label="Plus d'options"
+          aria-label={t('nav.more_options')}
           aria-expanded={moreOpen}
         >
           <LayoutGrid />
-          Plus
+          {t('nav.more')}
         </MoreBtn>
       </Nav>
 

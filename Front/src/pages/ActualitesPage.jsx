@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 import {
   Heart, MessageCircle, Newspaper, Trophy, Send, Image as ImageIcon,
   ArrowLeft, Plus, Sparkles, Calendar,
@@ -17,6 +19,7 @@ import { useAuth } from '../context/AuthContext';
 import { getHomeRoute } from '../config/branding';
 import { CAMEROON_COLORS } from '../config/cameroonHealth';
 import { resolveFileUrl } from '../components/ui/PhotoUploadCard';
+import { getActiveLocale } from '../i18n/syncLanguage';
 
 const Page = styled.div`
   max-width: 1080px;
@@ -319,6 +322,8 @@ const PublishTextarea = styled.textarea`
 `;
 
 function CommentSection({ publicationId, open, onToggle }) {
+  const { t } = useTranslation();
+  const locale = getActiveLocale();
   const [text, setText] = useState('');
   const { data: comments, isLoading } = usePublicationComments(open ? publicationId : null);
   const addComment = useAddComment();
@@ -329,9 +334,9 @@ function CommentSection({ publicationId, open, onToggle }) {
     try {
       await addComment.mutateAsync({ id: publicationId, contenu: text });
       setText('');
-      toast.success('Commentaire publié');
+      toast.success(t('actualites.comment_published'));
     } catch {
-      toast.error('Connectez-vous pour commenter');
+      toast.error(t('actualites.comment_login'));
     }
   };
 
@@ -341,27 +346,27 @@ function CommentSection({ publicationId, open, onToggle }) {
     <CommentsPanel>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
         <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'inherit' }}>
-          Commentaires {comments?.length ? `(${comments.length})` : ''}
+          {t('actualites.comments')} {comments?.length ? `(${comments.length})` : ''}
         </span>
         <button type="button" onClick={onToggle} style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', fontSize: '0.78rem' }}>
-          Masquer
+          {t('actualites.hide')}
         </button>
       </div>
 
-      {isLoading && <p style={{ fontSize: '0.82rem', color: '#94A3B8' }}>Chargement…</p>}
+      {isLoading && <p style={{ fontSize: '0.82rem', color: '#94A3B8' }}>{t('actualites.comments_loading')}</p>}
 
       {!isLoading && (!comments || comments.length === 0) && (
-        <p style={{ fontSize: '0.82rem', color: '#94A3B8', margin: '0 0 10px' }}>Aucun commentaire pour l&apos;instant. Soyez le premier !</p>
+        <p style={{ fontSize: '0.82rem', color: '#94A3B8', margin: '0 0 10px' }}>{t('actualites.no_comments')}</p>
       )}
 
       {(comments || []).map((c) => {
         const when = c.created_at || c.createdAt;
         return (
           <CommentItem key={c.id}>
-            <strong>{c.auteur_nom || 'Utilisateur'}</strong>
+            <strong>{c.auteur_nom || t('common.user')}</strong>
             <p>{c.contenu}</p>
             {when && (
-              <time>{new Date(when).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</time>
+              <time>{new Date(when).toLocaleString(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</time>
             )}
           </CommentItem>
         );
@@ -372,7 +377,7 @@ function CommentSection({ publicationId, open, onToggle }) {
           <CommentInput
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Écrire un commentaire…"
+            placeholder={t('actualites.comment_placeholder')}
             onKeyDown={(e) => e.key === 'Enter' && submit()}
           />
           <Button size="sm" onClick={submit} disabled={addComment.isPending}>
@@ -381,7 +386,7 @@ function CommentSection({ publicationId, open, onToggle }) {
         </div>
       ) : (
         <p style={{ fontSize: '0.8rem', color: '#64748B', marginTop: 10 }}>
-          <a href="/login" style={{ color: CAMEROON_COLORS.green, fontWeight: 600 }}>Connectez-vous</a> pour commenter.
+          <a href="/login" style={{ color: CAMEROON_COLORS.green, fontWeight: 600 }}>{t('actualites.login_link')}</a> {t('actualites.login_to_comment')}
         </p>
       )}
     </CommentsPanel>
@@ -389,6 +394,8 @@ function CommentSection({ publicationId, open, onToggle }) {
 }
 
 function PostItem({ post }) {
+  const { t } = useTranslation();
+  const locale = getActiveLocale();
   const toggleLike = useToggleLike();
   const [liked, setLiked] = useState(post.user_a_like);
   const [likes, setLikes] = useState(post.likes_count);
@@ -400,13 +407,13 @@ function PostItem({ post }) {
       setLiked(res.liked);
       setLikes(res.likes_count);
     } catch {
-      toast.error('Connectez-vous pour aimer');
+      toast.error(t('actualites.like_login'));
     }
   };
 
   const imgUrl = resolveFileUrl(post.image_url, post.fichier_image_id);
   const dateStr = post.created_at || post.createdAt
-    ? new Date(post.created_at || post.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+    ? new Date(post.created_at || post.createdAt).toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' })
     : '';
 
   return (
@@ -415,7 +422,7 @@ function PostItem({ post }) {
       <PostBody>
         <MetaRow>
           <TypeBadge $type={post.type}>
-            {post.type === 'realisation' ? <><Trophy size={10} style={{ marginRight: 4 }} />Réalisation</> : 'Actualité'}
+            {post.type === 'realisation' ? <><Trophy size={10} style={{ marginRight: 4 }} />{t('actualites.type_achievement')}</> : t('actualites.type_news')}
           </TypeBadge>
           <AuteurBadge>{post.auteur_nom}</AuteurBadge>
           {dateStr && (
@@ -444,6 +451,7 @@ function PostItem({ post }) {
 }
 
 export default function ActualitesPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { isAuthenticated, role, isMedecin, isPharmacie, isHopital, isClinique } = useAuth();
   const [filtre, setFiltre] = useState('');
@@ -455,22 +463,28 @@ export default function ActualitesPage() {
 
   const canPublish = isMedecin || isPharmacie || isHopital || isClinique;
   const homeRoute = isAuthenticated ? getHomeRoute(role) : '/login';
-  const backLabel = isAuthenticated ? 'Retour à mon espace' : 'Retour à la connexion';
+  const backLabel = isAuthenticated ? t('actualites.back_home') : t('actualites.back_login');
+
+  const filters = [
+    { v: '', l: t('actualites.filter_all'), icon: Sparkles },
+    { v: 'actualite', l: t('actualites.filter_news'), icon: Newspaper },
+    { v: 'realisation', l: t('actualites.filter_achievements'), icon: Trophy },
+  ];
 
   const handlePublish = async (e) => {
     e.preventDefault();
     try {
       await creer.mutateAsync({ payload: form, image });
-      toast.success('Publication envoyée !');
+      toast.success(t('actualites.publish_success'));
       setShowForm(false);
       setForm({ type: 'actualite', titre: '', contenu: '', mis_en_avant: false });
       setImage(null);
     } catch {
-      toast.error('Erreur publication');
+      toast.error(t('actualites.publish_error'));
     }
   };
 
-  if (isLoading) return <Spinner text="Chargement du fil actualités…" />;
+  if (isLoading) return <Spinner text={t('actualites.loading')} />;
 
   return (
     <Page>
@@ -481,22 +495,19 @@ export default function ActualitesPage() {
         </BackBtn>
         {canPublish && (
           <Button onClick={() => setShowForm(!showForm)} icon={showForm ? undefined : Plus}>
-            {showForm ? 'Annuler' : 'Publier'}
+            {showForm ? t('common.cancel') : t('actualites.publish')}
           </Button>
         )}
       </TopBar>
 
       <Hero>
-        <p className="kicker">Fil santé · Cameroun</p>
-        <h1><Newspaper size={28} strokeWidth={1.5} /> Actualités & Réalisations</h1>
-        <p>
-          Initiatives des médecins, hôpitaux, cliniques et pharmacies.
-          Partagez vos réussites et informez la communauté.
-        </p>
+        <p className="kicker">{t('actualites.kicker')}</p>
+        <h1><Newspaper size={28} strokeWidth={1.5} /> {t('actualites.title')}</h1>
+        <p>{t('actualites.subtitle')}</p>
       </Hero>
 
       <FilterRow>
-        {[{ v: '', l: 'Tout', icon: Sparkles }, { v: 'actualite', l: 'Actualités', icon: Newspaper }, { v: 'realisation', l: 'Réalisations', icon: Trophy }].map((f) => (
+        {filters.map((f) => (
           <FilterChip key={f.v} type="button" $active={filtre === f.v} onClick={() => setFiltre(f.v)}>
             <f.icon size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} />
             {f.l}
@@ -506,24 +517,24 @@ export default function ActualitesPage() {
 
       {showForm && (
         <PublishCard>
-          <h3>Nouvelle publication</h3>
+          <h3>{t('actualites.new_publication')}</h3>
           <form onSubmit={handlePublish}>
             <div style={{ display: 'flex', gap: 16, marginBottom: 14 }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: '0.88rem' }}>
-                <input type="radio" checked={form.type === 'actualite'} onChange={() => setForm({ ...form, type: 'actualite' })} /> Actualité
+                <input type="radio" checked={form.type === 'actualite'} onChange={() => setForm({ ...form, type: 'actualite' })} /> {t('actualites.type_news')}
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: '0.88rem' }}>
-                <input type="radio" checked={form.type === 'realisation'} onChange={() => setForm({ ...form, type: 'realisation' })} /> Réalisation
+                <input type="radio" checked={form.type === 'realisation'} onChange={() => setForm({ ...form, type: 'realisation' })} /> {t('actualites.type_achievement')}
               </label>
             </div>
-            <Input label="Titre" value={form.titre} onChange={(e) => setForm({ ...form, titre: e.target.value })} required />
-            <PublishTextarea value={form.contenu} onChange={(e) => setForm({ ...form, contenu: e.target.value })} rows={4} placeholder="Partagez votre actualité ou réalisation…" required />
+            <Input label={t('actualites.form_title')} value={form.titre} onChange={(e) => setForm({ ...form, titre: e.target.value })} required />
+            <PublishTextarea value={form.contenu} onChange={(e) => setForm({ ...form, contenu: e.target.value })} rows={4} placeholder={t('actualites.form_content_placeholder')} required />
             <label style={{ display: 'block', marginTop: 12, fontSize: '0.85rem', color: '#64748B' }}>
-              <ImageIcon size={14} style={{ verticalAlign: 'middle' }} /> Photo (optionnel)
+              <ImageIcon size={14} style={{ verticalAlign: 'middle' }} /> {t('actualites.photo_optional')}
               <input type="file" accept="image/*" onChange={(e) => setImage(e.target.files[0])} style={{ display: 'block', marginTop: 6 }} />
             </label>
             <Button type="submit" style={{ marginTop: 16 }} disabled={creer.isPending}>
-              {creer.isPending ? 'Publication…' : 'Publier sur le fil'}
+              {creer.isPending ? t('actualites.publishing') : t('actualites.publish_feed')}
             </Button>
           </form>
         </PublishCard>
@@ -536,8 +547,8 @@ export default function ActualitesPage() {
       ) : (
         <EmptyState
           icon={Newspaper}
-          title="Aucune publication"
-          description="Le fil est encore vide. Revenez bientôt ou publiez la première actualité."
+          title={t('actualites.empty_title')}
+          description={t('actualites.empty_desc')}
         />
       )}
     </Page>

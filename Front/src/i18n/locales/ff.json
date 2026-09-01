@@ -1,0 +1,117 @@
+{
+  "common": {
+    "loading": "Nana…",
+    "save": "Danndu",
+    "cancel": "Haaltu",
+    "delete": "Momtu",
+    "add": "Ɓeydu",
+    "back": "Rutto",
+    "next": "Ɓennooɗo",
+    "language": "Ɗemngal"
+  },
+  "nav": {
+    "dashboard": "Tablo",
+    "carnet": "Deftere kugal",
+    "famille": "Galle maa",
+    "qr": "QR kugal",
+    "urgence": "Ko waawi",
+    "actualites": "Kabaaruuji",
+    "profil": "Profil"
+  },
+  "dashboard": {
+    "hello": "Jam, {{name}}",
+    "subtitle": "Ko ngal ngoni hannde.",
+    "emergency_title": "🚨 Aɗa sokii wallude ?",
+    "emergency_sub": "Modu ko waawi — wallude & jokkondiral"
+  },
+  "famille": {
+    "title": "Galle maa",
+    "subtitle": "Toppito profiluji ɓeɓɓe maa",
+    "add_member": "Ɓeydu goɗɗo",
+    "switch_profile": "Profil ngol",
+    "myself": "Mi kanko",
+    "relation": "Jokkondiral",
+    "relations": {
+      "enfant": "Ɗiɗo",
+      "parent": "Baaba/Maama",
+      "conjoint": "Gorko/Dewo",
+      "autre": "Goɗɗo"
+    },
+    "empty": "Alaa profil.",
+    "saved": "Danndiiɗo",
+    "deleted": "Momtiiɗo",
+    "max_reached": "Max 8 profil"
+  },
+  "qr": {
+    "title": "QR kugal",
+    "subtitle": "Scannde ko waawi",
+    "regenerate": "Sos kala",
+    "regenerated": "QR keso",
+    "scan_hint": "Hollu ko waawi",
+    "allergies": "Allergies",
+    "blood": "Groupe sanguin",
+    "contact": "Jokkondiral ko waawi",
+    "public_title": "Fiche ko waawi",
+    "not_found": "QR moƴƴaani"
+  },
+  "alertes": {
+    "title": "Alerte kugal",
+    "none": "Alaa alerte",
+    "see_all": "Yiy fof",
+    "priorite": {
+      "critique": "Ko waawi",
+      "attention": "Hoola",
+      "info": "Kabaaru"
+    }
+  },
+  "carnet": {
+    "title": "Deftere kugal",
+    "subtitle": "Deftere maa digitale",
+    "save": "Danndu deftere",
+    "famille_note": "Deftere {{name}}"
+  },
+  "urgence": {
+    "title": "Modu ko waawi",
+    "help": "AɗA SOKII WALLUDE ?",
+    "call": "Noddu wallude"
+  },
+  "pwa": {
+    "install": "Install app",
+    "offline": "Offline — cache"
+  },
+  "push": {
+    "title": "Notification",
+    "subtitle": "Alerte ngam nokkuure maa",
+    "enable": "Uddit",
+    "disable": "Uddu",
+    "enabled": "Uddiiɗo",
+    "denied": "Haaltiiɗo"
+  },
+  "offline": {
+    "pending": "{{count}} e nana",
+    "sync": "Sync"
+  },
+  "qrScan": {
+    "title": "Scan QR",
+    "subtitle": "Tar deftere ko waawi",
+    "start": "Camera",
+    "stop": "Stop",
+    "manual": "Manual",
+    "retry": "Retry",
+    "another": "Goɗɗo"
+  },
+  "nfc": {
+    "hint": "Sokki telefon maa e NFC ngam bind QR maa",
+    "write": "Bind e NFC",
+    "written": "QR danndiiɗo e NFC",
+    "denied": "NFC haaltiiɗo",
+    "error": "Ngal bind NFC",
+    "unsupported": "NFC alaa e ngal kaal"
+  },
+  "profile": {
+    "region": "Nokkuure",
+    "ville": "Galle",
+    "localisation": "Nokkuure",
+    "localisation_hint": "Ngam heɓde alerte kugal ngam nokkuure maa"
+  }
+}

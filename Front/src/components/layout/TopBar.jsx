@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { getTodayFormatted, getGreeting } from '../../utils/helpers';
 import { getDisplayName } from '../../config/branding';
@@ -208,6 +209,7 @@ const SEARCH_ROUTES = {
 };
 
 export default function TopBar({ onMenuToggle, patientMobile = false }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { user, role } = useAuth();
@@ -215,20 +217,20 @@ export default function TopBar({ onMenuToggle, patientMobile = false }) {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const greeting = getGreeting();
   const today = getTodayFormatted();
-  const name = getDisplayName(user, role)?.split(' ').slice(-1)[0] || 'Utilisateur';
+  const name = getDisplayName(user, role)?.split(' ').slice(-1)[0] || t('common.user');
 
   const mobileTitle = patientMobile
-    ? getPatientMobileTitle(location.pathname, user, today)
+    ? getPatientMobileTitle(location.pathname, user, today, t)
     : null;
 
   const searchPlaceholder = {
-    patient: 'Rechercher un médicament…',
-    medecin: 'Rechercher un patient…',
-    pharmacie: 'Rechercher un produit…',
-    hopital: 'Rechercher un produit…',
-    clinique: 'Rechercher un produit…',
-    admin: 'Rechercher…',
-  }[role] || 'Rechercher…';
+    patient: t('nav.search.medicine'),
+    medecin: t('nav.search.patient'),
+    pharmacie: t('nav.search.product'),
+    hopital: t('nav.search.product'),
+    clinique: t('nav.search.product'),
+    admin: t('nav.search.generic'),
+  }[role] || t('nav.search.generic');
 
   const runSearch = (q) => {
     const trimmed = q.trim();
@@ -257,7 +259,7 @@ export default function TopBar({ onMenuToggle, patientMobile = false }) {
       <TopRow>
         <LeftSection>
           {!patientMobile && (
-            <MenuButton onClick={onMenuToggle} aria-label="Menu"><Menu /></MenuButton>
+            <MenuButton onClick={onMenuToggle} aria-label={t('common.menu')}><Menu /></MenuButton>
           )}
           {patientMobile ? (
             <MobileTitleBlock>
@@ -277,7 +279,7 @@ export default function TopBar({ onMenuToggle, patientMobile = false }) {
               <Search size={16} />
               <input
                 placeholder={searchPlaceholder}
-                aria-label="Rechercher"
+                aria-label={t('common.search')}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
@@ -287,7 +289,7 @@ export default function TopBar({ onMenuToggle, patientMobile = false }) {
             <MobileSearchBtn
               type="button"
               onClick={() => setMobileSearchOpen((o) => !o)}
-              aria-label={mobileSearchOpen ? 'Fermer la recherche' : 'Rechercher'}
+              aria-label={mobileSearchOpen ? t('common.close_search') : t('common.search')}
               aria-expanded={mobileSearchOpen}
             >
               {mobileSearchOpen ? <X /> : <Search />}

@@ -37,6 +37,20 @@ export function useUpdateCarnetMedical() {
   });
 }
 
+export function useAjouterObservationCarnet() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ text, source = 'patient' }) => {
+      const { data } = await client.post(ENDPOINTS.carnetMedical.observations, { text, source });
+      return data.data;
+    },
+    onSuccess: (data) => {
+      qc.setQueryData(['carnet-medical', 'me'], data);
+      qc.invalidateQueries({ queryKey: ['carnet-medical'] });
+    },
+  });
+}
+
 export function useOrdonnanceDocument(id) {
   return useQuery({
     queryKey: ['ordonnance-doc', id],

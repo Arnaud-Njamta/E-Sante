@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import Card from '../components/ui/Card';
+import { useTranslation } from 'react-i18next';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import Spinner from '../components/ui/Spinner';
@@ -11,23 +11,22 @@ import { formatHeurePrise, isPrisePending, isPriseDone } from '../utils/priseHel
 import toast from 'react-hot-toast';
 import {
   Check, SkipForward, Sunrise, Sun, Sunset, Moon,
-  Clock, Pill, Timer, CheckCircle2,
+  Pill, Timer, CheckCircle2,
 } from 'lucide-react';
 
-/* ─── Helpers ─── */
-function getMoment(heure) {
-  if (!heure) return { label: 'Autre', Icon: Sun, color: '#94A3B8' };
+function getMoment(heure, t) {
+  if (!heure) return { label: t('moments.other'), Icon: Sun, color: '#94A3B8' };
   const h = parseInt(heure.split(':')[0], 10);
-  if (h < 12) return { label: 'Matin', Icon: Sunrise, color: '#F59E0B' };
-  if (h < 17) return { label: 'Midi', Icon: Sun, color: '#F59E0B' };
-  if (h < 21) return { label: 'Soir', Icon: Sunset, color: '#EF4444' };
-  return { label: 'Coucher', Icon: Moon, color: '#6366F1' };
+  if (h < 12) return { label: t('moments.morning'), Icon: Sunrise, color: '#F59E0B' };
+  if (h < 17) return { label: t('moments.noon'), Icon: Sun, color: '#F59E0B' };
+  if (h < 21) return { label: t('moments.evening'), Icon: Sunset, color: '#EF4444' };
+  return { label: t('moments.bedtime'), Icon: Moon, color: '#6366F1' };
 }
 
-function groupPrisesByMoment(prises) {
+function groupPrisesByMoment(prises, t) {
   const groups = {};
   for (const prise of prises) {
-    const moment = getMoment(prise.heure_prevue);
+    const moment = getMoment(prise.heure_prevue, t);
     const key = moment.label;
     if (!groups[key]) {
       groups[key] = { moment: key, Icon: moment.Icon, heure: prise.heure_prevue, color: moment.color, prises: [] };
@@ -37,7 +36,6 @@ function groupPrisesByMoment(prises) {
   return Object.values(groups);
 }
 
-/* ─── Styles ─── */
 const PageHeader = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing[6]};
   animation: fadeIn 0.4s ease both;
@@ -106,7 +104,7 @@ const TimelineDot = styled.div`
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: ${({ $done, $color, theme }) =>
+  background: ${({ $done, theme }) =>
     $done
       ? `linear-gradient(135deg, ${theme.colors.success[400]}, ${theme.colors.success[600]})`
       : theme.colors.neutral[100]};
@@ -115,7 +113,6 @@ const TimelineDot = styled.div`
   justify-content: center;
   flex-shrink: 0;
   color: ${({ $done, theme }) => ($done ? 'white' : theme.colors.textMuted)};
-
   svg { width: 20px; height: 20px; }
 `;
 
@@ -142,11 +139,9 @@ const PriseCard = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.md};
   transition: all ${({ theme }) => theme.transitions.fast};
-
   ${({ $done, theme }) =>
     $done &&
     `background: ${theme.colors.success[50]}; border-color: ${theme.colors.success[200]};`}
-
   &:hover { box-shadow: ${({ theme }) => theme.shadows.sm}; }
 `;
 
@@ -157,7 +152,6 @@ const PriseMedName = styled.div`
   font-size: ${({ theme }) => theme.typography.sizes.sm};
   font-weight: ${({ theme }) => theme.typography.weights.medium};
   color: ${({ theme }) => theme.colors.text};
-
   svg { width: 16px; height: 16px; color: ${({ theme }) => theme.colors.primary[500]}; }
 `;
 
@@ -168,12 +162,13 @@ const PriseActions = styled.div`
 `;
 
 export default function PrisesPage() {
+  const { t } = useTranslation();
   const { data: prisesData, isLoading, error } = usePrisesToday();
   const confirmerMutation = useConfirmerPrise();
   const skipMutation = useSkipPrise();
 
   const allPrises = Array.isArray(prisesData) ? prisesData : [];
-  const groups = groupPrisesByMoment(allPrises);
+  const groups = groupPrisesByMoment(allPrises, t);
 
   const totalPrises = allPrises.length;
   const takenPrises = allPrises.filter((p) => isPriseDone(p.statut)).length;
@@ -181,20 +176,28 @@ export default function PrisesPage() {
 
   const handleConfirm = (id) => {
     confirmerMutation.mutate({ id, statut: 'pris' }, {
-      onSuccess: () => toast.success('Prise confirmée avec succès'),
-      onError: (err) => toast.error(err.response?.data?.message || 'Erreur lors de la confirmation'),
+      onSuccess: () => toast.success(t('prises.confirmed_toast')),
+      onError: (err) => toast.error(err.response?.data?.message || t('prises.confirm_error')),
     });
   };
 
   const handleSkip = (id) => {
     skipMutation.mutate(id, {
-      onSuccess: () => toast('Prise reportée', { icon: '⏭️' }),
-      onError: () => toast.error('Erreur lors du report'),
+      onSuccess: () => toast(t('prises.skipped_toast'), { icon: '⏭️' }),
+      onError: () => toast.error(t('prises.skip_error')),
     });
   };
 
-  if (isLoading) return <Spinner text="Chargement des prises du jour…" />;
-  if (error) return <ErrorState title="Erreur" message="Impossible de charger les prises." onRetry={() => window.location.reload()} />;
+  if (isLoading) return <Spinner text={t('prises.loading')} />;
+  if (error) {
+    return (
+      <ErrorState
+        title={t('prises.error_title')}
+        message={t('prises.error_load')}
+        onRetry={() => window.location.reload()}
+      />
+    );
+  }
 
   if (allPrises.length === 0) {
     return (
@@ -202,14 +205,14 @@ export default function PrisesPage() {
         <PageHeader>
           <TitleIcon><Timer /></TitleIcon>
           <TitleText>
-            <h1>Prises du jour</h1>
-            <p>Suivez et confirmez vos prises médicamenteuses</p>
+            <h1>{t('prises.title')}</h1>
+            <p>{t('prises.subtitle')}</p>
           </TitleText>
         </PageHeader>
         <EmptyState
           icon={Pill}
-          title="Aucune prise aujourd'hui"
-          description="Vous n'avez aucun traitement actif programmé pour aujourd'hui. Ajoutez un traitement pour commencer."
+          title={t('prises.empty_title')}
+          description={t('prises.empty_desc')}
         />
       </>
     );
@@ -220,13 +223,13 @@ export default function PrisesPage() {
       <PageHeader>
         <TitleIcon><Timer /></TitleIcon>
         <TitleText>
-          <h1>Prises du jour</h1>
-          <p>Suivez et confirmez vos prises médicamenteuses</p>
+          <h1>{t('prises.title')}</h1>
+          <p>{t('prises.subtitle')}</p>
         </TitleText>
       </PageHeader>
 
       <ProgressText>
-        <strong>{takenPrises}</strong> / {totalPrises} prises confirmées
+        {t('prises.progress', { taken: takenPrises, total: totalPrises })}
       </ProgressText>
       <ProgressBarContainer>
         <ProgressBarFill $percent={percent} />
@@ -246,7 +249,7 @@ export default function PrisesPage() {
                 <h3>{group.moment}</h3>
                 <span>{formatHeurePrise(group.heure)}</span>
               </GroupTitle>
-              {allDone && <Badge color="success" dot>Complété</Badge>}
+              {allDone && <Badge color="success" dot>{t('prises.completed')}</Badge>}
             </GroupHeader>
 
             <PriseCards>
@@ -264,23 +267,23 @@ export default function PrisesPage() {
                     </PriseMedName>
                     <PriseActions>
                       {isDone ? (
-                        <Badge color="success" dot>Prise</Badge>
+                        <Badge color="success" dot>{t('prises.taken')}</Badge>
                       ) : prise.statut === 'oublie' ? (
-                        <Badge color="danger" dot>Oubliée</Badge>
+                        <Badge color="danger" dot>{t('prises.forgotten')}</Badge>
                       ) : prise.statut === 'reporte' ? (
                         <>
-                          <Badge color="warning" dot>Reportée</Badge>
+                          <Badge color="warning" dot>{t('prises.postponed')}</Badge>
                           <Button size="sm" variant="success" icon={Check} onClick={() => handleConfirm(prise.prise_programmee_id)} disabled={confirmerMutation.isPending}>
-                            Confirmer
+                            {t('prises.confirm')}
                           </Button>
                         </>
                       ) : isPending ? (
                         <>
                           <Button size="sm" variant="success" icon={Check} onClick={() => handleConfirm(prise.prise_programmee_id)} disabled={confirmerMutation.isPending}>
-                            Confirmer
+                            {t('prises.confirm')}
                           </Button>
                           <Button size="sm" variant="ghost" icon={SkipForward} onClick={() => handleSkip(prise.prise_programmee_id)} disabled={skipMutation.isPending}>
-                            Reporter
+                            {t('prises.skip')}
                           </Button>
                         </>
                       ) : null}

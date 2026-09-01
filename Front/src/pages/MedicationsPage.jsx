@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
+import { useTranslation } from 'react-i18next';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
@@ -15,6 +16,7 @@ import {
   Plus, Edit2, Trash2, Heart, Search, Pill, FileText,
   Droplet, Tablet, Flame, ChevronRight,
 } from 'lucide-react';
+import { getActiveLocale } from '../i18n/syncLanguage';
 
 /* ─── Styles ─── */
 const PageHeader = styled.div`
@@ -245,13 +247,10 @@ const getFormeIcon = (forme) => {
   }
 };
 
-const getStatusLabel = (statut) => {
-  switch (statut) {
-    case 'actif': return { label: 'ACTIF', color: '#22C55E' };
-    case 'termine': return { label: 'TERMINÉ', color: '#64748B' };
-    case 'arrete': return { label: 'ARRÊTÉ', color: '#EF4444' };
-    default: return { label: 'ACTIF', color: '#22C55E' };
-  }
+const getStatusLabel = (statut, t) => {
+  const key = statut === 'termine' ? 'termine' : statut === 'arrete' ? 'arrete' : 'actif';
+  const colors = { actif: '#22C55E', termine: '#64748B', arrete: '#EF4444' };
+  return { label: t(`medications.status.${key}`), color: colors[key] || colors.actif };
 };
 
 const getColor = (forme) => {
@@ -267,6 +266,7 @@ const getColor = (forme) => {
 
 /* ─── Component ─── */
 export default function MedicationsPage() {
+  const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [showModal, setShowModal] = useState(false);
@@ -305,21 +305,21 @@ export default function MedicationsPage() {
     if (editingId) {
       updateMutation.mutate({ id: editingId, ...payload }, {
         onSuccess: () => {
-          toast.success(`Traitement "${data.nom}" modifié avec succès`);
+          toast.success(t('medications.updated_toast', { name: data.nom }));
           setShowModal(false);
           setEditingId(null);
           reset();
         },
-        onError: (err) => toast.error(err.response?.data?.message || 'Erreur lors de la modification'),
+        onError: (err) => toast.error(err.response?.data?.message || t('medications.update_error')),
       });
     } else {
       createMutation.mutate(payload, {
         onSuccess: () => {
-          toast.success(`Traitement "${data.nom}" ajouté avec succès`);
+          toast.success(t('medications.added_toast', { name: data.nom }));
           setShowModal(false);
           reset();
         },
-        onError: (err) => toast.error(err.response?.data?.message || 'Erreur lors de l\'ajout'),
+        onError: (err) => toast.error(err.response?.data?.message || t('medications.add_error')),
       });
     }
   };
@@ -337,42 +337,44 @@ export default function MedicationsPage() {
   };
 
   const handleDelete = (med) => {
-    if (!window.confirm(`Supprimer le traitement "${med.nom_medicament}" ?`)) return;
+    if (!window.confirm(t('medications.delete_confirm', { name: med.nom_medicament }))) return;
     deleteMutation.mutate(med.id, {
-      onSuccess: () => toast.success('Traitement supprimé'),
-      onError: () => toast.error('Erreur lors de la suppression'),
+      onSuccess: () => toast.success(t('medications.deleted_toast')),
+      onError: () => toast.error(t('medications.delete_error')),
     });
   };
 
-  if (isLoading) return <Spinner text="Chargement des traitements…" />;
-  if (error) return <ErrorState title="Erreur" message="Impossible de charger les traitements." onRetry={() => window.location.reload()} />;
+  const locale = getActiveLocale();
+
+  if (isLoading) return <Spinner text={t('medications.loading')} />;
+  if (error) return <ErrorState title={t('errors.generic')} message={t('medications.error_load')} onRetry={() => window.location.reload()} />;
 
   return (
     <>
       <PageHeader>
         <div>
-          <h1>Mes traitements</h1>
-          <p>Gérez et suivez vos traitements médicamenteux et compléments.</p>
+          <h1>{t('medications.title')}</h1>
+          <p>{t('medications.subtitle')}</p>
         </div>
         <Button icon={Plus} onClick={() => { setEditingId(null); reset(); setShowModal(true); }}>
-          Ajouter un traitement
+          {t('medications.add')}
         </Button>
       </PageHeader>
 
       <FilterBar>
         <SearchInput>
           <Search />
-          <input placeholder="Rechercher médicaments, dosage…" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input placeholder={t('medications.search_placeholder')} value={search} onChange={(e) => setSearch(e.target.value)} />
         </SearchInput>
         <Divider />
         <FilterTabs>
           {[
-            { key: 'all', label: 'Tous' },
-            { key: 'active', label: 'Actifs' },
-            { key: 'completed', label: 'Terminés' },
-            { key: 'stopped', label: 'Arrêtés' },
-          ].map((t) => (
-            <FilterTab key={t.key} $active={filter === t.key} onClick={() => setFilter(t.key)}>{t.label}</FilterTab>
+            { key: 'all', labelKey: 'medications.filter_all' },
+            { key: 'active', labelKey: 'medications.filter_active' },
+            { key: 'completed', labelKey: 'medications.filter_completed' },
+            { key: 'stopped', labelKey: 'medications.filter_stopped' },
+          ].map((tab) => (
+            <FilterTab key={tab.key} $active={filter === tab.key} onClick={() => setFilter(tab.key)}>{t(tab.labelKey)}</FilterTab>
           ))}
         </FilterTabs>
       </FilterBar>
@@ -380,14 +382,14 @@ export default function MedicationsPage() {
       {filtered.length === 0 && !allTraitements.length ? (
         <EmptyState
           icon={Pill}
-          title="Aucun traitement"
-          description="Ajoutez votre premier traitement pour commencer le suivi."
+          title={t('medications.empty_title')}
+          description={t('medications.empty_desc')}
         />
       ) : (
         <MedGrid>
           {filtered.map((med, i) => {
             const MedIcon = getFormeIcon(med.forme);
-            const status = getStatusLabel(med.statut);
+            const status = getStatusLabel(med.statut, t);
             const color = getColor(med.forme);
             return (
               <MedCard key={med.id} hoverable $delay={`${0.05 * (i + 1)}s`}>
@@ -402,20 +404,20 @@ export default function MedicationsPage() {
 
                 <DetailGrid>
                   <DetailItem>
-                    <div className="label">Dosage</div>
+                    <div className="label">{t('medications.field_dosage')}</div>
                     <div className="value">{med.dosage || '—'}</div>
                   </DetailItem>
                   <DetailItem>
-                    <div className="label">Fréquence</div>
-                    <div className="value">{med.frequence ? `${med.frequence}x/jour` : '—'}</div>
+                    <div className="label">{t('medications.field_frequency')}</div>
+                    <div className="value">{med.frequence ? t('medications.per_day', { n: med.frequence }) : '—'}</div>
                   </DetailItem>
                 </DetailGrid>
 
                 <DurationItem>
-                  <div className="label">Période</div>
+                  <div className="label">{t('medications.field_period')}</div>
                   <div className="value">
-                    {med.date_debut ? new Date(med.date_debut).toLocaleDateString('fr-FR') : '—'}
-                    {med.date_fin ? ` — ${new Date(med.date_fin).toLocaleDateString('fr-FR')}` : ' — En cours'}
+                    {med.date_debut ? new Date(med.date_debut).toLocaleDateString(locale) : '—'}
+                    {med.date_fin ? ` — ${new Date(med.date_fin).toLocaleDateString(locale)}` : ` — ${t('medications.ongoing')}`}
                   </div>
                 </DurationItem>
 
@@ -431,38 +433,38 @@ export default function MedicationsPage() {
 
           <AddCard onClick={() => { setEditingId(null); reset(); setShowModal(true); }}>
             <AddIcon><Plus /></AddIcon>
-            <AddTitle>Ajouter un médicament</AddTitle>
-            <AddDesc>Suivez vos compléments et prescriptions.</AddDesc>
+            <AddTitle>{t('medications.add_card_title')}</AddTitle>
+            <AddDesc>{t('medications.add_card_desc')}</AddDesc>
           </AddCard>
         </MedGrid>
       )}
 
       <Footer>
-        <span>{filtered.length} traitement(s) affiché(s)</span>
+        <span>{t('medications.shown_count', { count: filtered.length })}</span>
       </Footer>
 
       <Modal
         isOpen={showModal}
         onClose={() => { setShowModal(false); setEditingId(null); reset(); }}
-        title={editingId ? 'Modifier un traitement' : 'Ajouter un traitement'}
+        title={editingId ? t('medications.edit_modal') : t('medications.add_modal')}
         footer={
           <>
-            <Button variant="secondary" onClick={() => { setShowModal(false); setEditingId(null); reset(); }}>Annuler</Button>
+            <Button variant="secondary" onClick={() => { setShowModal(false); setEditingId(null); reset(); }}>{t('common.cancel')}</Button>
             <Button onClick={handleSubmit(onSubmit)} disabled={createMutation.isPending || updateMutation.isPending}>
-              {createMutation.isPending || updateMutation.isPending ? 'Enregistrement…' : 'Enregistrer'}
+              {createMutation.isPending || updateMutation.isPending ? t('medications.saving') : t('common.save')}
             </Button>
           </>
         }
       >
         <FormGrid>
-          <Input label="Nom du médicament" placeholder="Ex: Doliprane" error={errors.nom?.message} {...register('nom', { required: 'Le nom est requis' })} />
-          <Input label="Dosage" placeholder="Ex: 500mg" error={errors.dosage?.message} {...register('dosage', { required: 'Le dosage est requis' })} />
-          <Input label="Forme" placeholder="Ex: comprime, gelule, sirop" {...register('forme')} />
-          <Input label="Fréquence (prises/jour)" placeholder="Ex: 3" {...register('frequence')} />
-          <Input label="Horaires de prise" placeholder="Ex: 08:00, 13:00, 20:00" {...register('horaires')} />
-          <Input label="Instructions" placeholder="Ex: À prendre pendant les repas" {...register('instructions')} />
-          <Input label="Date de début" type="date" {...register('dateDebut')} />
-          <Input label="Date de fin (optionnel)" type="date" {...register('dateFin')} />
+          <Input label={t('medications.label_name')} placeholder={t('medications.placeholder_name')} error={errors.nom?.message} {...register('nom', { required: t('medications.name_required') })} />
+          <Input label={t('medications.label_dosage')} placeholder={t('medications.placeholder_dosage')} error={errors.dosage?.message} {...register('dosage', { required: t('medications.dosage_required') })} />
+          <Input label={t('medications.label_form')} placeholder={t('medications.placeholder_form')} {...register('forme')} />
+          <Input label={t('medications.label_frequency')} placeholder={t('medications.placeholder_frequency')} {...register('frequence')} />
+          <Input label={t('medications.label_schedule')} placeholder={t('medications.placeholder_schedule')} {...register('horaires')} />
+          <Input label={t('medications.label_instructions')} placeholder={t('medications.placeholder_instructions')} {...register('instructions')} />
+          <Input label={t('medications.label_start')} type="date" {...register('dateDebut')} />
+          <Input label={t('medications.label_end')} type="date" {...register('dateFin')} />
         </FormGrid>
       </Modal>
     </>

@@ -329,6 +329,127 @@ const runPendingMigrations = async () => {
   await addColumnIfMissing('patients', 'vaccinations', '`vaccinations` JSON NULL');
   await addColumnIfMissing('patients', 'notes_medicales', '`notes_medicales` TEXT NULL');
   await addColumnIfMissing('patients', 'consentement_carnet_at', '`consentement_carnet_at` DATETIME NULL');
+  await addColumnIfMissing('patients', 'observations_carnet', '`observations_carnet` JSON NULL');
+  await addColumnIfMissing('patients', 'region', '`region` VARCHAR(100) NULL');
+  await addColumnIfMissing('patients', 'ville', '`ville` VARCHAR(100) NULL');
+  await addColumnIfMissing('patients', 'langue', "`langue` VARCHAR(5) NOT NULL DEFAULT 'fr'");
+  await addColumnIfMissing('patients', 'qr_token', '`qr_token` VARCHAR(64) NULL');
+
+  const addUniqueIndexIfMissing = async (table, indexName, columnsSql) => {
+    try {
+      const [rows] = await sequelize.query(
+        `SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?`,
+        { replacements: [table, indexName] },
+      );
+      if (rows.length === 0) {
+        await sequelize.query(`CREATE UNIQUE INDEX \`${indexName}\` ON \`${table}\` (${columnsSql})`);
+        console.log(`Migration: index unique ${indexName} sur ${table}.`);
+      }
+    } catch (err) {
+      console.warn(`Migration index unique ${indexName} (${table}) ignorée:`, err.message);
+    }
+  };
+  await addUniqueIndexIfMissing('patients', 'idx_patients_qr_token', '`qr_token`');
+
+  const [familleTables] = await sequelize.query(
+    "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'profils_famille'",
+  );
+  if (familleTables.length === 0) {
+    await sequelize.query(`
+      CREATE TABLE \`profils_famille\` (
+        \`id\` CHAR(36) NOT NULL,
+        \`patient_id\` CHAR(36) NOT NULL,
+        \`nom\` VARCHAR(100) NOT NULL,
+        \`prenom\` VARCHAR(100) NOT NULL,
+        \`date_naissance\` DATE NULL,
+        \`relation\` ENUM('enfant','parent','conjoint','autre') NOT NULL DEFAULT 'autre',
+        \`groupe_sanguin\` VARCHAR(5) NULL,
+        \`allergies\` JSON NULL,
+        \`pathologies\` JSON NULL,
+        \`traitements_habituelles\` JSON NULL,
+        \`vaccinations\` JSON NULL,
+        \`contact_urgence\` VARCHAR(255) NULL,
+        \`notes_medicales\` TEXT NULL,
+        \`observations_carnet\` JSON NULL,
+        \`qr_token\` VARCHAR(64) NULL,
+        \`actif\` TINYINT(1) NOT NULL DEFAULT 1,
+        \`created_at\` DATETIME NOT NULL,
+        \`updated_at\` DATETIME NOT NULL,
+        PRIMARY KEY (\`id\`),
+        UNIQUE KEY \`qr_token\` (\`qr_token\`),
+        INDEX \`pf_patient\` (\`patient_id\`, \`actif\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+    console.log('Migration: table profils_famille créée.');
+  }
+
+  await addColumnIfMissing('publications', 'region', '`region` VARCHAR(100) NULL');
+  await addColumnIfMissing('publications', 'priorite', "`priorite` ENUM('info','attention','critique') NULL");
+  await addColumnIfMissing('publications', 'expire_at', '`expire_at` DATETIME NULL');
+
+  try {
+    await sequelize.query(
+      "ALTER TABLE `publications` MODIFY COLUMN `type` "
+      + "ENUM('actualite','realisation','alerte_sanitaire') NOT NULL DEFAULT 'actualite'",
+    );
+    console.log('Migration: publications.type inclut alerte_sanitaire.');
+  } catch (err) {
+    console.warn('Migration publications.type alerte_sanitaire:', err.message);
+  }
+
+  const [pushTables] = await sequelize.query(
+    "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'push_subscriptions'",
+  );
+  if (pushTables.length === 0) {
+    await sequelize.query(`
+      CREATE TABLE \`push_subscriptions\` (
+        \`id\` CHAR(36) NOT NULL,
+        \`user_role\` VARCHAR(20) NOT NULL,
+        \`user_id\` CHAR(36) NOT NULL,
+        \`endpoint\` TEXT NOT NULL,
+        \`p256dh\` VARCHAR(255) NOT NULL,
+        \`auth\` VARCHAR(255) NOT NULL,
+        \`user_agent\` VARCHAR(500) NULL,
+        \`created_at\` DATETIME NOT NULL,
+        \`updated_at\` DATETIME NOT NULL,
+        PRIMARY KEY (\`id\`),
+        UNIQUE KEY \`endpoint_unique\` (\`endpoint\`(255)),
+        INDEX \`push_user\` (\`user_role\`, \`user_id\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+    console.log('Migration: table push_subscriptions créée.');
+  }
+
+  const [demandeTables] = await sequelize.query(
+    "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'demandes_prise_en_charge'",
+  );
+  if (demandeTables.length === 0) {
+    await sequelize.query(`
+      CREATE TABLE \`demandes_prise_en_charge\` (
+        \`id\` CHAR(36) NOT NULL,
+        \`numero_reference\` VARCHAR(50) NOT NULL,
+        \`patient_id\` CHAR(36) NOT NULL,
+        \`etablissement_id\` CHAR(36) NOT NULL,
+        \`service_id\` CHAR(36) NULL,
+        \`type_urgence\` VARCHAR(50) NULL,
+        \`message_patient\` TEXT NULL,
+        \`date_souhaitee\` DATE NULL,
+        \`priorite\` ENUM('normal','urgent') NOT NULL DEFAULT 'normal',
+        \`statut\` ENUM('en_attente','confirmee','refusee','annulee') NOT NULL DEFAULT 'en_attente',
+        \`reponse_etablissement\` TEXT NULL,
+        \`date_proposee\` DATE NULL,
+        \`heure_proposee\` VARCHAR(5) NULL,
+        \`created_at\` DATETIME NOT NULL,
+        \`updated_at\` DATETIME NOT NULL,
+        PRIMARY KEY (\`id\`),
+        UNIQUE KEY \`numero_reference\` (\`numero_reference\`),
+        INDEX \`dpc_patient\` (\`patient_id\`),
+        INDEX \`dpc_etab\` (\`etablissement_id\`, \`statut\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+    console.log('Migration: table demandes_prise_en_charge créée.');
+  }
 
   await addColumnIfMissing('reservations_dispensaire', 'ordonnance_papier_id', '`ordonnance_papier_id` CHAR(36) NULL AFTER `ordonnance_electronique_id`');
   await addColumnIfMissing('ordonnances_electroniques', 'fichier_signature_id', '`fichier_signature_id` CHAR(36) NULL');

@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
+import { useTranslation } from 'react-i18next';
 import { BookHeart, CheckCircle } from 'lucide-react';
 
 const fadeIn = keyframes`
@@ -108,6 +109,8 @@ const Progress = styled.div`
 `;
 
 export default function CarnetSuccessAnimation({ onDone }) {
+  const { t } = useTranslation();
+
   useEffect(() => {
     const timer = setTimeout(() => onDone?.(), 2800);
     return () => clearTimeout(timer);
@@ -117,12 +120,9 @@ export default function CarnetSuccessAnimation({ onDone }) {
     <Overlay aria-live="polite" role="status">
       <Scene>
         <BookWrap><BookHeart /></BookWrap>
-        <CheckWrap><CheckCircle /> Carnet activé</CheckWrap>
-        <Title>Votre carnet est prêt</Title>
-        <Subtitle>
-          Vos informations de santé sont enregistrées en toute sécurité.
-          Vous pourrez les modifier à tout moment.
-        </Subtitle>
+        <CheckWrap><CheckCircle /> {t('carnet.success_activated')}</CheckWrap>
+        <Title>{t('carnet.success_title')}</Title>
+        <Subtitle>{t('carnet.success_subtitle')}</Subtitle>
         <Progress />
       </Scene>
     </Overlay>

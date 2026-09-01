@@ -48,7 +48,7 @@ const updateProfile = async (patientId, data) => {
     throw error;
   }
 
-  const allowed = ['nom', 'prenom', 'date_naissance', 'telephone', 'contact_urgence', 'allergies', 'pathologies', 'preferences_notification'];
+  const allowed = ['nom', 'prenom', 'date_naissance', 'telephone', 'contact_urgence', 'allergies', 'pathologies', 'preferences_notification', 'region', 'ville', 'langue'];
   const updateData = {};
   allowed.forEach((key) => {
     if (data[key] !== undefined) updateData[key] = data[key];

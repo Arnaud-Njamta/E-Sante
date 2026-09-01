@@ -1,6 +1,7 @@
 const { Op, Sequelize } = require('sequelize');
 const {
   ReservationDispensaire, Conversation, Message, RendezVous, Etablissement, Patient, Medecin,
+  Publication,
 } = require('../models');
 const { STATUT_RESERVATION, STATUT_RDV } = require('../utils/constants');
 const { MemoryCache } = require('../utils/memory-cache');
@@ -108,6 +109,36 @@ const getPatientNotifications = async (patientId) => {
         createdAt: c.dernier_message_at || c.updatedAt,
       });
     }
+  });
+
+  const patient = await Patient.findByPk(patientId, { attributes: ['region'] });
+  const alerteConditions = [
+    { [Op.or]: [{ expire_at: null }, { expire_at: { [Op.gt]: new Date() } }] },
+  ];
+  if (patient?.region) {
+    alerteConditions.push({
+      [Op.or]: [{ region: null }, { region: '' }, { region: patient.region }],
+    });
+  }
+  const alertes = await Publication.findAll({
+    where: {
+      type: 'alerte_sanitaire',
+      actif: true,
+      [Op.and]: alerteConditions,
+    },
+    order: [['createdAt', 'DESC']],
+    limit: 3,
+  });
+  alertes.forEach((a) => {
+    items.push({
+      id: `alerte-${a.id}`,
+      type: 'alerte_sanitaire',
+      title: `🚨 ${a.titre}`,
+      message: (a.contenu || '').slice(0, 120),
+      link: '/actualites?type=alerte_sanitaire',
+      createdAt: a.createdAt,
+      priorite: a.priorite,
+    });
   });
 
   return items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 15);

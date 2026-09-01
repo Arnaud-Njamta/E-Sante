@@ -40,6 +40,10 @@ router.use('/publications', publicationRoutes);
 router.use('/ai', require('./ai.routes'));
 router.use('/commissions', require('./commission.routes'));
 router.use('/paiements', require('./paiement.routes'));
+router.use('/urgence', require('./urgence.routes'));
+router.use('/demandes-prise-en-charge', require('./demande-prise-en-charge.routes'));
+router.use('/famille', require('./famille.routes'));
+router.use('/qr-medical', require('./qr-medical.routes'));
 router.use('/admin', require('./admin.routes'));
 
 module.exports = router;

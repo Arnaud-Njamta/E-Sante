@@ -4,6 +4,7 @@ import {
   Calendar, X, Video, MapPin, Check, RefreshCw, CreditCard, CheckCircle, Download, Star, MessageSquare,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Spinner from '../components/ui/Spinner';
@@ -17,17 +18,6 @@ import { getRecuUrl } from '../hooks/usePaiement';
 import { joinTeleconsultation } from '../utils/teleconsultation';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
-
-const TYPE_LABELS = { presentiel: 'Présentiel', teleconsultation: 'Téléconsultation' };
-
-const STATUT_LABELS = {
-  en_attente: 'En attente de validation',
-  confirme: 'Confirmé',
-  contre_proposition: 'Contre-proposition reçue',
-  annule: 'Annulé',
-  termine: 'Terminé',
-  absent: 'Absent',
-};
 
 const STATUT_COLORS = {
   en_attente: { bg: '#FEF3C7', color: '#B45309' },
@@ -158,6 +148,7 @@ const EmptyCard = styled(Card)`
 `;
 
 export default function PatientRendezVousPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: rdvs, isLoading, error, refetch } = useMesRendezVous();
@@ -171,24 +162,38 @@ export default function PatientRendezVousPage() {
   const [note, setNote] = useState(5);
   const [commentaire, setCommentaire] = useState('');
 
+  const TYPE_LABELS = {
+    presentiel: t('rdv.type_presentiel'),
+    teleconsultation: t('rdv.type_tele'),
+  };
+
+  const STATUT_LABELS = {
+    en_attente: t('rdv.status_en_attente'),
+    confirme: t('rdv.status_confirme'),
+    contre_proposition: t('rdv.status_contre'),
+    annule: t('rdv.status_annule'),
+    termine: t('rdv.status_termine'),
+    absent: t('rdv.status_absent'),
+  };
+
   const handleConfirmAnnuler = async () => {
     if (!cancelTarget) return;
     try {
       const res = await annuler.mutateAsync(cancelTarget);
-      toast.success(res.message || 'Rendez-vous annulé');
+      toast.success(res.message || t('rdv.cancelled'));
       setCancelTarget(null);
       refetch();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Erreur');
+      toast.error(err.response?.data?.message || t('rdv.error'));
     }
   };
 
   const handleReponse = async (id, accepter) => {
     try {
       await repondre.mutateAsync({ id, accepter });
-      toast.success(accepter ? 'Nouveau créneau confirmé !' : 'Contre-proposition refusée');
+      toast.success(accepter ? t('rdv.slot_confirmed') : t('rdv.slot_refused'));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Erreur');
+      toast.error(err.response?.data?.message || t('rdv.error'));
     }
   };
 
@@ -201,31 +206,31 @@ export default function PatientRendezVousPage() {
         note,
         commentaire,
       });
-      toast.success('Merci pour votre avis !');
+      toast.success(t('rdv.thanks_review'));
       setRateRdv(null);
       setCommentaire('');
       setNote(5);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Impossible de publier l\'avis');
+      toast.error(err.response?.data?.message || t('rdv.review_error'));
     }
   };
 
   if (isLoading) return <Spinner />;
-  if (error) return <ErrorState message="Erreur" onRetry={refetch} />;
+  if (error) return <ErrorState message={t('rdv.error')} onRetry={refetch} />;
 
   return (
     <div>
       <PatientPageHeader
-        title="Mes rendez-vous"
-        subtitle="Consultations présentielles et téléconsultations"
+        title={t('rdv.title')}
+        subtitle={t('rdv.subtitle')}
       />
 
       {!rdvs?.length ? (
         <EmptyCard>
           <Calendar />
-          <p>Aucun rendez-vous. Trouvez un médecin dans l&apos;annuaire santé.</p>
+          <p>{t('rdv.empty')}</p>
           <Button size="sm" style={{ marginTop: 16 }} onClick={() => navigate('/sante?tab=medecins')}>
-            Trouver un médecin
+            {t('rdv.find_doctor')}
           </Button>
         </EmptyCard>
       ) : (
@@ -238,7 +243,7 @@ export default function PatientRendezVousPage() {
                   <RdvInfo>
                     <strong>Dr. {rdv.medecin?.prenom} {rdv.medecin?.nom}</strong>
                     <RdvMeta>
-                      {rdv.date_rdv} à {rdv.heure_debut} —{' '}
+                      {t('rdv.at_time', { date: rdv.date_rdv, time: rdv.heure_debut })} —{' '}
                       {rdv.type_consultation === 'teleconsultation'
                         ? <><Video size={14} /> {TYPE_LABELS.teleconsultation}</>
                         : <><MapPin size={14} /> {TYPE_LABELS.presentiel}</>}
@@ -249,9 +254,9 @@ export default function PatientRendezVousPage() {
                     {rdv.transaction && (
                       <PaymentNote $paid={rdv.transaction.statut_paiement === 'paye'}>
                         {rdv.transaction.statut_paiement === 'paye' ? (
-                          <><CheckCircle size={12} style={{ verticalAlign: 'middle' }} /> Payé — {Number(rdv.transaction.montant_brut_fcfa).toLocaleString()} FCFA</>
+                          <><CheckCircle size={12} style={{ verticalAlign: 'middle' }} /> {t('rdv.paid', { amount: Number(rdv.transaction.montant_brut_fcfa).toLocaleString() })}</>
                         ) : rdv.transaction.montant_brut_fcfa > 0 ? (
-                          <>Paiement en attente — {Number(rdv.transaction.montant_brut_fcfa).toLocaleString()} FCFA</>
+                          <>{t('rdv.payment_pending', { amount: Number(rdv.transaction.montant_brut_fcfa).toLocaleString() })}</>
                         ) : null}
                       </PaymentNote>
                     )}
@@ -268,15 +273,15 @@ export default function PatientRendezVousPage() {
                         referenceType: 'rendez_vous',
                         referenceId: rdv.id,
                         transaction: rdv.transaction,
-                        titre: `Consultation Dr. ${rdv.medecin?.prenom} ${rdv.medecin?.nom}`,
+                        titre: t('rdv.consultation_title', { name: `${rdv.medecin?.prenom} ${rdv.medecin?.nom}` }),
                       })}
                       >
-                        <CreditCard size={14} /> Payer
+                        <CreditCard size={14} /> {t('rdv.pay')}
                       </Button>
                     )}
                     {rdv.transaction?.statut_paiement === 'paye' && rdv.transaction?.id && (
                       <Button size="sm" variant="secondary" onClick={() => window.open(getRecuUrl(rdv.transaction.id), '_blank')}>
-                        <Download size={14} /> Reçu
+                        <Download size={14} /> {t('rdv.receipt')}
                       </Button>
                     )}
                     {rdv.statut === 'confirme' && rdv.type_consultation === 'teleconsultation' && rdv.lien_video && (
@@ -287,17 +292,17 @@ export default function PatientRendezVousPage() {
                         route: `/rendez-vous/${rdv.id}/video`,
                       })}
                       >
-                        <Video size={14} /> Rejoindre
+                        <Video size={14} /> {t('rdv.join')}
                       </Button>
                     )}
                     {['confirme', 'termine'].includes(rdv.statut) && rdv.medecin?.id && (
                       <Button size="sm" variant="secondary" onClick={() => setRateRdv(rdv)}>
-                        <Star size={14} /> Noter
+                        <Star size={14} /> {t('rdv.rate')}
                       </Button>
                     )}
                     {['en_attente', 'confirme', 'contre_proposition'].includes(rdv.statut) && (
                       <Button variant="secondary" onClick={() => setCancelTarget(rdv.id)}>
-                        <X size={14} /> Annuler
+                        <X size={14} /> {t('rdv.cancel')}
                       </Button>
                     )}
                   </Actions>
@@ -305,18 +310,18 @@ export default function PatientRendezVousPage() {
 
                 {rdv.statut === 'contre_proposition' && rdv.date_proposee && (
                   <CounterOffer>
-                    <h4><RefreshCw size={14} /> Le médecin propose un autre créneau</h4>
-                    <p><strong>Nouveau créneau :</strong> {rdv.date_proposee} à {rdv.heure_debut_proposee}</p>
-                    <p>Créneau demandé initialement : {rdv.date_rdv} à {rdv.heure_debut}</p>
+                    <h4><RefreshCw size={14} /> {t('rdv.counter_title')}</h4>
+                    <p><strong>{t('rdv.new_slot')}</strong> {t('rdv.at_time', { date: rdv.date_proposee, time: rdv.heure_debut_proposee })}</p>
+                    <p>{t('rdv.initial_slot')} {t('rdv.at_time', { date: rdv.date_rdv, time: rdv.heure_debut })}</p>
                     {rdv.message_contre_proposition && (
                       <blockquote>« {rdv.message_contre_proposition} »</blockquote>
                     )}
                     <Actions style={{ marginTop: 12 }}>
                       <Button size="sm" onClick={() => handleReponse(rdv.id, true)}>
-                        <Check size={14} /> Accepter
+                        <Check size={14} /> {t('rdv.accept')}
                       </Button>
                       <Button size="sm" variant="secondary" onClick={() => handleReponse(rdv.id, false)}>
-                        <X size={14} /> Refuser
+                        <X size={14} /> {t('rdv.refuse')}
                       </Button>
                     </Actions>
                   </CounterOffer>
@@ -334,8 +339,8 @@ export default function PatientRendezVousPage() {
         loading={annuler.isPending}
         previewLoading={previewLoading}
         preview={cancelPreview}
-        title="Annuler ce rendez-vous ?"
-        confirmLabel="Oui, annuler le rendez-vous"
+        title={t('rdv.cancel_title')}
+        confirmLabel={t('rdv.cancel_confirm')}
       />
 
       <PaymentModal
@@ -355,8 +360,8 @@ export default function PatientRendezVousPage() {
         }}
         >
           <Card style={{ padding: 24, maxWidth: 400, width: '100%' }} onClick={(e) => e.stopPropagation()}>
-            <h3 style={{ margin: '0 0 8px' }}>Noter Dr. {rateRdv.medecin?.prenom} {rateRdv.medecin?.nom}</h3>
-            <p style={{ fontSize: '0.85rem', color: '#64748B', marginBottom: 12 }}>Votre avis aide les autres patients.</p>
+            <h3 style={{ margin: '0 0 8px' }}>{t('rdv.rate_title', { name: `${rateRdv.medecin?.prenom} ${rateRdv.medecin?.nom}` })}</h3>
+            <p style={{ fontSize: '0.85rem', color: '#64748B', marginBottom: 12 }}>{t('rdv.rate_hint')}</p>
             <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
               {[1, 2, 3, 4, 5].map((s) => (
                 <button
@@ -375,13 +380,13 @@ export default function PatientRendezVousPage() {
             <textarea
               value={commentaire}
               onChange={(e) => setCommentaire(e.target.value)}
-              placeholder="Commentaire (optionnel)"
+              placeholder={t('rdv.comment_placeholder')}
               rows={3}
               style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #E2E8F0', marginBottom: 12 }}
             />
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <Button variant="secondary" onClick={() => setRateRdv(null)}>Annuler</Button>
-              <Button onClick={handleRate} disabled={creerAvis.isPending}>Publier</Button>
+              <Button variant="secondary" onClick={() => setRateRdv(null)}>{t('rdv.cancel')}</Button>
+              <Button onClick={handleRate} disabled={creerAvis.isPending}>{t('rdv.publish')}</Button>
             </div>
           </Card>
         </div>

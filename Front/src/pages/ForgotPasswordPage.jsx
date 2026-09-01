@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import client from '../api/client';
 import ENDPOINTS from '../api/endpoints';
 import toast from 'react-hot-toast';
@@ -11,6 +12,7 @@ import AuthShell, {
 import BrandLogo from '../components/brand/BrandLogo';
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslation();
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const { register, handleSubmit, formState: { errors } } = useForm();
@@ -20,9 +22,9 @@ export default function ForgotPasswordPage() {
     try {
       await client.post(ENDPOINTS.auth.forgotPassword, { email });
       setSent(true);
-      toast.success('Si un compte existe, un e-mail vient d\'être envoyé.');
+      toast.success(t('auth.forgot_toast'));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Impossible d\'envoyer l\'e-mail');
+      toast.error(err.response?.data?.message || t('auth.forgot_error'));
     } finally {
       setSubmitting(false);
     }
@@ -34,42 +36,37 @@ export default function ForgotPasswordPage() {
         <BrandLogo variant="compact" emblemSize={52} />
       </Wordmark>
 
-      <SectionTitle>Mot de passe oublié</SectionTitle>
-      <SectionHint>
-        Saisissez votre e-mail. Nous vous enverrons un lien pour choisir un nouveau mot de passe.
-      </SectionHint>
+      <SectionTitle>{t('auth.forgot_title')}</SectionTitle>
+      <SectionHint>{t('auth.forgot_hint')}</SectionHint>
 
       {sent ? (
-        <Notice>
-          Si un compte existe avec cette adresse, un e-mail de réinitialisation a été envoyé.
-          Vérifiez aussi vos spams. Le lien est valable 1 heure.
-        </Notice>
+        <Notice>{t('auth.forgot_sent')}</Notice>
       ) : (
         <AuthForm onSubmit={handleSubmit(onSubmit)}>
           <Field>
-            <FieldLabel htmlFor="email">E-mail</FieldLabel>
+            <FieldLabel htmlFor="email">{t('auth.email')}</FieldLabel>
             <FieldInput
               id="email"
               type="email"
               autoComplete="email"
-              placeholder="vous@exemple.com"
+              placeholder={t('auth.email_placeholder')}
               $error={!!errors.email}
               {...register('email', {
-                required: 'L\'email est requis',
-                pattern: { value: /^\S+@\S+$/i, message: 'Email invalide' },
+                required: t('auth.email_required'),
+                pattern: { value: /^\S+@\S+$/i, message: t('auth.email_invalid') },
               })}
             />
             {errors.email && <FieldError>{errors.email.message}</FieldError>}
           </Field>
 
           <AuthSubmit type="submit" disabled={submitting}>
-            {submitting ? 'Envoi…' : 'Envoyer le lien'}
+            {submitting ? t('auth.sending') : t('auth.send_link')}
           </AuthSubmit>
         </AuthForm>
       )}
 
       <Footnotes>
-        <p><Link to="/login">← Retour à la connexion</Link></p>
+        <p><Link to="/login">{t('auth.back_login')}</Link></p>
       </Footnotes>
     </AuthShell>
   );

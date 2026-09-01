@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import styled from 'styled-components';
 import { Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -6,8 +6,10 @@ import useBreakpoint from '../../hooks/useBreakpoint';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import PatientBottomNav, { BOTTOM_NAV_HEIGHT } from './PatientBottomNav';
-import AiAssistantWidget from '../ai/AiAssistantWidget';
+import PageContentSkeleton from '../ui/PageContentSkeleton';
 import { HERO_IMAGE } from '../auth/authTheme';
+
+const AiAssistantWidget = React.lazy(() => import('../ai/AiAssistantWidget'));
 
 const LayoutWrapper = styled.div`
   display: flex;
@@ -146,11 +148,15 @@ export default function AppLayout() {
           onMenuToggle={() => setMobileOpen((o) => !o)}
         />
         <PageContent $patientMobile={isPatientMobile} $compact={isCompact && !isPatientMobile}>
-          <Outlet />
+          <Suspense fallback={<PageContentSkeleton />}>
+            <Outlet />
+          </Suspense>
         </PageContent>
       </MainArea>
       {isPatientMobile && <PatientBottomNav />}
-      <AiAssistantWidget />
+      <Suspense fallback={null}>
+        <AiAssistantWidget />
+      </Suspense>
     </LayoutWrapper>
   );
 }

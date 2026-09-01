@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import client from '../api/client';
 import ENDPOINTS from '../api/endpoints';
 import toast from 'react-hot-toast';
@@ -12,6 +13,7 @@ import BrandLogo from '../components/brand/BrandLogo';
 import PasswordStrengthMeter, { scorePassword } from '../components/ui/PasswordStrengthMeter';
 
 export default function ResetPasswordPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token') || '';
@@ -21,16 +23,16 @@ export default function ResetPasswordPage() {
 
   const onSubmit = async ({ password }) => {
     if (!token) {
-      toast.error('Lien invalide — demandez un nouvel e-mail.');
+      toast.error(t('auth.invalid_token_toast'));
       return;
     }
     setSubmitting(true);
     try {
       await client.post(ENDPOINTS.auth.resetPassword, { token, password });
-      toast.success('Mot de passe mis à jour !');
+      toast.success(t('auth.password_updated'));
       navigate('/login', { replace: true });
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Lien expiré ou invalide');
+      toast.error(err.response?.data?.message || t('auth.link_expired'));
     } finally {
       setSubmitting(false);
     }
@@ -42,13 +44,10 @@ export default function ResetPasswordPage() {
         <Wordmark>
           <BrandLogo variant="compact" emblemSize={52} />
         </Wordmark>
-        <SectionTitle>Lien invalide</SectionTitle>
-        <Notice>
-          Ce lien de réinitialisation est incomplet ou a expiré.
-          Demandez un nouvel e-mail depuis la page « Mot de passe oublié ».
-        </Notice>
+        <SectionTitle>{t('auth.invalid_link_title')}</SectionTitle>
+        <Notice>{t('auth.invalid_link_desc')}</Notice>
         <Footnotes>
-          <p><Link to="/mot-de-passe-oublie">Demander un nouveau lien</Link></p>
+          <p><Link to="/mot-de-passe-oublie">{t('auth.request_new_link')}</Link></p>
         </Footnotes>
       </AuthShell>
     );
@@ -60,24 +59,24 @@ export default function ResetPasswordPage() {
         <BrandLogo variant="compact" emblemSize={52} />
       </Wordmark>
 
-      <SectionTitle>Nouveau mot de passe</SectionTitle>
-      <SectionHint>Choisissez un mot de passe sécurisé pour votre compte DjamSanté.</SectionHint>
+      <SectionTitle>{t('auth.reset_title')}</SectionTitle>
+      <SectionHint>{t('auth.reset_hint')}</SectionHint>
 
       <AuthForm onSubmit={handleSubmit(onSubmit)}>
         <Field>
-          <FieldLabel htmlFor="password">Nouveau mot de passe</FieldLabel>
+          <FieldLabel htmlFor="password">{t('auth.new_password')}</FieldLabel>
           <FieldInput
             id="password"
             type="password"
             autoComplete="new-password"
-            placeholder="8 caractères minimum"
+            placeholder={t('auth.password_placeholder')}
             $error={!!errors.password}
             {...register('password', {
-              required: 'Le mot de passe est requis',
-              minLength: { value: 8, message: 'Minimum 8 caractères' },
+              required: t('auth.password_required'),
+              minLength: { value: 8, message: t('auth.password_min') },
               validate: (val) => {
                 const s = scorePassword(val);
-                return s.isAcceptable || 'Mot de passe trop faible';
+                return s.isAcceptable || t('auth.password_too_weak');
               },
             })}
           />
@@ -86,27 +85,27 @@ export default function ResetPasswordPage() {
         </Field>
 
         <Field>
-          <FieldLabel htmlFor="confirmPassword">Confirmer</FieldLabel>
+          <FieldLabel htmlFor="confirmPassword">{t('auth.confirm_password')}</FieldLabel>
           <FieldInput
             id="confirmPassword"
             type="password"
             autoComplete="new-password"
             $error={!!errors.confirmPassword}
             {...register('confirmPassword', {
-              required: 'Confirmez le mot de passe',
-              validate: (val) => val === watch('password') || 'Les mots de passe ne correspondent pas',
+              required: t('auth.confirm_required'),
+              validate: (val) => val === watch('password') || t('auth.password_mismatch'),
             })}
           />
           {errors.confirmPassword && <FieldError>{errors.confirmPassword.message}</FieldError>}
         </Field>
 
         <AuthSubmit type="submit" disabled={submitting}>
-          {submitting ? 'Enregistrement…' : 'Enregistrer'}
+          {submitting ? t('profile.saving') : t('common.save')}
         </AuthSubmit>
       </AuthForm>
 
       <Footnotes>
-        <p><Link to="/login">← Retour à la connexion</Link></p>
+        <p><Link to="/login">{t('auth.back_login')}</Link></p>
       </Footnotes>
     </AuthShell>
   );

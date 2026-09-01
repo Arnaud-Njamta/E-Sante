@@ -1,10 +1,11 @@
-const { Patient } = require('../models');
+const { Patient, ProfilFamille } = require('../models');
 const { parseJsonField } = require('../utils/helpers');
+const familleService = require('./famille.service');
 
 const CARNET_FIELDS = [
   'allergies', 'pathologies', 'groupe_sanguin',
   'antecedents_familiaux', 'antecedents_chirurgicaux',
-  'traitements_habituelles', 'vaccinations', 'notes_medicales',
+  'traitements_habituelles', 'vaccinations', 'notes_medicales', 'observations_carnet',
   'contact_urgence', 'date_naissance', 'consentement_carnet_at',
 ];
 
@@ -23,6 +24,7 @@ const formatCarnet = (patient) => {
     traitements_habituelles: parseJsonField(data.traitements_habituelles, []),
     vaccinations: parseJsonField(data.vaccinations, []),
     notes_medicales: data.notes_medicales || '',
+    observations_carnet: parseJsonField(data.observations_carnet, []),
     contact_urgence: data.contact_urgence || null,
     actif: !!data.consentement_carnet_at,
     consentement_carnet_at: data.consentement_carnet_at,
@@ -30,7 +32,34 @@ const formatCarnet = (patient) => {
   };
 };
 
-const getMonCarnet = async (patientId) => {
+const formatFamilleCarnet = (profil) => {
+  const data = profil.toJSON ? profil.toJSON() : profil;
+  return {
+    profil_famille_id: data.id,
+    patient_id: data.patient_id,
+    nom: data.nom,
+    prenom: data.prenom,
+    date_naissance: data.date_naissance,
+    relation: data.relation,
+    groupe_sanguin: data.groupe_sanguin || null,
+    allergies: parseJsonField(data.allergies, []),
+    pathologies: parseJsonField(data.pathologies, []),
+    antecedents_familiaux: [],
+    antecedents_chirurgicaux: [],
+    traitements_habituelles: parseJsonField(data.traitements_habituelles, []),
+    vaccinations: parseJsonField(data.vaccinations, []),
+    notes_medicales: data.notes_medicales || '',
+    observations_carnet: parseJsonField(data.observations_carnet, []),
+    contact_urgence: data.contact_urgence || null,
+    actif: true,
+    is_famille: true,
+    updated_at: data.updatedAt,
+  };
+};
+
+const getMonCarnet = async (patientId, familleProfil = null) => {
+  if (familleProfil) return formatFamilleCarnet(familleProfil);
+
   const patient = await Patient.findByPk(patientId, {
     attributes: ['id', 'nom', 'prenom', 'date_naissance', ...CARNET_FIELDS, 'updatedAt'],
   });
@@ -42,7 +71,13 @@ const getMonCarnet = async (patientId) => {
   return formatCarnet(patient);
 };
 
-const mettreAJourMonCarnet = async (patientId, payload) => {
+const mettreAJourMonCarnet = async (patientId, payload, familleProfil = null) => {
+  if (familleProfil) {
+    await familleService.mettreAJour(patientId, familleProfil.id, payload);
+    await familleProfil.reload();
+    return formatFamilleCarnet(familleProfil);
+  }
+
   const patient = await Patient.findByPk(patientId);
   if (!patient) {
     const error = new Error('Patient non trouvé');
@@ -129,10 +164,50 @@ const mettreAJourParMedecin = async (medecinId, patientId, payload) => {
   return formatCarnet(patient);
 };
 
+const ajouterObservation = async (patientId, { text, source = 'patient' }, familleProfil = null) => {
+  if (familleProfil) {
+    const existing = parseJsonField(familleProfil.observations_carnet, []);
+    const entry = {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      text: text.trim().slice(0, 2000),
+      source: source === 'ia' ? 'ia' : 'patient',
+    };
+    await familleProfil.update({ observations_carnet: [entry, ...existing].slice(0, 100) });
+    await familleProfil.reload();
+    return formatFamilleCarnet(familleProfil);
+  }
+
+  const patient = await Patient.findByPk(patientId);
+  if (!patient) {
+    const error = new Error('Patient non trouvé');
+    error.statusCode = 404;
+    throw error;
+  }
+  if (!text?.trim()) {
+    const error = new Error('Texte d\'observation requis');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const existing = parseJsonField(patient.observations_carnet, []);
+  const entry = {
+    id: Date.now(),
+    date: new Date().toISOString(),
+    text: text.trim().slice(0, 2000),
+    source: source === 'ia' ? 'ia' : 'patient',
+  };
+  const observations_carnet = [entry, ...existing].slice(0, 100);
+  await patient.update({ observations_carnet });
+  return formatCarnet(patient);
+};
+
 module.exports = {
   getMonCarnet,
   mettreAJourMonCarnet,
   getCarnetPourMedecin,
   mettreAJourParMedecin,
   formatCarnet,
+  formatFamilleCarnet,
+  ajouterObservation,
 };

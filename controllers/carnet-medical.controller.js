@@ -3,7 +3,7 @@ const consentementService = require('../services/consentement.service');
 
 const getMonCarnet = async (req, res, next) => {
   try {
-    const carnet = await carnetService.getMonCarnet(req.patient.id);
+    const carnet = await carnetService.getMonCarnet(req.patient.id, req.familleProfil || null);
     res.json({ success: true, data: carnet });
   } catch (error) {
     next(error);
@@ -12,8 +12,12 @@ const getMonCarnet = async (req, res, next) => {
 
 const updateMonCarnet = async (req, res, next) => {
   try {
-    const carnet = await carnetService.mettreAJourMonCarnet(req.patient.id, req.body);
-    if (req.body.activer_carnet && req.body.consentement_carnet) {
+    const carnet = await carnetService.mettreAJourMonCarnet(
+      req.patient.id,
+      req.body,
+      req.familleProfil || null,
+    );
+    if (!req.familleProfil && req.body.activer_carnet && req.body.consentement_carnet) {
       await consentementService.enregistrer({
         patient_id: req.patient.id,
         type: consentementService.CONSENTEMENT_TYPES.CARNET_ACTIVATION,
@@ -63,6 +67,19 @@ const listerMesConsentements = async (req, res, next) => {
   }
 };
 
+const ajouterObservation = async (req, res, next) => {
+  try {
+    const carnet = await carnetService.ajouterObservation(
+      req.patient.id,
+      req.body,
+      req.familleProfil || null,
+    );
+    res.json({ success: true, data: carnet });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getMonCarnet,
   updateMonCarnet,
@@ -70,4 +87,5 @@ module.exports = {
   updateCarnetPatient,
   getTextes,
   listerMesConsentements,
+  ajouterObservation,
 };

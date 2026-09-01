@@ -9,6 +9,7 @@ const proRoles = ['medecin', 'pharmacie', 'hopital', 'clinique'];
 const allRoles = ['patient', ...proRoles];
 
 router.get('/featured', publicationController.listerFeatured);
+router.get('/alertes', publicationController.optionalAuth, publicationController.listerAlertes);
 router.get('/', publicationController.optionalAuth, publicationController.lister);
 router.post('/', authMiddleware, requireRole(...proRoles), uploadImage.single('image'), publicationController.creer);
 router.post('/:id/like', authMiddleware, requireRole(...allRoles), publicationController.toggleLike);

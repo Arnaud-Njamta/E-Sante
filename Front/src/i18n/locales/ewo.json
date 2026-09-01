@@ -1,0 +1,130 @@
+{
+  "common": {
+    "loading": "Ebolo…",
+    "save": "Bikisa",
+    "cancel": "Tika",
+    "delete": "Longola",
+    "add": "Kokela",
+    "back": "Zonga",
+    "next": "Elandeli",
+    "language": "Lokota"
+  },
+  "greeting": {
+    "morning": "Mbote",
+    "afternoon": "Mbote",
+    "evening": "Butu elamu",
+    "hello_name": "Mbote, {{name}}"
+  },
+  "nav": {
+    "dashboard": "Etuluku",
+    "home": "Ebandeli",
+    "medications": "Biloko",
+    "prises": "Bilei",
+    "health_directory": "Annuaire",
+    "carnet": "Buku ya bokɔnɔ",
+    "famille": "Libota na ngai",
+    "qr": "QR ya bokɔnɔ",
+    "urgence": "Mpasi",
+    "actualites": "Bansango",
+    "profil": "Profil",
+    "chat": "Chat",
+    "more": "Mosusu",
+    "more_options": "Mosusu ya makambo"
+  },
+  "dashboard": {
+    "hello": "Mbote, {{name}}",
+    "subtitle": "Omoni mpo na mokolo ya lelo.",
+    "emergency_title": "🚨 Ozali na mpasi ?",
+    "emergency_sub": "Mode ya mpasi — kosalisa & kolakisa nzela"
+  },
+  "famille": {
+    "title": "Libota na ngai",
+    "subtitle": "Bokela baprofil ya bato ya libota — bana, baboti, mobali/mwasi",
+    "add_member": "Kokela moto",
+    "switch_profile": "Profil ya lelo",
+    "myself": "Ngai moko",
+    "relation": "Boyokani",
+    "relations": {
+      "enfant": "Mwana",
+      "parent": "Moboti",
+      "conjoint": "Mobali/Mwasi",
+      "autre": "Mosusu"
+    },
+    "empty": "Profil moko te. Kokela mwana to moto ya libota.",
+    "saved": "Profil ebikisami",
+    "deleted": "Profil elongolami",
+    "max_reached": "Profil 8 ekoki te"
+  },
+  "qr": {
+    "title": "QR ya bokɔnɔ",
+    "subtitle": "Scanner code oyo na mpasi mpo na komona makambo ya motuya",
+    "regenerate": "Kobongisa code",
+    "regenerated": "QR ya sika",
+    "scan_hint": "Talá bato ya kosalisa to monganga",
+    "allergies": "Allergies",
+    "blood": "Lolenge ya makila",
+    "contact": "Contact ya mpasi",
+    "public_title": "Fiche ya mpasi",
+    "not_found": "QR ezali malamu te"
+  },
+  "alertes": {
+    "title": "Likebisi ya bokɔnɔ",
+    "none": "Likebisi moko te na etuka na yo",
+    "see_all": "Mona likebisi nyonso",
+    "priorite": {
+      "critique": "Mpasi mingi",
+      "attention": "Tala",
+      "info": "Bansango"
+    }
+  },
+  "carnet": {
+    "title": "Buku ya bokɔnɔ",
+    "subtitle": "Buku na yo ya numérique — kokoma likolo",
+    "save": "Bikisa buku na ngai",
+    "famille_note": "Buku ya {{name}} (libota)"
+  },
+  "urgence": {
+    "title": "Mode ya mpasi",
+    "help": "OZALI NA MPASI ?",
+    "call": "Benga bato ya kosalisa"
+  },
+  "pwa": {
+    "install": "Installer application",
+    "offline": "Mode hors-ligne — données na cache"
+  },
+  "push": {
+    "title": "Notifications push",
+    "subtitle": "Zwa likebisi ya bokɔnɔ na esika na yo",
+    "enable": "Activer",
+    "disable": "Désactiver",
+    "enabled": "Notifications activées",
+    "denied": "Permission refusée"
+  },
+  "offline": {
+    "pending": "{{count}} action(s) en attente de sync",
+    "sync": "Synchroniser"
+  },
+  "qrScan": {
+    "title": "Scanner QR médical",
+    "subtitle": "Lire la fiche d'urgence d'un patient",
+    "start": "Démarrer la caméra",
+    "stop": "Arrêter",
+    "manual": "Saisie manuelle",
+    "retry": "Réessayer",
+    "another": "Scanner un autre"
+  },
+  "nfc": {
+    "hint": "Approchez téléphone na étiquette NFC mpo na kokoma QR na yo",
+    "write": "Kokoma na NFC",
+    "written": "QR ekomi na puce NFC",
+    "denied": "NFC eboyi",
+    "error": "Libunga ya kokoma NFC",
+    "unsupported": "NFC ezali te na appareil oyo"
+  },
+  "profile": {
+    "region": "Région",
+    "ville": "Ville",
+    "localisation": "Esika",
+    "localisation_hint": "Mpo na kozwa ba alertes ya esika na yo"
+  }
+}

@@ -17,6 +17,10 @@ client.interceptors.request.use(
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
+        const familleProfilId = localStorage.getItem('djamsante_famille_profil_id');
+        if (familleProfilId) {
+            config.headers['X-Famille-Profil-Id'] = familleProfilId;
+        }
         if (config.data instanceof FormData) {
             delete config.headers['Content-Type'];
             if (!config.timeout) {

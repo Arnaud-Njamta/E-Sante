@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { getBranding, getDisplayName } from '../../config/branding';
 import { getInitials } from '../../utils/helpers';
+import { SECTION_KEYS } from '../../config/navKeys';
+import { prefetchRoute } from '../../utils/routePrefetch';
 import BrandLogo from '../brand/BrandLogo';
 import UserAvatar from '../ui/UserAvatar';
 import {
   LayoutDashboard, Heart, BookHeart, Clock, FileText, BarChart3, User, LogOut,
-  ChevronLeft, Building2, MessageCircle, Stethoscope, Star, Pill, Newspaper, Camera, Package, Shield, Wallet, ScrollText, Briefcase, Users,
+  ChevronLeft, Building2, MessageCircle, Stethoscope, Star, Pill, Newspaper, Camera, Package, Shield, Wallet, ScrollText, Briefcase, Users, Inbox, QrCode, Siren, Activity,
 } from 'lucide-react';
 
 const SidebarContainer = styled.aside`
@@ -182,88 +185,93 @@ const LogoutBtn = styled.button`
 
 const ROLE_NAV = {
   patient: [
-    { to: '/dashboard', icon: LayoutDashboard, label: 'Tableau de bord', section: 'principal' },
-    { to: '/medications', icon: Heart, label: 'Médicaments', section: 'principal' },
-    { to: '/prises', icon: Clock, label: 'Prises du jour', section: 'principal' },
-    { to: '/sante', icon: Building2, label: 'Annuaire Santé', section: 'sante' },
-    { to: '/sante?tab=medicaments', icon: Pill, label: 'Trouver un médicament', section: 'sante' },
-    { to: '/rendez-vous', icon: Clock, label: 'Mes rendez-vous', section: 'sante' },
-    { to: '/reservations', icon: Package, label: 'Mes réservations', section: 'sante' },
-    { to: '/paiements', icon: Wallet, label: 'Mes paiements', section: 'sante' },
-    { to: '/carnet-medical', icon: BookHeart, label: 'Carnet médical', section: 'sante' },
-    { to: '/ordonnances-electroniques', icon: FileText, label: 'Ordonnances élec.', section: 'sante' },
-    { to: '/sante?tab=medecins', icon: Stethoscope, label: 'Trouver un médecin', section: 'sante' },
-    { to: '/actualites', icon: Newspaper, label: 'Actualités', section: 'sante' },
-    { to: '/pharmacie/chat', icon: MessageCircle, label: 'Pharmacie en ligne', section: 'sante' },
-    { to: '/ordonnances', icon: FileText, label: 'Ordonnances', section: 'outils' },
-    { to: '/analytics', icon: BarChart3, label: 'Statistiques', section: 'outils' },
-    { to: '/profil', icon: User, label: 'Mon profil', section: 'compte' },
+    { to: '/dashboard', icon: LayoutDashboard, labelKey: 'nav.dashboard', section: 'principal' },
+    { to: '/medications', icon: Heart, labelKey: 'nav.medications', section: 'principal' },
+    { to: '/prises', icon: Clock, labelKey: 'nav.prises', section: 'principal' },
+    { to: '/sante', icon: Building2, labelKey: 'nav.health_directory', section: 'sante' },
+    { to: '/sante?tab=medicaments', icon: Pill, labelKey: 'nav.find_medicine', section: 'sante' },
+    { to: '/rendez-vous', icon: Clock, labelKey: 'nav.my_appointments', section: 'sante' },
+    { to: '/reservations', icon: Package, labelKey: 'nav.my_reservations', section: 'sante' },
+    { to: '/paiements', icon: Wallet, labelKey: 'nav.my_payments', section: 'sante' },
+    { to: '/carnet-medical', icon: BookHeart, labelKey: 'nav.carnet', section: 'sante' },
+    { to: '/famille', icon: Users, labelKey: 'nav.famille', section: 'sante' },
+    { to: '/qr-medical', icon: QrCode, labelKey: 'nav.qr', section: 'sante' },
+    { to: '/ordonnances-electroniques', icon: FileText, labelKey: 'nav.e_prescriptions', section: 'sante' },
+    { to: '/sante?tab=medecins', icon: Stethoscope, labelKey: 'nav.find_doctor', section: 'sante' },
+    { to: '/actualites', icon: Newspaper, labelKey: 'nav.actualites', section: 'sante' },
+    { to: '/pharmacie/chat', icon: MessageCircle, labelKey: 'nav.online_pharmacy', section: 'sante' },
+    { to: '/ordonnances', icon: FileText, labelKey: 'nav.prescriptions', section: 'outils' },
+    { to: '/analytics', icon: BarChart3, labelKey: 'nav.statistics', section: 'outils' },
+    { to: '/profil', icon: User, labelKey: 'nav.profil', section: 'compte' },
   ],
   medecin: [
-    { to: '/medecin/dashboard', icon: LayoutDashboard, label: 'Tableau de bord', section: 'principal' },
-    { to: '/medecin/rendez-vous', icon: Clock, label: 'Rendez-vous', section: 'principal' },
-    { to: '/medecin/ordonnances', icon: FileText, label: 'Ordonnances élec.', section: 'principal' },
-    { to: '/medecin/carriere', icon: Briefcase, label: 'Carrière & affiliations', section: 'principal' },
-    { to: '/medecin/actualites', icon: Newspaper, label: 'Actualités', section: 'principal' },
-    { to: '/medecin/profil', icon: User, label: 'Mon profil public', section: 'principal' },
-    { to: '/medecin/parametres', icon: Camera, label: 'Photo & cachet', section: 'compte' },
-    { to: '/medecin/avis', icon: Star, label: 'Mes avis', section: 'compte' },
+    { to: '/medecin/dashboard', icon: LayoutDashboard, labelKey: 'nav.dashboard', section: 'principal' },
+    { to: '/medecin/rendez-vous', icon: Clock, labelKey: 'nav.appointments', section: 'principal' },
+    { to: '/medecin/ordonnances', icon: FileText, labelKey: 'nav.e_prescriptions', section: 'principal' },
+    { to: '/medecin/qr-scan', icon: QrCode, labelKey: 'nav.scan_qr', section: 'principal' },
+    { to: '/medecin/carriere', icon: Briefcase, labelKey: 'nav.career', section: 'principal' },
+    { to: '/medecin/actualites', icon: Newspaper, labelKey: 'nav.actualites', section: 'principal' },
+    { to: '/medecin/profil', icon: User, labelKey: 'nav.public_profile', section: 'principal' },
+    { to: '/medecin/parametres', icon: Camera, labelKey: 'nav.photo_stamp', section: 'compte' },
+    { to: '/medecin/avis', icon: Star, labelKey: 'nav.reviews', section: 'compte' },
   ],
   pharmacie: [
-    { to: '/pharmacie/dashboard', icon: LayoutDashboard, label: 'Tableau de bord', section: 'principal' },
-    { to: '/pharmacie/messages', icon: MessageCircle, label: 'Messages patients', section: 'principal' },
-    { to: '/pharmacie/produits', icon: Pill, label: 'Catalogue produits', section: 'principal' },
-    { to: '/pharmacie/reservations', icon: Package, label: 'Réservations', section: 'principal' },
-    { to: '/pharmacie/ordonnances', icon: FileText, label: 'Vérifier ordonnance', section: 'principal' },
-    { to: '/pharmacie/actualites', icon: Newspaper, label: 'Actualités', section: 'principal' },
-    { to: '/pharmacie/equipe', icon: Users, label: 'Équipe', section: 'principal' },
-    { to: '/pharmacie/profil', icon: Camera, label: 'Photo & profil', section: 'compte' },
-    { to: '/pharmacie/horaires', icon: Clock, label: 'Horaires', section: 'principal' },
-    { to: '/pharmacie/localisation', icon: Building2, label: 'Localisation', section: 'compte' },
+    { to: '/pharmacie/dashboard', icon: LayoutDashboard, labelKey: 'nav.dashboard', section: 'principal' },
+    { to: '/pharmacie/messages', icon: MessageCircle, labelKey: 'nav.patient_messages', section: 'principal' },
+    { to: '/pharmacie/produits', icon: Pill, labelKey: 'nav.product_catalog', section: 'principal' },
+    { to: '/pharmacie/reservations', icon: Package, labelKey: 'nav.reservations', section: 'principal' },
+    { to: '/pharmacie/ordonnances', icon: FileText, labelKey: 'nav.verify_prescription', section: 'principal' },
+    { to: '/pharmacie/qr-scan', icon: QrCode, labelKey: 'nav.scan_qr', section: 'principal' },
+    { to: '/pharmacie/actualites', icon: Newspaper, labelKey: 'nav.actualites', section: 'principal' },
+    { to: '/pharmacie/equipe', icon: Users, labelKey: 'nav.team', section: 'principal' },
+    { to: '/pharmacie/profil', icon: Camera, labelKey: 'nav.photo_profile', section: 'compte' },
+    { to: '/pharmacie/horaires', icon: Clock, labelKey: 'nav.hours', section: 'principal' },
+    { to: '/pharmacie/localisation', icon: Building2, labelKey: 'nav.location', section: 'compte' },
   ],
   hopital: [
-    { to: '/hopital/dashboard', icon: LayoutDashboard, label: 'Tableau de bord', section: 'principal' },
-    { to: '/hopital/medecins', icon: Stethoscope, label: 'Médecins affiliés', section: 'principal' },
-    { to: '/hopital/equipe', icon: Users, label: 'Équipe', section: 'principal' },
-    { to: '/hopital/services', icon: Heart, label: 'Services & tarifs', section: 'principal' },
-    { to: '/hopital/rendez-vous', icon: Clock, label: 'Rendez-vous', section: 'principal' },
-    { to: '/hopital/dispensaire', icon: Pill, label: 'Dispensaire', section: 'principal' },
-    { to: '/hopital/reservations', icon: Package, label: 'Réservations', section: 'principal' },
-    { to: '/hopital/ordonnances', icon: FileText, label: 'Vérifier ordonnance', section: 'principal' },
-    { to: '/hopital/messages', icon: MessageCircle, label: 'Messages patients', section: 'principal' },
-    { to: '/hopital/actualites', icon: Newspaper, label: 'Actualités', section: 'principal' },
-    { to: '/hopital/profil', icon: Camera, label: 'Photo & profil', section: 'principal' },
-    { to: '/hopital/horaires', icon: Clock, label: 'Horaires', section: 'compte' },
-    { to: '/hopital/localisation', icon: Building2, label: 'Localisation', section: 'compte' },
+    { to: '/hopital/dashboard', icon: LayoutDashboard, labelKey: 'nav.dashboard', section: 'principal' },
+    { to: '/hopital/medecins', icon: Stethoscope, labelKey: 'nav.affiliated_doctors', section: 'principal' },
+    { to: '/hopital/equipe', icon: Users, labelKey: 'nav.team', section: 'principal' },
+    { to: '/hopital/services', icon: Heart, labelKey: 'nav.services_rates', section: 'principal' },
+    { to: '/hopital/rendez-vous', icon: Clock, labelKey: 'nav.appointments', section: 'principal' },
+    { to: '/hopital/demandes', icon: Inbox, labelKey: 'nav.care_requests', section: 'principal' },
+    { to: '/hopital/alertes', icon: Siren, labelKey: 'nav.health_alerts', section: 'principal' },
+    { to: '/hopital/dispensaire', icon: Pill, labelKey: 'nav.dispensary', section: 'principal' },
+    { to: '/hopital/reservations', icon: Package, labelKey: 'nav.reservations', section: 'principal' },
+    { to: '/hopital/ordonnances', icon: FileText, labelKey: 'nav.verify_prescription', section: 'principal' },
+    { to: '/hopital/qr-scan', icon: QrCode, labelKey: 'nav.scan_qr', section: 'principal' },
+    { to: '/hopital/messages', icon: MessageCircle, labelKey: 'nav.patient_messages', section: 'principal' },
+    { to: '/hopital/actualites', icon: Newspaper, labelKey: 'nav.actualites', section: 'principal' },
+    { to: '/hopital/profil', icon: Camera, labelKey: 'nav.photo_profile', section: 'principal' },
+    { to: '/hopital/horaires', icon: Clock, labelKey: 'nav.hours', section: 'compte' },
+    { to: '/hopital/localisation', icon: Building2, labelKey: 'nav.location', section: 'compte' },
   ],
   clinique: [
-    { to: '/clinique/dashboard', icon: LayoutDashboard, label: 'Tableau de bord', section: 'principal' },
-    { to: '/clinique/medecins', icon: Stethoscope, label: 'Médecins affiliés', section: 'principal' },
-    { to: '/clinique/equipe', icon: Users, label: 'Équipe', section: 'principal' },
-    { to: '/clinique/services', icon: Heart, label: 'Services & tarifs', section: 'principal' },
-    { to: '/clinique/rendez-vous', icon: Clock, label: 'Rendez-vous', section: 'principal' },
-    { to: '/clinique/dispensaire', icon: Pill, label: 'Dispensaire', section: 'principal' },
-    { to: '/clinique/reservations', icon: Package, label: 'Réservations', section: 'principal' },
-    { to: '/clinique/ordonnances', icon: FileText, label: 'Vérifier ordonnance', section: 'principal' },
-    { to: '/clinique/messages', icon: MessageCircle, label: 'Messages patients', section: 'principal' },
-    { to: '/clinique/actualites', icon: Newspaper, label: 'Actualités', section: 'principal' },
-    { to: '/clinique/profil', icon: Camera, label: 'Photo & profil', section: 'principal' },
-    { to: '/clinique/horaires', icon: Clock, label: 'Horaires', section: 'compte' },
-    { to: '/clinique/localisation', icon: Building2, label: 'Localisation', section: 'compte' },
+    { to: '/clinique/dashboard', icon: LayoutDashboard, labelKey: 'nav.dashboard', section: 'principal' },
+    { to: '/clinique/medecins', icon: Stethoscope, labelKey: 'nav.affiliated_doctors', section: 'principal' },
+    { to: '/clinique/equipe', icon: Users, labelKey: 'nav.team', section: 'principal' },
+    { to: '/clinique/services', icon: Heart, labelKey: 'nav.services_rates', section: 'principal' },
+    { to: '/clinique/rendez-vous', icon: Clock, labelKey: 'nav.appointments', section: 'principal' },
+    { to: '/clinique/demandes', icon: Inbox, labelKey: 'nav.care_requests', section: 'principal' },
+    { to: '/clinique/alertes', icon: Siren, labelKey: 'nav.health_alerts', section: 'principal' },
+    { to: '/clinique/dispensaire', icon: Pill, labelKey: 'nav.dispensary', section: 'principal' },
+    { to: '/clinique/reservations', icon: Package, labelKey: 'nav.reservations', section: 'principal' },
+    { to: '/clinique/ordonnances', icon: FileText, labelKey: 'nav.verify_prescription', section: 'principal' },
+    { to: '/clinique/qr-scan', icon: QrCode, labelKey: 'nav.scan_qr', section: 'principal' },
+    { to: '/clinique/messages', icon: MessageCircle, labelKey: 'nav.patient_messages', section: 'principal' },
+    { to: '/clinique/actualites', icon: Newspaper, labelKey: 'nav.actualites', section: 'principal' },
+    { to: '/clinique/profil', icon: Camera, labelKey: 'nav.photo_profile', section: 'principal' },
+    { to: '/clinique/horaires', icon: Clock, labelKey: 'nav.hours', section: 'compte' },
+    { to: '/clinique/localisation', icon: Building2, labelKey: 'nav.location', section: 'compte' },
   ],
   admin: [
-    { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Tableau de bord', section: 'principal' },
-    { to: '/admin/inscriptions', icon: Shield, label: 'Validations MINSANTE', section: 'principal' },
-    { to: '/admin/audit', icon: ScrollText, label: 'Journal de contrôle', section: 'principal' },
-    { to: '/admin/commissions', icon: BarChart3, label: 'Finances & commissions', section: 'principal' },
+    { to: '/admin/dashboard', icon: LayoutDashboard, labelKey: 'nav.dashboard', section: 'principal' },
+    { to: '/admin/inscriptions', icon: Shield, labelKey: 'nav.minsante_validations', section: 'principal' },
+    { to: '/admin/alertes', icon: Siren, labelKey: 'nav.health_alerts', section: 'principal' },
+    { to: '/admin/sante-publique', icon: Activity, labelKey: 'nav.public_health', section: 'principal' },
+    { to: '/admin/audit', icon: ScrollText, labelKey: 'nav.audit_log', section: 'principal' },
+    { to: '/admin/commissions', icon: BarChart3, labelKey: 'nav.finances', section: 'principal' },
   ],
-};
-
-const SECTION_LABELS = {
-  principal: 'Principal',
-  sante: 'Santé',
-  outils: 'Outils',
-  compte: 'Compte',
 };
 
 const ROLE_ICONS = {
@@ -276,6 +284,7 @@ const ROLE_ICONS = {
 };
 
 export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
+  const { t } = useTranslation();
   const { user, role, logout } = useAuth();
   const branding = getBranding(role);
   const navItems = ROLE_NAV[role] || ROLE_NAV.patient;
@@ -303,11 +312,18 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
       <NavSection>
         {sections.map((sectionKey) => (
           <React.Fragment key={sectionKey}>
-            <SectionLabel $collapsed={collapsed}>{SECTION_LABELS[sectionKey]}</SectionLabel>
+            <SectionLabel $collapsed={collapsed}>{t(SECTION_KEYS[sectionKey])}</SectionLabel>
             {navItems.filter((i) => i.section === sectionKey).map((item) => (
-              <NavItem key={item.to} to={item.to} title={collapsed ? item.label : undefined}>
+              <NavItem
+                key={item.to}
+                to={item.to}
+                title={collapsed ? t(item.labelKey) : undefined}
+                onMouseEnter={() => prefetchRoute(item.to)}
+                onFocus={() => prefetchRoute(item.to)}
+                onTouchStart={() => prefetchRoute(item.to)}
+              >
                 <item.icon />
-                {!collapsed && item.label}
+                {!collapsed && t(item.labelKey)}
               </NavItem>
             ))}
           </React.Fragment>
@@ -322,7 +338,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
               <p>{displayName}</p>
               <span>{branding.tagline}</span>
             </ProfileInfo>
-            <LogoutBtn onClick={logout} title="Déconnexion"><LogOut /></LogoutBtn>
+            <LogoutBtn onClick={logout} title={t('common.logout')}><LogOut /></LogoutBtn>
           </>
         )}
       </ProfileSection>

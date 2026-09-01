@@ -1,6 +1,7 @@
 import React from 'react';
 import styled, { keyframes, css } from 'styled-components';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { BookHeart, ChevronRight, Droplets, AlertTriangle } from 'lucide-react';
 import { useCarnetMedical } from '../../hooks/useCarnetMedical';
 
@@ -106,6 +107,7 @@ const Arrow = styled.div`
 `;
 
 export default function PatientCarnetTeaser() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { data, isLoading } = useCarnetMedical();
 
@@ -120,8 +122,8 @@ export default function PatientCarnetTeaser() {
         <CardBtn type="button" $active onClick={() => navigate('/carnet-medical')}>
           <IconBox $active><BookHeart /></IconBox>
           <Body>
-            <h3>Créez votre carnet médical</h3>
-            <p>Centralisez allergies, antécédents et vaccinations en toute sécurité.</p>
+            <h3>{t('carnetTeaser.create_title')}</h3>
+            <p>{t('carnetTeaser.create_desc')}</p>
           </Body>
           <Arrow><ChevronRight /></Arrow>
         </CardBtn>
@@ -134,14 +136,18 @@ export default function PatientCarnetTeaser() {
       <CardBtn type="button" onClick={() => navigate('/carnet-medical')}>
         <IconBox><BookHeart /></IconBox>
         <Body>
-          <h3>Mon carnet médical</h3>
-          <p>Votre carnet est actif — consultez ou modifiez vos informations.</p>
+          <h3>{t('carnetTeaser.active_title')}</h3>
+          <p>{t('carnetTeaser.active_desc')}</p>
           <Meta>
             {data.groupe_sanguin && (
               <span><Droplets size={12} /> {data.groupe_sanguin}</span>
             )}
             {allergyCount > 0 && (
-              <span><AlertTriangle size={12} /> {allergyCount} allergie{allergyCount > 1 ? 's' : ''}</span>
+              <span>
+                <AlertTriangle size={12} />
+                {' '}
+                {t(allergyCount > 1 ? 'carnetTeaser.allergy_other' : 'carnetTeaser.allergy_one', { count: allergyCount })}
+              </span>
             )}
           </Meta>
         </Body>

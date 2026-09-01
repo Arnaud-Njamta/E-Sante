@@ -1,8 +1,9 @@
 import React from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
-  Calendar, ScanLine, Heart, Wallet, Package, BarChart3, BookHeart,
+  Calendar, ScanLine, Heart, Wallet, Package, BarChart3, BookHeart, Siren,
 } from 'lucide-react';
 
 const Scroll = styled.div`
@@ -67,26 +68,28 @@ const TileLabel = styled.span`
 `;
 
 const ACTIONS = [
-  { to: '/rendez-vous', icon: Calendar, label: 'RDV', bg: '#ECFDF5', color: '#007A5E' },
-  { to: '/carnet-medical', icon: BookHeart, label: 'Carnet', bg: '#FDF2F8', color: '#DB2777' },
-  { to: '/ordonnances', icon: ScanLine, label: 'Scanner', bg: '#F0FDF4', color: '#16A34A' },
-  { to: '/medications', icon: Heart, label: 'Médicaments', bg: '#FFF7ED', color: '#EA580C' },
-  { to: '/reservations', icon: Package, label: 'Réservations', bg: '#EFF6FF', color: '#2563EB' },
-  { to: '/paiements', icon: Wallet, label: 'Paiements', bg: '#F5F3FF', color: '#7C3AED' },
-  { to: '/analytics', icon: BarChart3, label: 'Stats', bg: '#FEF3C7', color: '#D97706' },
+  { to: '/urgence', icon: Siren, labelKey: 'quickActions.urgence', bg: '#FEE2E2', color: '#DC2626' },
+  { to: '/rendez-vous', icon: Calendar, labelKey: 'quickActions.rdv', bg: '#ECFDF5', color: '#007A5E' },
+  { to: '/carnet-medical', icon: BookHeart, labelKey: 'quickActions.carnet', bg: '#FDF2F8', color: '#DB2777' },
+  { to: '/ordonnances', icon: ScanLine, labelKey: 'quickActions.scan', bg: '#F0FDF4', color: '#16A34A' },
+  { to: '/medications', icon: Heart, labelKey: 'quickActions.medications', bg: '#FFF7ED', color: '#EA580C' },
+  { to: '/reservations', icon: Package, labelKey: 'quickActions.reservations', bg: '#EFF6FF', color: '#2563EB' },
+  { to: '/paiements', icon: Wallet, labelKey: 'quickActions.payments', bg: '#F5F3FF', color: '#7C3AED' },
+  { to: '/analytics', icon: BarChart3, labelKey: 'quickActions.stats', bg: '#FEF3C7', color: '#D97706' },
 ];
 
 export default function PatientMobileQuickActions() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   return (
-    <Scroll aria-label="Accès rapide">
+    <Scroll aria-label={t('quickActions.aria')}>
       {ACTIONS.map((action) => (
         <Tile key={action.to} type="button" onClick={() => navigate(action.to)}>
           <TileIcon $bg={action.bg} $color={action.color}>
             <action.icon />
           </TileIcon>
-          <TileLabel>{action.label}</TileLabel>
+          <TileLabel>{t(action.labelKey)}</TileLabel>
         </Tile>
       ))}
     </Scroll>

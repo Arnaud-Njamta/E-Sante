@@ -3,9 +3,10 @@ import styled, { keyframes } from 'styled-components';
 import { Link } from 'react-router-dom';
 import {
   Bot, X, Send, AlertTriangle, Loader2, Stethoscope,
-  Shield, Video, UserRound, Calendar,
+  Shield, Video, UserRound, Calendar, BookHeart,
 } from 'lucide-react';
 import { useAiChat, useAiBookRdv, useAiStatus } from '../../hooks/useAiAssistant';
+import { useAjouterObservationCarnet } from '../../hooks/useCarnetMedical';
 import useMediaQuery from '../../hooks/useMediaQuery';
 import { useTheme } from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
@@ -392,7 +393,24 @@ function formatSlotDate(dateStr) {
   return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
-function MessageContent({ msg, onBookSlot, bookingKey, isPatient }) {
+const CarnetBtn = styled.button`
+  margin-top: 6px;
+  padding: 6px 10px;
+  border: 1px dashed #059669;
+  border-radius: 8px;
+  background: #ECFDF5;
+  color: #047857;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  &:hover { background: #D1FAE5; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+`;
+
+function MessageContent({ msg, onBookSlot, bookingKey, isPatient, onSaveToCarnet, savingCarnet }) {
   return (
   <>
     {msg.urgent && (
@@ -464,6 +482,11 @@ function MessageContent({ msg, onBookSlot, bookingKey, isPatient }) {
         </div>
       </VideoCard>
     ))}
+    {isPatient && msg.role === 'assistant' && msg.content && onSaveToCarnet && (
+      <CarnetBtn type="button" onClick={() => onSaveToCarnet(msg.content)} disabled={savingCarnet}>
+        <BookHeart size={12} /> {savingCarnet ? 'Enregistrement…' : 'Noter dans mon carnet'}
+      </CarnetBtn>
+    )}
   </>
   );
 }
@@ -486,6 +509,7 @@ export default function AiAssistantWidget() {
   ]);
   const chat = useAiChat();
   const bookRdv = useAiBookRdv();
+  const ajouterObservation = useAjouterObservationCarnet();
   const { data: aiStatus } = useAiStatus(open);
   const bottomRef = useRef(null);
 
@@ -558,6 +582,16 @@ export default function AiAssistantWidget() {
     [messages],
   );
 
+  const handleSaveToCarnet = async (content) => {
+    const plain = content.replace(/\*\*/g, '').replace(/^> /gm, '').slice(0, 1500);
+    try {
+      await ajouterObservation.mutateAsync({ text: plain, source: 'ia' });
+      toast.success('Observation enregistrée dans votre carnet médical');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Impossible d\'enregistrer dans le carnet');
+    }
+  };
+
   return (
     <>
       {open && (
@@ -610,6 +644,8 @@ export default function AiAssistantWidget() {
                   onBookSlot={handleBookSlot}
                   bookingKey={bookingKey}
                   isPatient={isPatient}
+                  onSaveToCarnet={i > 0 ? handleSaveToCarnet : undefined}
+                  savingCarnet={ajouterObservation.isPending}
                 />
               </MessageRow>
             ))}

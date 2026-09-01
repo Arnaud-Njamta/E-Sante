@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
@@ -167,12 +168,6 @@ const ServiceCount = styled.span`
   font-weight: 500;
 `;
 
-const TYPE_LABELS = {
-  pharmacie: 'Pharmacie',
-  hopital: 'Hôpital',
-  clinique: 'Clinique',
-};
-
 const TYPE_ICONS = {
   pharmacie: Pill,
   hopital: Hospital,
@@ -180,8 +175,15 @@ const TYPE_ICONS = {
 };
 
 export default function SantePage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
+  const typeLabels = useMemo(() => ({
+    pharmacie: t('sante.type_pharmacie'),
+    hopital: t('sante.type_hopital'),
+    clinique: t('sante.type_clinique'),
+  }), [t]);
   const initialTab = searchParams.get('tab');
   const initialQ = searchParams.get('q') || '';
   const [tab, setTab] = useState(() => {
@@ -191,9 +193,9 @@ export default function SantePage() {
   });
 
   useEffect(() => {
-    const t = searchParams.get('tab');
-    if (t === 'medecins' || t === 'medicaments') setTab(t);
-    else if (!t) setTab('etablissements');
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'medecins' || tabParam === 'medicaments') setTab(tabParam);
+    else if (!tabParam) setTab('etablissements');
   }, [searchParams]);
 
   useEffect(() => {
@@ -261,55 +263,55 @@ export default function SantePage() {
   return (
     <div>
       <PageHeader>
-        <h1>Annuaire Santé</h1>
-        <p>Pharmacies, hôpitaux, cliniques, soignants et médicaments — près de vous</p>
+        <h1>{t('sante.title')}</h1>
+        <p>{t('sante.subtitle')}</p>
       </PageHeader>
 
       {tab === 'etablissements' && (
         <NearbyBar>
           <MapPin size={16} />
           {geoLoading && !hasLocation
-            ? 'Recherche des établissements autour de vous…'
+            ? t('sante.geo_loading')
             : cityLabel
-              ? `Autour de ${cityLabel} — les plus proches en premier`
-              : 'Établissements les mieux notés près de vous'}
+              ? t('sante.geo_near', { city: cityLabel })
+              : t('sante.geo_default')}
         </NearbyBar>
       )}
 
       <Tabs>
         <Tab $active={tab === 'etablissements'} onClick={() => setTab('etablissements')}>
-          <Building2 size={16} /> Établissements
+          <Building2 size={16} /> {t('sante.tab_establishments')}
         </Tab>
         <Tab $active={tab === 'medecins'} onClick={() => setTab('medecins')}>
-          <Stethoscope size={16} /> Médecins
+          <Stethoscope size={16} /> {t('sante.tab_doctors')}
         </Tab>
         <Tab $active={tab === 'medicaments'} onClick={() => setTab('medicaments')}>
-          <Pill size={16} /> Médicaments
+          <Pill size={16} /> {t('sante.tab_medicines')}
         </Tab>
       </Tabs>
 
       {tab === 'medicaments' && (
         <Tabs>
-          <Tab $active={!typeMed} onClick={() => setTypeMed('')}>Tous</Tab>
-          <Tab $active={typeMed === 'pharmacie'} onClick={() => setTypeMed('pharmacie')}>Pharmacies</Tab>
-          <Tab $active={typeMed === 'clinique'} onClick={() => setTypeMed('clinique')}>Cliniques</Tab>
-          <Tab $active={typeMed === 'hopital'} onClick={() => setTypeMed('hopital')}>Hôpitaux</Tab>
+          <Tab $active={!typeMed} onClick={() => setTypeMed('')}>{t('sante.all')}</Tab>
+          <Tab $active={typeMed === 'pharmacie'} onClick={() => setTypeMed('pharmacie')}>{t('sante.pharmacies')}</Tab>
+          <Tab $active={typeMed === 'clinique'} onClick={() => setTypeMed('clinique')}>{t('sante.clinics')}</Tab>
+          <Tab $active={typeMed === 'hopital'} onClick={() => setTypeMed('hopital')}>{t('sante.hospitals')}</Tab>
         </Tabs>
       )}
 
       {tab === 'etablissements' && (
         <Tabs>
-          <Tab $active={!typeFilter} onClick={() => setTypeFilter('')}>Tous</Tab>
-          <Tab $active={typeFilter === 'pharmacie'} onClick={() => setTypeFilter('pharmacie')}>Pharmacies</Tab>
-          <Tab $active={typeFilter === 'hopital'} onClick={() => setTypeFilter('hopital')}>Hôpitaux</Tab>
-          <Tab $active={typeFilter === 'clinique'} onClick={() => setTypeFilter('clinique')}>Cliniques</Tab>
+          <Tab $active={!typeFilter} onClick={() => setTypeFilter('')}>{t('sante.all')}</Tab>
+          <Tab $active={typeFilter === 'pharmacie'} onClick={() => setTypeFilter('pharmacie')}>{t('sante.pharmacies')}</Tab>
+          <Tab $active={typeFilter === 'hopital'} onClick={() => setTypeFilter('hopital')}>{t('sante.hospitals')}</Tab>
+          <Tab $active={typeFilter === 'clinique'} onClick={() => setTypeFilter('clinique')}>{t('sante.clinics')}</Tab>
         </Tabs>
       )}
 
       {tab === 'medecins' && (
         <Tabs>
-          <Tab $active={!dispoOnly} onClick={() => setDispoOnly(false)}>Tous</Tab>
-          <Tab $active={dispoOnly} onClick={() => setDispoOnly(true)}>Disponibles maintenant</Tab>
+          <Tab $active={!dispoOnly} onClick={() => setDispoOnly(false)}>{t('sante.all')}</Tab>
+          <Tab $active={dispoOnly} onClick={() => setDispoOnly(true)}>{t('sante.available_now')}</Tab>
         </Tabs>
       )}
 
@@ -318,9 +320,9 @@ export default function SantePage() {
           <Search />
           <input
             placeholder={
-              tab === 'medicaments' ? 'Rechercher un médicament (ex. Paracetamol, Amoxicilline)...'
-                : tab === 'etablissements' ? 'Rechercher un établissement...'
-                  : 'Rechercher un médecin...'
+              tab === 'medicaments' ? t('sante.search_medicine')
+                : tab === 'etablissements' ? t('sante.search_establishment')
+                  : t('sante.search_doctor')
             }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -329,7 +331,7 @@ export default function SantePage() {
         {tab === 'medicaments' && (
           <>
             <input
-              placeholder={cityLabel ? `Ville (ex. ${cityLabel}) — optionnel` : 'Ville (ex. Douala) — optionnel'}
+              placeholder={cityLabel ? t('sante.city_optional', { city: cityLabel }) : t('sante.city_douala')}
               value={villeMed}
               onChange={(e) => setVilleMed(e.target.value)}
               style={{ width: 200, padding: '10px 14px', border: '1px solid #E2E8F0', borderRadius: 8 }}
@@ -340,7 +342,7 @@ export default function SantePage() {
                 onClick={() => setVilleMed('')}
                 style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', cursor: 'pointer', fontSize: '0.8rem' }}
               >
-                Toutes villes
+                {t('sante.all_cities')}
               </button>
             )}
           </>
@@ -348,7 +350,7 @@ export default function SantePage() {
         {tab === 'medecins' && (
           <>
             <input
-              placeholder="Compétence (ex. Cardiologie)"
+              placeholder={t('sante.competence')}
               value={competenceFilter}
               onChange={(e) => setCompetenceFilter(e.target.value)}
               style={{ width: 200, padding: '10px 14px', border: '1px solid #E2E8F0', borderRadius: 8 }}
@@ -358,7 +360,7 @@ export default function SantePage() {
               onChange={(e) => setEtablissementFilter(e.target.value)}
               style={{ width: 220, padding: '10px 14px', border: '1px solid #E2E8F0', borderRadius: 8 }}
             >
-              <option value="">Tous les établissements</option>
+              <option value="">{t('sante.all_establishments')}</option>
               {etabOptions.map((e) => (
                 <option key={e.id} value={e.id}>{e.nom} ({e.ville})</option>
               ))}
@@ -371,7 +373,9 @@ export default function SantePage() {
         (etabLoading && !etabData) ? <Spinner /> :
         etabError ? (
           <ErrorState
-            message={`Impossible de charger les établissements. ${etabError.response?.data?.message || 'Vérifiez votre connexion.'}`}
+            message={t('sante.load_establishments_error', {
+              detail: etabError.response?.data?.message || t('sante.check_connection'),
+            })}
             onRetry={refetchEtab}
           />
         ) :
@@ -379,15 +383,15 @@ export default function SantePage() {
           {etablissements.length === 0 && !etabLoading && (
             <Card style={{ padding: 32, gridColumn: '1 / -1', textAlign: 'center', color: '#94A3B8' }}>
               {cityLabel
-                ? `Aucun établissement répertorié autour de ${cityLabel} pour le moment.`
-                : 'Aucun établissement trouvé.'}
+                ? t('sante.no_establishment_city', { city: cityLabel })
+                : t('sante.no_establishment')}
             </Card>
           )}
           {etablissements.map((e) => {
             const Icon = TYPE_ICONS[e.type] || Building2;
             return (
               <ItemCard key={e.id} onClick={() => navigate(`/sante/etablissement/${e.id}`)}>
-                <TypeBadge $type={e.type}><Icon size={12} /> {TYPE_LABELS[e.type]}</TypeBadge>
+                <TypeBadge $type={e.type}><Icon size={12} /> {typeLabels[e.type]}</TypeBadge>
                 <CardTitle>{e.nom}</CardTitle>
                 <Location>
                   <MapPin /> {e.ville}{e.adresse ? ` — ${e.adresse}` : ''}
@@ -399,7 +403,9 @@ export default function SantePage() {
                 <StarRating rating={e.note_moyenne} count={e.nombre_avis} />
                 {e.services?.length > 0 && (
                   <div style={{ marginTop: 8 }}>
-                    <ServiceCount>{e.services.length} service{e.services.length > 1 ? 's' : ''} disponible{e.services.length > 1 ? 's' : ''}</ServiceCount>
+                    <ServiceCount>
+                      {t(e.services.length === 1 ? 'sante.services_one' : 'sante.services_other', { count: e.services.length })}
+                    </ServiceCount>
                   </div>
                 )}
               </ItemCard>
@@ -410,12 +416,12 @@ export default function SantePage() {
 
       {tab === 'medicaments' && (
         prodLoading || (search.trim() !== debouncedSearch.trim()) ? <Spinner /> :
-        prodError ? <ErrorState message="Impossible de charger les médicaments" onRetry={refetchProd} /> :
+        prodError ? <ErrorState message={t('sante.load_medicines_error')} onRetry={refetchProd} /> :
         (
           <>
             {!search.trim() && (
               <p style={{ color: '#64748B', fontSize: '0.9rem', marginBottom: 16 }}>
-                Médicaments disponibles dans les pharmacies et dispensaires — utilisez la recherche pour affiner.
+                {t('sante.medicines_hint')}
               </p>
             )}
             <Grid>
@@ -430,13 +436,13 @@ export default function SantePage() {
                     )}
                     <CardTitle>{p.nom}</CardTitle>
                     {etab && (
-                      <TypeBadge $type={etab.type}><Icon size={12} /> {TYPE_LABELS[etab.type]} — {etab.nom}</TypeBadge>
+                      <TypeBadge $type={etab.type}><Icon size={12} /> {typeLabels[etab.type]} — {etab.nom}</TypeBadge>
                     )}
                     <Location><MapPin /> {etab?.ville}{etab?.adresse ? ` — ${etab.adresse}` : ''}</Location>
                     <strong style={{ color: '#059669', fontSize: '1rem' }}>{Number(p.prix_fcfa || 0).toLocaleString()} FCFA</strong>
                     <ServiceCount style={{ display: 'block', marginTop: 6 }}>
-                      En stock : {p.stock_disponible}
-                      {p.necessite_ordonnance && ' · Ordonnance requise'}
+                      {t('sante.in_stock', { count: p.stock_disponible })}
+                      {p.necessite_ordonnance && t('sante.prescription_required')}
                     </ServiceCount>
                   </ItemCard>
                 );
@@ -445,8 +451,11 @@ export default function SantePage() {
             {(produitsData || []).length === 0 && (
               <Card style={{ padding: 32, marginTop: 16, textAlign: 'center', color: '#94A3B8' }}>
                 {debouncedSearch.trim()
-                  ? <>Aucun médicament trouvé pour « {debouncedSearch} »{villeMed ? ` à ${villeMed}` : ''}. Essayez sans filtre ville.</>
-                  : <>Aucun médicament en stock pour le moment. Les établissements peuvent alimenter leur dispensaire depuis leur espace pro.</>}
+                  ? t('sante.no_medicine_search', {
+                    query: debouncedSearch,
+                    city: villeMed ? t('sante.in_city', { city: villeMed }) : '',
+                  })
+                  : t('sante.no_medicine_stock')}
               </Card>
             )}
           </>
@@ -455,7 +464,7 @@ export default function SantePage() {
 
       {tab === 'medecins' && (
         medLoading ? <Spinner /> :
-        medError ? <ErrorState message="Impossible de charger les médecins" onRetry={refetchMed} /> :
+        medError ? <ErrorState message={t('sante.load_doctors_error')} onRetry={refetchMed} /> :
         <Grid>
           {medecins.map((m) => {
             const competences = parseJsonArray(m.competences);
@@ -465,7 +474,7 @@ export default function SantePage() {
               <CardTitle>Dr. {m.prenom} {m.nom}</CardTitle>
               {m.disponible_maintenant && (
                 <span style={{ display: 'inline-block', marginBottom: 6, padding: '2px 8px', borderRadius: 12, background: '#DCFCE7', color: '#166534', fontSize: '0.7rem', fontWeight: 600 }}>
-                  Disponible
+                  {t('sante.available')}
                 </span>
               )}
               {m.etablissement && (

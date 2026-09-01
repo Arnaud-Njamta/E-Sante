@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
+import { FamilleProfilProvider } from './context/FamilleProfilContext';
 import ThemeProvider from './theme/ThemeProvider';
 import RoleRoute from './utils/RoleRoute';
 import AppLayout from './components/layout/AppLayout';
@@ -41,6 +42,8 @@ const PatientReservationsPage = React.lazy(() => import('./pages/PatientReservat
 const PatientRendezVousPage = React.lazy(() => import('./pages/PatientRendezVousPage'));
 const PaymentReturnPage = React.lazy(() => import('./pages/PaymentReturnPage'));
 const CarnetMedicalPage = React.lazy(() => import('./pages/CarnetMedicalPage'));
+const UrgencePage = React.lazy(() => import('./pages/UrgencePage'));
+const StructureDemandesPage = React.lazy(() => import('./pages/StructureDemandesPage'));
 const PatientOrdonnancesElecPage = React.lazy(() => import('./pages/PatientOrdonnancesElecPage'));
 const DispensaireProduitsPage = React.lazy(() => import('./pages/DispensaireProduitsPage'));
 const PharmacieLocalisationPage = React.lazy(() => import('./pages/PharmacieLocalisationPage'));
@@ -59,36 +62,53 @@ const PatientPaiementsPage = React.lazy(() => import('./pages/PatientPaiementsPa
 const PharmacieOrdonnanceVerifyPage = React.lazy(() => import('./pages/PharmacieOrdonnanceVerifyPage'));
 const MedecinProfilProPage = React.lazy(() => import('./pages/MedecinProfilProPage'));
 const StructureEquipePage = React.lazy(() => import('./pages/StructureEquipePage'));
+const FamillePage = React.lazy(() => import('./pages/FamillePage'));
+const QrMedicalPage = React.lazy(() => import('./pages/QrMedicalPage'));
+const QrPublicPage = React.lazy(() => import('./pages/QrPublicPage'));
+const ProQrScanPage = React.lazy(() => import('./pages/ProQrScanPage'));
+const AdminAlertesPage = React.lazy(() => import('./pages/AdminAlertesPage'));
+const AdminSantePubliquePage = React.lazy(() => import('./pages/AdminSantePubliquePage'));
+const StructureAlertesPage = React.lazy(() => import('./pages/StructureAlertesPage'));
 
 const queryClient = new QueryClient({
     defaultOptions: {
-        queries: { retry: 1, staleTime: 5 * 60 * 1000, refetchOnWindowFocus: false },
+        queries: {
+            retry: 1,
+            staleTime: 5 * 60 * 1000,
+            refetchOnWindowFocus: false,
+            placeholderData: (prev) => prev,
+        },
     },
 });
 
-const PageLoader = () => (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', color: '#64748B' }}>
-        Chargement…
+const AuthPageLoader = () => (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', color: '#64748B' }}>
+        …
     </div>
 );
+
+function LazyRoute({ children }) {
+    return <Suspense fallback={<AuthPageLoader />}>{children}</Suspense>;
+}
 
 export default function App() {
     return (
         <QueryClientProvider client={queryClient}>
             <BrowserRouter>
                 <AuthProvider>
+                    <FamilleProfilProvider>
                     <ThemeProvider>
                         <ErrorBoundary>
-                        <Suspense fallback={<PageLoader />}>
                             <Routes>
-                                <Route path="/login" element={<LoginPage />} />
-                                <Route path="/register" element={<RegisterPage />} />
-                                <Route path="/mot-de-passe-oublie" element={<ForgotPasswordPage />} />
-                                <Route path="/reset-password" element={<ResetPasswordPage />} />
-                                <Route path="/register/professionnel" element={<RegisterProfessionnelPage />} />
-                                <Route path="/confidentialite" element={<PrivacyPolicyPage />} />
-                                <Route path="/cgu" element={<TermsOfServicePage />} />
-                                <Route path="/actualites" element={<ActualitesPage />} />
+                                <Route path="/login" element={<LazyRoute><LoginPage /></LazyRoute>} />
+                                <Route path="/register" element={<LazyRoute><RegisterPage /></LazyRoute>} />
+                                <Route path="/mot-de-passe-oublie" element={<LazyRoute><ForgotPasswordPage /></LazyRoute>} />
+                                <Route path="/reset-password" element={<LazyRoute><ResetPasswordPage /></LazyRoute>} />
+                                <Route path="/register/professionnel" element={<LazyRoute><RegisterProfessionnelPage /></LazyRoute>} />
+                                <Route path="/confidentialite" element={<LazyRoute><PrivacyPolicyPage /></LazyRoute>} />
+                                <Route path="/cgu" element={<LazyRoute><TermsOfServicePage /></LazyRoute>} />
+                                <Route path="/actualites" element={<LazyRoute><ActualitesPage /></LazyRoute>} />
+                                <Route path="/qr/:token" element={<LazyRoute><QrPublicPage /></LazyRoute>} />
 
                                 <Route element={<RoleRoute allowedRoles={[ROLES.PATIENT]} />}>
                                     <Route element={<AppLayout />}>
@@ -107,6 +127,9 @@ export default function App() {
                                     <Route path="/paiements" element={<PatientPaiementsPage />} />
                                     <Route path="/ordonnances-electroniques" element={<PatientOrdonnancesElecPage />} />
                                     <Route path="/carnet-medical" element={<CarnetMedicalPage />} />
+                                    <Route path="/famille" element={<FamillePage />} />
+                                    <Route path="/qr-medical" element={<QrMedicalPage />} />
+                                    <Route path="/urgence" element={<UrgencePage />} />
                                     <Route path="/pharmacie/chat" element={<PharmacieChatPage />} />
                                     <Route path="/pharmacie/chat/:conversationId" element={<PharmacieChatPage />} />
                                     <Route path="/profil" element={<ProfilePage />} />
@@ -123,6 +146,7 @@ export default function App() {
                                     <Route path="/medecin/carriere" element={<MedecinProfilProPage />} />
                                     <Route path="/medecin/ordonnances" element={<MedecinOrdonnancesPage />} />
                                     <Route path="/medecin/avis" element={<MedecinAvisPage />} />
+                                    <Route path="/medecin/qr-scan" element={<ProQrScanPage />} />
                                     <Route path="/medecin/actualites" element={<ActualitesPage />} />
                                     <Route path="/sante/medecin/:id" element={<MedecinDetailPage />} />
                                     </Route>
@@ -140,6 +164,7 @@ export default function App() {
                                     <Route path="/pharmacie/profil" element={<StructureProfilPage />} />
                                     <Route path="/pharmacie/equipe" element={<StructureEquipePage />} />
                                     <Route path="/pharmacie/ordonnances" element={<PharmacieOrdonnanceVerifyPage />} />
+                                    <Route path="/pharmacie/qr-scan" element={<ProQrScanPage />} />
                                     <Route path="/pharmacie/actualites" element={<ActualitesPage />} />
                                     </Route>
                                 </Route>
@@ -150,6 +175,8 @@ export default function App() {
                                     <Route path="/hopital/medecins" element={<StructureMedecinsPage />} />
                                     <Route path="/hopital/services" element={<StructureServicesPage />} />
                                     <Route path="/hopital/rendez-vous" element={<StructureRendezVousPage />} />
+                                    <Route path="/hopital/demandes" element={<StructureDemandesPage />} />
+                                    <Route path="/hopital/alertes" element={<StructureAlertesPage />} />
                                     <Route path="/hopital/dispensaire" element={<DispensaireProduitsPage />} />
                                     <Route path="/hopital/reservations" element={<StructureReservationsPage />} />
                                     <Route path="/hopital/messages" element={<PharmacieMessagesPage />} />
@@ -159,6 +186,7 @@ export default function App() {
                                     <Route path="/hopital/profil" element={<StructureProfilPage />} />
                                     <Route path="/hopital/equipe" element={<StructureEquipePage />} />
                                     <Route path="/hopital/ordonnances" element={<PharmacieOrdonnanceVerifyPage />} />
+                                    <Route path="/hopital/qr-scan" element={<ProQrScanPage />} />
                                     <Route path="/hopital/actualites" element={<ActualitesPage />} />
                                     </Route>
                                 </Route>
@@ -169,6 +197,8 @@ export default function App() {
                                     <Route path="/clinique/medecins" element={<StructureMedecinsPage />} />
                                     <Route path="/clinique/services" element={<StructureServicesPage />} />
                                     <Route path="/clinique/rendez-vous" element={<StructureRendezVousPage />} />
+                                    <Route path="/clinique/demandes" element={<StructureDemandesPage />} />
+                                    <Route path="/clinique/alertes" element={<StructureAlertesPage />} />
                                     <Route path="/clinique/dispensaire" element={<DispensaireProduitsPage />} />
                                     <Route path="/clinique/reservations" element={<StructureReservationsPage />} />
                                     <Route path="/clinique/messages" element={<PharmacieMessagesPage />} />
@@ -178,6 +208,7 @@ export default function App() {
                                     <Route path="/clinique/profil" element={<StructureProfilPage />} />
                                     <Route path="/clinique/equipe" element={<StructureEquipePage />} />
                                     <Route path="/clinique/ordonnances" element={<PharmacieOrdonnanceVerifyPage />} />
+                                    <Route path="/clinique/qr-scan" element={<ProQrScanPage />} />
                                     <Route path="/clinique/actualites" element={<ActualitesPage />} />
                                     </Route>
                                 </Route>
@@ -189,15 +220,17 @@ export default function App() {
                                     <Route path="/admin/inscriptions" element={<AdminInscriptionsPage />} />
                                     <Route path="/admin/audit" element={<AdminAuditPage />} />
                                     <Route path="/admin/commissions" element={<AdminCommissionsPage />} />
+                                    <Route path="/admin/alertes" element={<AdminAlertesPage />} />
+                                    <Route path="/admin/sante-publique" element={<AdminSantePubliquePage />} />
                                     </Route>
                                 </Route>
 
                                 <Route path="*" element={<Navigate to="/login" replace />} />
                             </Routes>
-                        </Suspense>
                         </ErrorBoundary>
                         <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
                     </ThemeProvider>
+                    </FamilleProfilProvider>
                 </AuthProvider>
             </BrowserRouter>
         </QueryClientProvider>

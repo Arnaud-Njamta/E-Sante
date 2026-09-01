@@ -29,6 +29,16 @@ const listerFeatured = async (req, res, next) => {
   }
 };
 
+const listerAlertes = async (req, res, next) => {
+  try {
+    const region = req.query.region || req.patient?.region || null;
+    const alertes = await publicationService.listerAlertes(region);
+    res.json({ success: true, data: alertes });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const creer = async (req, res, next) => {
   try {
     const payload = typeof req.body.data === 'string' ? JSON.parse(req.body.data) : req.body;
@@ -78,5 +88,5 @@ const supprimer = async (req, res, next) => {
 };
 
 module.exports = {
-  optionalAuth, lister, listerFeatured, creer, toggleLike, getComments, addComment, supprimer,
+  optionalAuth, lister, listerFeatured, listerAlertes, creer, toggleLike, getComments, addComment, supprimer,
 };

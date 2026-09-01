@@ -1,9 +1,13 @@
+import { getActiveLocale } from '../i18n/syncLanguage';
+import i18n from '../i18n';
+
 /**
- * Format a date to a French locale string
+ * Format a date using the active UI language
  */
+
 export function formatDate(date, options = {}) {
     const d = new Date(date);
-    return d.toLocaleDateString('fr-FR', {
+    return d.toLocaleDateString(getActiveLocale(), {
         day: 'numeric',
         month: 'long',
         year: 'numeric',
@@ -54,13 +58,13 @@ export function computeObservance(taken, total) {
 }
 
 /**
- * Get greeting based on current hour
+ * Get greeting based on current hour (i18n)
  */
 export function getGreeting() {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Bonjour';
-    if (hour < 18) return 'Bon après-midi';
-    return 'Bonsoir';
+    if (hour < 12) return i18n.t('greeting.morning');
+    if (hour < 18) return i18n.t('greeting.afternoon');
+    return i18n.t('greeting.evening');
 }
 
 /**

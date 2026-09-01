@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import {
   Package, X, MapPin, CreditCard, CheckCircle2, Download,
@@ -14,13 +15,13 @@ import { useMesReservations, useAnnulerReservation, usePreviewAnnulationReservat
 import { getRecuUrl } from '../hooks/usePaiement';
 import toast from 'react-hot-toast';
 
-const STATUT = {
-  en_attente: { label: 'En attente', color: '#F59E0B' },
-  confirmee: { label: 'Confirmée', color: '#007A5E' },
-  refusee: { label: 'Refusée', color: '#EF4444' },
-  prete: { label: 'Prête au retrait', color: '#22C55E' },
-  retiree: { label: 'Retirée', color: '#64748B' },
-  annulee: { label: 'Annulée', color: '#94A3B8' },
+const STATUT_COLORS = {
+  en_attente: { color: '#F59E0B' },
+  confirmee: { color: '#007A5E' },
+  refusee: { color: '#EF4444' },
+  prete: { color: '#22C55E' },
+  retiree: { color: '#64748B' },
+  annulee: { color: '#94A3B8' },
 };
 
 const List = styled.div`
@@ -101,7 +102,17 @@ const parseLignes = (lignes) => {
 };
 
 export default function PatientReservationsPage() {
+  const { t } = useTranslation();
   const { data: reservations, isLoading, error, refetch } = useMesReservations();
+
+  const STATUT_LABELS = {
+    en_attente: t('reservations.status_en_attente'),
+    confirmee: t('reservations.status_confirmee'),
+    refusee: t('reservations.status_refusee'),
+    prete: t('reservations.status_prete'),
+    retiree: t('reservations.status_retiree'),
+    annulee: t('reservations.status_annulee'),
+  };
   const annuler = useAnnulerReservation();
   const [paiement, setPaiement] = useState(null);
   const [cancelTarget, setCancelTarget] = useState(null);
@@ -113,33 +124,33 @@ export default function PatientReservationsPage() {
     if (!cancelTarget) return;
     try {
       const res = await annuler.mutateAsync(cancelTarget);
-      toast.success(res.message || 'Réservation annulée');
+      toast.success(res.message || t('reservations.cancelled'));
       setCancelTarget(null);
       refetch();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Impossible d\'annuler');
+      toast.error(err.response?.data?.message || t('reservations.cancel_error'));
     }
   };
 
   if (isLoading) return <Spinner />;
-  if (error) return <ErrorState message="Impossible de charger vos réservations" onRetry={refetch} />;
+  if (error) return <ErrorState message={t('reservations.load_error')} onRetry={refetch} />;
 
   return (
     <div>
       <PatientPageHeader
-        title="Mes réservations"
-        subtitle="Demandes de médicaments auprès des pharmacies et dispensaires"
+        title={t('reservations.title')}
+        subtitle={t('reservations.subtitle')}
       />
 
       {list.length === 0 ? (
         <EmptyCard>
           <Package />
-          <p>Aucune réservation. Parcourez l&apos;annuaire santé et réservez vos médicaments en ligne.</p>
+          <p>{t('reservations.empty')}</p>
         </EmptyCard>
       ) : (
         <List>
           {list.map((r) => {
-            const st = STATUT[r.statut] || STATUT.en_attente;
+            const st = STATUT_COLORS[r.statut] || STATUT_COLORS.en_attente;
             const lignes = parseLignes(r.lignes);
             return (
               <ResCard key={r.id}>
@@ -150,22 +161,22 @@ export default function PatientReservationsPage() {
                       <MapPin size={14} style={{ verticalAlign: 'middle' }} /> {r.etablissement?.nom} — {r.etablissement?.ville}
                     </ResMeta>
                   </div>
-                  <StatusBadge $color={st.color}>{st.label}</StatusBadge>
+                  <StatusBadge $color={st.color}>{STATUT_LABELS[r.statut] || STATUT_LABELS.en_attente}</StatusBadge>
                 </ResTop>
                 <ProductList>
                   {lignes.length > 0 ? lignes.map((l, i) => (
                     <li key={l.produit_id || i}>
-                      <strong>{l.nom || l.medicament || 'Médicament'}</strong>
+                      <strong>{l.nom || l.medicament || t('reservations.medicine_default')}</strong>
                       {' '}× {l.quantite || 1}
                       {l.prix_fcfa_unitaire ? ` — ${(l.prix_fcfa_unitaire * (l.quantite || 1)).toLocaleString()} FCFA` : ''}
                     </li>
                   )) : (
-                    <li style={{ color: '#94A3B8' }}>Détail des produits indisponible</li>
+                    <li style={{ color: '#94A3B8' }}>{t('reservations.product_detail_unavailable')}</li>
                   )}
                 </ProductList>
                 {r.montant_total_fcfa > 0 && (
                   <p style={{ margin: '0 0 12px', fontSize: '0.9rem', fontWeight: 600, color: '#059669' }}>
-                    Total : {Number(r.montant_total_fcfa).toLocaleString()} FCFA
+                    {t('reservations.total', { amount: Number(r.montant_total_fcfa).toLocaleString() })}
                   </p>
                 )}
                 <Actions>
@@ -174,25 +185,25 @@ export default function PatientReservationsPage() {
                       referenceType: 'reservation_dispensaire',
                       referenceId: r.id,
                       transaction: r.transaction,
-                      titre: `Réservation ${r.numero_reference}`,
+                      titre: t('reservations.reservation_title', { ref: r.numero_reference }),
                     })}
                     >
-                      <CreditCard size={14} /> Payer
+                      <CreditCard size={14} /> {t('reservations.pay')}
                     </Button>
                   )}
                   {r.transaction?.statut_paiement === 'paye' && r.transaction?.id && (
                     <Button size="sm" variant="secondary" onClick={() => window.open(getRecuUrl(r.transaction.id), '_blank')}>
-                      <Download size={14} /> Reçu
+                      <Download size={14} /> {t('reservations.receipt')}
                     </Button>
                   )}
                   {['en_attente', 'confirmee'].includes(r.statut) && (
                     <Button size="sm" variant="secondary" onClick={() => setCancelTarget(r.id)}>
-                      <X size={14} /> Annuler
+                      <X size={14} /> {t('reservations.cancel')}
                     </Button>
                   )}
                   {r.statut === 'prete' && (
                     <span style={{ fontSize: '0.85rem', color: '#047857', display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <CheckCircle2 size={16} /> Prête au retrait
+                      <CheckCircle2 size={16} /> {t('reservations.ready_pickup')}
                     </span>
                   )}
                 </Actions>
@@ -209,8 +220,8 @@ export default function PatientReservationsPage() {
         loading={annuler.isPending}
         previewLoading={previewLoading}
         preview={cancelPreview}
-        title="Annuler cette réservation ?"
-        confirmLabel="Oui, annuler la réservation"
+        title={t('reservations.cancel_title')}
+        confirmLabel={t('reservations.cancel_confirm')}
       />
 
       <PaymentModal

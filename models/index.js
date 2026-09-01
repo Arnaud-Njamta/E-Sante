@@ -28,6 +28,9 @@ const MedecinAffiliation = require('./MedecinAffiliation');
 const ParcoursProfessionnel = require('./ParcoursProfessionnel');
 const MembreEquipeEtablissement = require('./MembreEquipeEtablissement');
 const ConsentementPatient = require('./ConsentementPatient');
+const DemandePriseEnCharge = require('./DemandePriseEnCharge');
+const ProfilFamille = require('./ProfilFamille');
+const PushSubscription = require('./PushSubscription');
 
 // ==================== ASSOCIATIONS ====================
 
@@ -120,6 +123,16 @@ ParcoursProfessionnel.belongsTo(Medecin, { foreignKey: 'medecin_id', as: 'medeci
 Etablissement.hasMany(MembreEquipeEtablissement, { foreignKey: 'etablissement_id', as: 'membres_equipe' });
 MembreEquipeEtablissement.belongsTo(Etablissement, { foreignKey: 'etablissement_id', as: 'etablissement' });
 
+Patient.hasMany(DemandePriseEnCharge, { foreignKey: 'patient_id', as: 'demandes_prise_en_charge' });
+DemandePriseEnCharge.belongsTo(Patient, { foreignKey: 'patient_id', as: 'patient' });
+Etablissement.hasMany(DemandePriseEnCharge, { foreignKey: 'etablissement_id', as: 'demandes_prise_en_charge' });
+DemandePriseEnCharge.belongsTo(Etablissement, { foreignKey: 'etablissement_id', as: 'etablissement' });
+ServiceEtablissement.hasMany(DemandePriseEnCharge, { foreignKey: 'service_id', as: 'demandes' });
+DemandePriseEnCharge.belongsTo(ServiceEtablissement, { foreignKey: 'service_id', as: 'service' });
+
+Patient.hasMany(ProfilFamille, { foreignKey: 'patient_id', as: 'profils_famille' });
+ProfilFamille.belongsTo(Patient, { foreignKey: 'patient_id', as: 'patient' });
+
 module.exports = {
   sequelize,
   Patient,
@@ -151,4 +164,7 @@ module.exports = {
   ParcoursProfessionnel,
   MembreEquipeEtablissement,
   ConsentementPatient,
+  DemandePriseEnCharge,
+  ProfilFamille,
+  PushSubscription,
 };

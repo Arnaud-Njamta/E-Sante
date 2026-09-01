@@ -19,15 +19,29 @@ const haversineKm = (lat1, lon1, lat2, lon2) => {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
-const fetchRows = async (where, order, limit, offset = 0) => {
+const fetchRows = async (where, order, limit, offset = 0, serviceCategorie = null) => {
   const cap = Math.max(1, Math.min(parseInt(limit, 10) || 20, 500));
   const skip = Math.max(parseInt(offset, 10) || 0, 0);
+
+  if (serviceCategorie) {
+    return Etablissement.findAll({
+      where,
+      include: [{
+        model: ServiceEtablissement,
+        as: 'services',
+        where: { disponible: true, categorie: { [Op.like]: `%${serviceCategorie}%` } },
+        required: true,
+      }],
+      order,
+      limit: cap,
+      offset: skip,
+      subQuery: false,
+    });
+  }
+
   return Etablissement.findAll({
     where,
-    include: [{
-      ...serviceInclude,
-      separate: true,
-    }],
+    include: [{ ...serviceInclude, separate: true }],
     order,
     limit: cap,
     offset: skip,
@@ -52,7 +66,7 @@ const buildWhere = ({ type, recherche, ville, useGeo }) => {
 
 const lister = async ({
   type, ville, recherche, page = 1, limit = 20,
-  latitude, longitude, radius_km = 25, nearby,
+  latitude, longitude, radius_km = 25, nearby, service_categorie,
 } = {}) => {
   try {
     const pageNum = Math.max(parseInt(page, 10) || 1, 1);
@@ -69,8 +83,19 @@ const lister = async ({
 
     if (!useGeo) {
       const [rows, total] = await Promise.all([
-        fetchRows(where, defaultOrder, limitNum, offset),
-        Etablissement.count({ where }),
+        fetchRows(where, defaultOrder, limitNum, offset, service_categorie),
+        service_categorie
+          ? Etablissement.count({
+            where,
+            include: [{
+              model: ServiceEtablissement,
+              as: 'services',
+              where: { disponible: true, categorie: { [Op.like]: `%${service_categorie}%` } },
+              required: true,
+            }],
+            distinct: true,
+          })
+          : Etablissement.count({ where }),
       ]);
       return {
         etablissements: rows.map((r) => (r.toJSON ? r.toJSON() : r)),
@@ -85,7 +110,7 @@ const lister = async ({
     }
 
     const radius = Number(radius_km) || 25;
-    const rows = await fetchRows(where, defaultOrder, 150, 0);
+    const rows = await fetchRows(where, defaultOrder, 150, 0, service_categorie);
 
     let etablissements = rows.map((r) => {
       const plain = r.toJSON ? r.toJSON() : { ...r };

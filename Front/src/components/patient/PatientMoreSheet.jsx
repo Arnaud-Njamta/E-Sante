@@ -1,9 +1,11 @@
 import React, { useEffect } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { X, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { PATIENT_MORE_SECTIONS } from '../../config/patientMobileNav';
+import { prefetchRoute } from '../../utils/routePrefetch';
 
 const Backdrop = styled.div`
   position: fixed;
@@ -169,6 +171,7 @@ const LogoutBtn = styled.button`
 `;
 
 export default function PatientMoreSheet({ open, onClose }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { logout } = useAuth();
 
@@ -189,25 +192,31 @@ export default function PatientMoreSheet({ open, onClose }) {
   return (
     <>
       <Backdrop onClick={onClose} aria-hidden />
-      <Sheet role="dialog" aria-label="Plus d'options">
+      <Sheet role="dialog" aria-label={t('nav.more_options')}>
         <Handle />
         <SheetHead>
-          <h2>Plus d&apos;options</h2>
-          <CloseBtn type="button" onClick={onClose} aria-label="Fermer">
+          <h2>{t('nav.more_options')}</h2>
+          <CloseBtn type="button" onClick={onClose} aria-label={t('common.cancel')}>
             <X size={18} />
           </CloseBtn>
         </SheetHead>
 
         {PATIENT_MORE_SECTIONS.map((section) => (
-          <Section key={section.title}>
-            <SectionTitle>{section.title}</SectionTitle>
+          <Section key={section.titleKey}>
+            <SectionTitle>{t(section.titleKey)}</SectionTitle>
             <ItemGrid>
               {section.items.map((item) => (
-                <Item key={item.to} type="button" onClick={() => handleNav(item.to)}>
+                <Item
+                  key={item.to}
+                  type="button"
+                  onMouseEnter={() => prefetchRoute(item.to)}
+                  onFocus={() => prefetchRoute(item.to)}
+                  onClick={() => handleNav(item.to)}
+                >
                   <ItemIcon><item.icon /></ItemIcon>
                   <ItemText>
-                    <strong>{item.label}</strong>
-                    <span>{item.desc}</span>
+                    <strong>{t(item.labelKey)}</strong>
+                    <span>{t(item.descKey)}</span>
                   </ItemText>
                 </Item>
               ))}
@@ -224,7 +233,7 @@ export default function PatientMoreSheet({ open, onClose }) {
           }}
         >
           <LogOut />
-          Se déconnecter
+          {t('common.logout')}
         </LogoutBtn>
       </Sheet>
     </>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FileText, Pill, Search, CheckCircle, AlertCircle, Shield, Download } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -16,6 +17,7 @@ import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 
 export default function PatientOrdonnancesElecPage() {
+  const { t } = useTranslation();
   const { data: ordonnances, isLoading } = useOrdonnancesElecPatient();
   const [selectedOrdo, setSelectedOrdo] = useState(null);
   const [etabId, setEtabId] = useState('');
@@ -27,22 +29,28 @@ export default function PatientOrdonnancesElecPage() {
 
   const structures = (etabs?.etablissements || []).filter((e) => ['pharmacie', 'hopital', 'clinique'].includes(e.type));
 
+  const typeLabels = {
+    pharmacie: t('sante.type_pharmacie'),
+    hopital: t('sante.type_hopital'),
+    clinique: t('sante.type_clinique'),
+  };
+
   const handleDownload = async () => {
     if (!selectedOrdo) return;
     try {
       await downloadOrdo.mutateAsync(selectedOrdo);
-      toast.success('Ordonnance téléchargée — ouvrez le fichier et imprimez-le si besoin');
+      toast.success(t('ordonnancesElec.download_success'));
     } catch {
-      toast.error('Erreur lors du téléchargement');
+      toast.error(t('ordonnancesElec.download_error'));
     }
   };
 
   const handleReserver = async () => {
     try {
       await reserver.mutateAsync({ ordonnanceId: selectedOrdo, etablissement_id: etabId });
-      toast.success('Réservation créée — l\'établissement va confirmer');
+      toast.success(t('ordonnancesElec.reserve_success'));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Erreur');
+      toast.error(err.response?.data?.message || t('ordonnancesElec.error'));
     }
   };
 
@@ -50,18 +58,18 @@ export default function PatientOrdonnancesElecPage() {
 
   return (
     <div>
-      <h1 style={{ margin: '0 0 8px' }}><FileText size={24} style={{ verticalAlign: 'middle' }} /> Ordonnances électroniques</h1>
-      <p style={{ color: '#64748B', marginBottom: 24 }}>Vérifiez la disponibilité des médicaments et réservez au dispensaire</p>
+      <h1 style={{ margin: '0 0 8px' }}><FileText size={24} style={{ verticalAlign: 'middle' }} /> {t('ordonnancesElec.title')}</h1>
+      <p style={{ color: '#64748B', marginBottom: 24 }}>{t('ordonnancesElec.subtitle')}</p>
 
       {(ordonnances || []).length === 0 ? (
         <Card style={{ padding: 40, textAlign: 'center', color: '#94A3B8' }}>
           <FileText size={40} style={{ marginBottom: 12 }} />
-          <p>Aucune ordonnance électronique signée. Elles apparaîtront ici après consultation chez un médecin DjamSanté.</p>
+          <p>{t('ordonnancesElec.empty')}</p>
         </Card>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
           <div>
-            <h3 style={{ marginBottom: 12 }}>Vos ordonnances</h3>
+            <h3 style={{ marginBottom: 12 }}>{t('ordonnancesElec.your_prescriptions')}</h3>
             {(ordonnances || []).map((o) => (
               <Card
                 key={o.id}
@@ -83,9 +91,9 @@ export default function PatientOrdonnancesElecPage() {
           </div>
 
           <div>
-            <h3 style={{ marginBottom: 12 }}><Search size={18} /> Détail & disponibilité</h3>
+            <h3 style={{ marginBottom: 12 }}><Search size={18} /> {t('ordonnancesElec.detail_title')}</h3>
             {!selectedOrdo ? (
-              <Card style={{ padding: 24, color: '#94A3B8' }}>Sélectionnez une ordonnance</Card>
+              <Card style={{ padding: 24, color: '#94A3B8' }}>{t('ordonnancesElec.select_prescription')}</Card>
             ) : (
               <>
               {docLoading ? <Spinner /> : docOrdo && (
@@ -98,7 +106,7 @@ export default function PatientOrdonnancesElecPage() {
                       </p>
                       {docOrdo.diagnostic && <p style={{ fontSize: '0.9rem' }}><em>{docOrdo.diagnostic}</em></p>}
                     </div>
-                    <span style={{ fontSize: '0.72rem', color: '#059669', fontWeight: 600 }}>SIGNÉE</span>
+                    <span style={{ fontSize: '0.72rem', color: '#059669', fontWeight: 600 }}>{t('ordonnancesElec.signed')}</span>
                   </div>
                   <Button
                     variant="secondary"
@@ -107,7 +115,7 @@ export default function PatientOrdonnancesElecPage() {
                     disabled={downloadOrdo.isPending}
                     style={{ marginBottom: 12 }}
                   >
-                    <Download size={14} /> Télécharger l&apos;ordonnance
+                    <Download size={14} /> {t('ordonnancesElec.download')}
                   </Button>
                   <ul style={{ margin: '12px 0', paddingLeft: 18, fontSize: '0.9rem' }}>
                     {(docOrdo.medicaments || []).map((m, i) => (
@@ -118,14 +126,14 @@ export default function PatientOrdonnancesElecPage() {
                   <div style={{ display: 'flex', gap: 24, marginTop: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
                     {docOrdo.cachet_url && docOrdo.fichier_cachet_id && (
                       <div>
-                        <p style={{ fontSize: '0.72rem', color: '#94A3B8', margin: '0 0 4px' }}>Cachet</p>
-                        <img src={authenticatedFileUrl(docOrdo.fichier_cachet_id)} alt="Cachet" style={{ maxHeight: 64 }} />
+                        <p style={{ fontSize: '0.72rem', color: '#94A3B8', margin: '0 0 4px' }}>{t('ordonnancesElec.stamp')}</p>
+                        <img src={authenticatedFileUrl(docOrdo.fichier_cachet_id)} alt={t('ordonnancesElec.stamp')} style={{ maxHeight: 64 }} />
                       </div>
                     )}
                     {docOrdo.signature_url && docOrdo.fichier_signature_id && (
                       <div>
-                        <p style={{ fontSize: '0.72rem', color: '#94A3B8', margin: '0 0 4px' }}>Signature</p>
-                        <img src={authenticatedFileUrl(docOrdo.fichier_signature_id)} alt="Signature" style={{ maxHeight: 48 }} />
+                        <p style={{ fontSize: '0.72rem', color: '#94A3B8', margin: '0 0 4px' }}>{t('ordonnancesElec.signature')}</p>
+                        <img src={authenticatedFileUrl(docOrdo.fichier_signature_id)} alt={t('ordonnancesElec.signature')} style={{ maxHeight: 48 }} />
                       </div>
                     )}
                   </div>
@@ -135,15 +143,15 @@ export default function PatientOrdonnancesElecPage() {
                 </Card>
               )}
               <Card style={{ padding: 20 }}>
-                <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Établissement (pharmacie / clinique / hôpital)</label>
+                <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>{t('ordonnancesElec.establishment_label')}</label>
                 <select
                   value={etabId}
                   onChange={(e) => setEtabId(e.target.value)}
                   style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #E2E8F0', marginTop: 4, marginBottom: 16 }}
                 >
-                  <option value="">Choisir...</option>
+                  <option value="">{t('ordonnancesElec.choose')}</option>
                   {structures.map((e) => (
-                    <option key={e.id} value={e.id}>{e.nom} ({e.type}) — {e.ville}</option>
+                    <option key={e.id} value={e.id}>{e.nom} ({typeLabels[e.type] || e.type}) — {e.ville}</option>
                   ))}
                 </select>
 
@@ -154,23 +162,23 @@ export default function PatientOrdonnancesElecPage() {
                       padding: 12, borderRadius: 8, marginBottom: 16,
                       background: dispo.resume?.complet ? '#ECFDF5' : dispo.resume?.partiel ? '#FFFBEB' : '#FEF2F2',
                     }}>
-                      {dispo.resume?.complet && <><CheckCircle size={16} color="#22C55E" /> Tous les médicaments disponibles</>}
-                      {dispo.resume?.partiel && <><AlertCircle size={16} color="#F59E0B" /> Disponibilité partielle ({dispo.resume.disponibles}/{dispo.resume.total})</>}
-                      {!dispo.resume?.disponibles && <><AlertCircle size={16} color="#EF4444" /> Aucun médicament en stock</>}
+                      {dispo.resume?.complet && <><CheckCircle size={16} color="#22C55E" /> {t('ordonnancesElec.all_available')}</>}
+                      {dispo.resume?.partiel && <><AlertCircle size={16} color="#F59E0B" /> {t('ordonnancesElec.partial_available', { available: dispo.resume.disponibles, total: dispo.resume.total })}</>}
+                      {!dispo.resume?.disponibles && <><AlertCircle size={16} color="#EF4444" /> {t('ordonnancesElec.none_available')}</>}
                     </div>
                     {(dispo.lignes || []).map((l, i) => (
                       <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #F1F5F9', fontSize: '0.9rem' }}>
                         <span>{l.nom_recherche}</span>
                         {l.disponible ? (
-                          <span style={{ color: '#22C55E' }}>{l.produit?.prix_fcfa?.toLocaleString()} FCFA — stock {l.produit?.stock_disponible}</span>
+                          <span style={{ color: '#22C55E' }}>{t('ordonnancesElec.stock_price', { price: l.produit?.prix_fcfa?.toLocaleString(), stock: l.produit?.stock_disponible })}</span>
                         ) : (
-                          <span style={{ color: '#EF4444' }}>Indisponible</span>
+                          <span style={{ color: '#EF4444' }}>{t('ordonnancesElec.unavailable')}</span>
                         )}
                       </div>
                     ))}
                     {dispo.resume?.disponibles > 0 && (
                       <Button onClick={handleReserver} disabled={reserver.isPending} style={{ marginTop: 16, width: '100%' }}>
-                        <Pill size={16} /> Réserver les médicaments disponibles
+                        <Pill size={16} /> {t('ordonnancesElec.reserve')}
                       </Button>
                     )}
                   </>
@@ -183,7 +191,7 @@ export default function PatientOrdonnancesElecPage() {
       )}
 
       <p style={{ marginTop: 24, fontSize: '0.85rem', color: '#64748B' }}>
-        <Link to="/reservations">Voir mes réservations →</Link>
+        <Link to="/reservations">{t('ordonnancesElec.view_reservations')}</Link>
       </p>
     </div>
   );

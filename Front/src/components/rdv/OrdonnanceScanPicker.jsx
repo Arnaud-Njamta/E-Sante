@@ -117,10 +117,10 @@ export default function OrdonnanceScanPicker({ value, onChange, disabled }) {
   return (
     <>
       <Zone>
-        <ZoneTitle>Ordonnance manuscrite (optionnel)</ZoneTitle>
+        <ZoneTitle>Ordonnance papier (optionnel)</ZoneTitle>
         <ZoneDesc>
-          Photographiez votre ordonnance avec la caméra ou importez une photo depuis votre galerie,
-          comme avec CamScanner.
+          Si vous avez déjà une ordonnance manuscrite, photographiez-la ou importez-la.
+          Sinon, ignorez cette étape : le médecin pourra rédiger l&apos;ordonnance de son côté après la consultation.
         </ZoneDesc>
         <Actions>
           <Button

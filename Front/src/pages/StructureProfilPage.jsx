@@ -1,5 +1,6 @@
 import React from 'react';
 import { Building2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -13,6 +14,7 @@ import ENDPOINTS from '../api/endpoints';
 import toast from 'react-hot-toast';
 
 export default function StructureProfilPage() {
+  const { t } = useTranslation();
   const { user, role } = useAuth();
   const { data, isLoading, refetch } = useStructureDashboard();
   const uploadPhoto = useUploadEtabPhoto();
@@ -57,12 +59,12 @@ export default function StructureProfilPage() {
   return (
     <div>
       <h1 style={{ margin: '0 0 8px' }}><Building2 size={24} style={{ verticalAlign: 'middle' }} /> Profil {typeLabel}</h1>
-      <p style={{ color: '#64748B', marginBottom: 24 }}>Photo et informations visibles dans l'annuaire santé et le fil d'actualités.</p>
+      <p style={{ color: '#64748B', marginBottom: 24 }}>{t('actualites.public_profile_hint')}</p>
 
       <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 24 }}>
         <PhotoUploadCard
           title="Photo de la structure"
-          subtitle="Visible dans l'annuaire santé et les actualités"
+          subtitle={t('actualites.photo_visible_feed')}
           photoUrl={profil?.image_url}
           fichierId={profil?.fichier_photo_id}
           onUpload={handlePhoto}

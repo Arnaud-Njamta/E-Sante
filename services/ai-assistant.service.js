@@ -8,6 +8,7 @@ const {
   extractDoctorTeaching, addDoctorKnowledge, getKnowledgeBlock,
 } = require('../services/ai-knowledge.service');
 const medecinService = require('./medecin.service');
+const medecinServicesService = require('./medecin-services.service');
 const rendezvousService = require('./rendezvous.service');
 const { callGemini } = require('../utils/gemini-client');
 
@@ -112,11 +113,19 @@ const buildListerGeo = (userContext = {}) => {
 const buildMedecinCatalog = async (userContext = {}) => {
   try {
     const { medecins } = await medecinService.lister({ limit: 30, ...buildListerGeo(userContext) });
-    return medecins.map((m) => (
-      `- ID ${m.id} : Dr ${m.prenom} ${m.nom} — ${m.specialite}`
-      + `${m.etablissement ? ` (${m.etablissement.nom}, ${m.etablissement.ville || 'Cameroun'})` : ''}`
-      + ` — note ${m.note_moyenne}/5`
-    )).join('\n');
+    const servicesByMedecin = await medecinServicesService.listByMedecinIds(medecins.map((m) => m.id));
+    return medecins.map((m) => {
+      const services = servicesByMedecin[m.id] || m.services || [];
+      const prestations = services.length
+        ? services.map((s) => `${s.nom}${s.prix_indicatif ? ` (${Number(s.prix_indicatif).toLocaleString()} FCFA)` : ''}`).join(', ')
+        : (m.tarif_consultation_fcfa ? `Consultation ${Number(m.tarif_consultation_fcfa).toLocaleString()} FCFA` : 'tarifs non renseignés');
+      return (
+        `- ID ${m.id} : Dr ${m.prenom} ${m.nom} — ${m.specialite}`
+        + `${m.etablissement ? ` (${m.etablissement.nom}, ${m.etablissement.ville || 'Cameroun'})` : ''}`
+        + ` — note ${m.note_moyenne}/5`
+        + ` — Prestations: ${prestations}`
+      );
+    }).join('\n');
   } catch {
     return '';
   }
@@ -155,6 +164,11 @@ const enrichRecommendations = async (rawRecs) => {
         distance_km: m.distance_km,
         accepte_teleconsultation: m.accepte_teleconsultation,
         tarif_fcfa: m.tarif_consultation_fcfa,
+        services: (m.services || []).map((s) => ({
+          nom: s.nom,
+          categorie: s.categorie,
+          prix_fcfa: s.prix_indicatif,
+        })),
         creneaux,
       });
     } catch { /* skip invalid id */ }
@@ -357,10 +371,12 @@ const bookRdv = async (patientId, payload) => {
     throw error;
   }
   const { POLITIQUE_CONFIDENTIALITE_VERSION } = require('../utils/constants');
+  const isTele = payload.type_consultation === 'teleconsultation';
   return rendezvousService.creerRdv(patientId, {
     ...payload,
     consentement_politique: true,
-    consentement_teleconsultation: payload.type_consultation === 'teleconsultation' ? true : undefined,
+    consentement_teleconsultation: isTele ? true : undefined,
+    consentement_partage_carnet: isTele ? true : undefined,
     politique_version: POLITIQUE_CONFIDENTIALITE_VERSION,
   });
 };

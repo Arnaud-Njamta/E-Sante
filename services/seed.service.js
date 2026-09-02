@@ -164,57 +164,190 @@ const seedDemoData = async () => {
 
 const seedDemoAccounts = async () => {
   const bcrypt = require('bcrypt');
-  const { Patient } = require('../models');
+  const { Op } = require('sequelize');
+  const { Patient, Medecin, Etablissement, Admin, ServiceMedecin } = require('../models');
+  const { DEMO_BRANCHES } = require('../config/demo-profiles');
+  const { DEFAULT_HORAIRES_MEDECIN } = require('./rendezvous.service');
 
-  const medecinHash = await bcrypt.hash('Medecin123!', 12);
-  const pharmaHash = await bcrypt.hash('Pharmacie123!', 12);
-  const patientHash = await bcrypt.hash('Patient123!', 12);
+  const hashCache = {};
 
-  const medecin = await Medecin.findOne({ where: { nom: 'Ndiaye', prenom: 'Fatou' } });
-  if (medecin && !medecin.password_hash) {
-    await medecin.update({ email: 'dr.fatou@e-sante.sn', password_hash: medecinHash });
-    console.log('Compte médecin démo: dr.fatou@e-sante.sn / Medecin123!');
-  }
-
-  const pharmacie = await Etablissement.findOne({ where: { nom: 'Pharmacie Centrale' } });
-  if (pharmacie && !pharmacie.password_hash) {
-    await pharmacie.update({ email: 'pharma@e-sante.sn', password_hash: pharmaHash });
-    console.log('Compte pharmacie démo: pharma@e-sante.sn / Pharmacie123!');
-  }
-
-  const patient = await Patient.findOne({ where: { email: 'patient@e-sante.sn' } });
-  if (!patient) {
-    await Patient.create({
-      email: 'patient@e-sante.sn',
-      password_hash: patientHash,
-      nom: 'Demo',
-      prenom: 'Patient',
-      telephone: '0612345678',
-    });
-    console.log('Compte patient démo: patient@e-sante.sn / Patient123!');
-  }
-
-  const hopital = await Etablissement.findOne({ where: { nom: 'Hôpital Central de Yaoundé' } });
-  if (!hopital) {
-    const legacy = await Etablissement.findOne({ where: { nom: 'Hôpital Principal de Dakar' } });
-    if (legacy && !legacy.password_hash) {
-      await legacy.update({ email: 'hopital@e-sante.sn', password_hash: pharmaHash });
+  const getHash = async (password) => {
+    if (!hashCache[password]) {
+      hashCache[password] = await bcrypt.hash(password, 12);
     }
-  } else if (!hopital.password_hash) {
-    await hopital.update({ email: 'hopital@e-sante.sn', password_hash: pharmaHash });
-    console.log('Compte hôpital démo: hopital@e-sante.sn / Pharmacie123!');
+    return hashCache[password];
+  };
+
+  const upsertMedecinServices = async (medecinId, services = []) => {
+    for (const svc of services) {
+      const exists = await ServiceMedecin.findOne({
+        where: { medecin_id: medecinId, nom: svc.nom, disponible: true },
+      });
+      if (!exists) {
+        await ServiceMedecin.create({
+          medecin_id: medecinId,
+          ...svc,
+          disponible: true,
+        });
+      }
+    }
+  };
+
+  for (const branch of DEMO_BRANCHES) {
+    const passwordHash = await getHash(branch.password);
+
+    if (branch.role === 'admin') {
+      const [admin] = await Admin.findOrCreate({
+        where: { email: branch.email },
+        defaults: {
+          nom: branch.profile?.nom || 'Administrateur MINSANTE',
+          password_hash: passwordHash,
+          actif: true,
+        },
+      });
+      if (!admin.password_hash || process.env.NODE_ENV !== 'production') {
+        await admin.update({ password_hash: passwordHash, actif: true });
+      }
+      console.log(`Profil démo [${branch.label}] : ${branch.email} / ${branch.password}`);
+      continue;
+    }
+
+    if (branch.role === 'patient') {
+      const [patient, created] = await Patient.findOrCreate({
+        where: { email: branch.email },
+        defaults: {
+          ...branch.profile,
+          email: branch.email,
+          password_hash: passwordHash,
+        },
+      });
+      if (!created) {
+        await patient.update({ ...branch.profile, password_hash: passwordHash });
+      }
+      console.log(`Profil démo [${branch.label}] : ${branch.email} / ${branch.password}`);
+      continue;
+    }
+
+    if (branch.role === 'medecin') {
+      let medecin = null;
+      if (branch.match) {
+        medecin = await Medecin.findOne({ where: branch.match });
+      }
+      if (!medecin && branch.email) {
+        medecin = await Medecin.findOne({ where: { email: branch.email } });
+      }
+      if (!medecin && branch.create) {
+        const hopital = await Etablissement.findOne({ where: { type: 'hopital' } });
+        medecin = await Medecin.create({
+          ...branch.create,
+          email: branch.email,
+          password_hash: passwordHash,
+          etablissement_id: hopital?.id || null,
+          horaires_consultation: DEFAULT_HORAIRES_MEDECIN,
+        });
+      }
+      if (medecin) {
+        await medecin.update({
+          ...(branch.profile || {}),
+          email: branch.email,
+          password_hash: passwordHash,
+          statut_validation: 'valide',
+          actif: true,
+        });
+        if (!medecin.horaires_consultation) {
+          await medecin.update({ horaires_consultation: DEFAULT_HORAIRES_MEDECIN });
+        }
+        await upsertMedecinServices(medecin.id, branch.services);
+        console.log(`Profil démo [${branch.label}] : ${branch.email} / ${branch.password}`);
+      } else {
+        console.warn(`Profil démo médecin introuvable : ${branch.label}`);
+      }
+      continue;
+    }
+
+    if (['pharmacie', 'hopital', 'clinique'].includes(branch.role)) {
+      const where = branch.match || { type: branch.role };
+      let etab = await Etablissement.findOne({ where });
+      if (!etab && branch.match?.nom) {
+        const legacyNames = {
+          'Hôpital Central de Yaoundé': 'Hôpital Principal de Dakar',
+          'Clinique Laquintinie': 'Clinique Médicale Almadies',
+        };
+        const legacy = legacyNames[branch.match.nom];
+        if (legacy) {
+          etab = await Etablissement.findOne({ where: { nom: legacy, type: branch.role } });
+        }
+      }
+      if (etab) {
+        await etab.update({
+          email: branch.email,
+          password_hash: passwordHash,
+          statut_validation: 'valide',
+          actif: true,
+          chat_actif: true,
+        });
+        console.log(`Profil démo [${branch.label}] : ${branch.email} / ${branch.password}`);
+      } else {
+        console.warn(`Profil démo structure introuvable : ${branch.label}`);
+      }
+    }
   }
 
-  const clinique = await Etablissement.findOne({ where: { nom: 'Clinique Laquintinie' } });
-  if (!clinique) {
-    const legacy = await Etablissement.findOne({ where: { nom: 'Clinique Médicale Almadies' } });
-    if (legacy && !legacy.password_hash) {
-      await legacy.update({ email: 'clinique@e-sante.sn', password_hash: pharmaHash });
+  // Médecins catalogue sans compte login — horaires par défaut
+  const medecins = await Medecin.findAll({ where: { email: { [Op.is]: null } } });
+  await Promise.all(medecins.map(async (m) => {
+    let parsed = {};
+    try {
+      parsed = typeof m.horaires_consultation === 'string'
+        ? JSON.parse(m.horaires_consultation || '{}')
+        : (m.horaires_consultation || {});
+    } catch {
+      parsed = {};
     }
-  } else if (!clinique.password_hash) {
-    await clinique.update({ email: 'clinique@e-sante.sn', password_hash: pharmaHash });
-    console.log('Compte clinique démo: clinique@e-sante.sn / Pharmacie123!');
-  }
+    const hasActive = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche']
+      .some((jour) => parsed[jour]?.actif && parsed[jour]?.creneaux?.length);
+    if (!hasActive) {
+      await m.update({ horaires_consultation: DEFAULT_HORAIRES_MEDECIN });
+    }
+  }));
+};
+
+const PUBLICATION_EN_PATCHES = [
+  {
+    titre: '1000 consultations cardiaques réalisées au Cameroun',
+    titre_en: '1,000 cardiac consultations completed in Cameroon',
+    contenu_en: 'Thanks to DjamSanté telemedicine, we have been able to follow more than 1,000 patients with cardiovascular disease in Yaoundé and Douala.',
+  },
+  {
+    titre: 'Campagne de dépistage du diabète — gratuit cette semaine',
+    titre_en: 'Diabetes screening campaign — free this week',
+    contenu_en: 'Free blood glucose testing Monday to Friday, 9 a.m. to 5 p.m. Remember to bring your health record.',
+  },
+  {
+    titre: 'Nouveau bloc opératoire inauguré à Yaoundé',
+    titre_en: 'New operating wing inaugurated in Yaoundé',
+    contenu_en: 'A modern 4-room operating wing, funded under the MINSANTE Digital Health Plan, is now operational.',
+  },
+  {
+    titre: 'Journée portes ouvertes — vaccination enfants',
+    titre_en: 'Open house day — child vaccinations',
+    contenu_en: 'Next Saturday: paediatric consultation and vaccine boosters at a reduced rate.',
+  },
+  {
+    titre: 'Conseils pour la saison des pluies',
+    titre_en: 'Rainy season health tips',
+    contenu_en: 'Watch out for fevers and respiratory infections. See a doctor promptly if fever persists.',
+  },
+];
+
+const patchPublicationTranslations = async () => {
+  const { Publication } = require('../models');
+  await Promise.all(PUBLICATION_EN_PATCHES.map(async (patch) => {
+    const pub = await Publication.findOne({ where: { titre: patch.titre } });
+    if (pub && (!pub.titre_en || !pub.contenu_en)) {
+      await pub.update({ titre_en: patch.titre_en, contenu_en: patch.contenu_en });
+    }
+  }));
 };
 
 const seedPublications = async () => {
@@ -241,7 +374,9 @@ const seedPublications = async () => {
       auteur_nom: 'Dr. Fatou Ndiaye',
       type: 'realisation',
       titre: '1000 consultations cardiaques réalisées au Cameroun',
+      titre_en: '1,000 cardiac consultations completed in Cameroon',
       contenu: 'Grâce à la télémédecine DjamSanté, nous avons pu suivre plus de 1000 patients atteints de maladies cardiovasculaires à Yaoundé et Douala.',
+      contenu_en: 'Thanks to DjamSanté telemedicine, we have been able to follow more than 1,000 patients with cardiovascular disease in Yaoundé and Douala.',
       mis_en_avant: true,
       likes_count: 47,
       comments_count: 8,
@@ -252,7 +387,9 @@ const seedPublications = async () => {
       auteur_nom: 'Pharmacie Centrale',
       type: 'actualite',
       titre: 'Campagne de dépistage du diabète — gratuit cette semaine',
+      titre_en: 'Diabetes screening campaign — free this week',
       contenu: 'Test glycémie gratuit du lundi au vendredi de 9h à 17h. Pensez à apporter votre carnet de santé.',
+      contenu_en: 'Free blood glucose testing Monday to Friday, 9 a.m. to 5 p.m. Remember to bring your health record.',
       mis_en_avant: true,
       likes_count: 32,
       comments_count: 5,
@@ -263,7 +400,9 @@ const seedPublications = async () => {
       auteur_nom: hopital?.nom || 'Hôpital Central de Yaoundé',
       type: 'realisation',
       titre: 'Nouveau bloc opératoire inauguré à Yaoundé',
+      titre_en: 'New operating wing inaugurated in Yaoundé',
       contenu: 'Un bloc moderne de 4 salles opératoires, financé dans le cadre du Plan Santé Numérique MINSANTE, est désormais opérationnel.',
+      contenu_en: 'A modern 4-room operating wing, funded under the MINSANTE Digital Health Plan, is now operational.',
       mis_en_avant: true,
       likes_count: 89,
       comments_count: 12,
@@ -274,7 +413,9 @@ const seedPublications = async () => {
       auteur_nom: clinique?.nom || 'Clinique Laquintinie',
       type: 'actualite',
       titre: 'Journée portes ouvertes — vaccination enfants',
+      titre_en: 'Open house day — child vaccinations',
       contenu: 'Samedi prochain : consultation pédiatrique et rappels vaccinaux à tarif réduit.',
+      contenu_en: 'Next Saturday: paediatric consultation and vaccine boosters at a reduced rate.',
       mis_en_avant: true,
       likes_count: 24,
       comments_count: 3,
@@ -285,7 +426,9 @@ const seedPublications = async () => {
       auteur_nom: 'Dr. Fatou Ndiaye',
       type: 'actualite',
       titre: 'Conseils pour la saison des pluies',
+      titre_en: 'Rainy season health tips',
       contenu: 'Attention aux fièvres et infections respiratoires. Consultez sans attendre en cas de fièvre persistante.',
+      contenu_en: 'Watch out for fevers and respiratory infections. See a doctor promptly if fever persists.',
       mis_en_avant: false,
       likes_count: 15,
       comments_count: 2,
@@ -348,23 +491,6 @@ const seedAdminAccount = async () => {
     await medecin.update({ accepte_teleconsultation: true, tarif_consultation_fcfa: 15000 });
   }
 
-  const { DEFAULT_HORAIRES_MEDECIN } = require('./rendezvous.service');
-  const medecins = await Medecin.findAll();
-  await Promise.all(medecins.map(async (m) => {
-    let parsed = {};
-    try {
-      parsed = typeof m.horaires_consultation === 'string'
-        ? JSON.parse(m.horaires_consultation || '{}')
-        : (m.horaires_consultation || {});
-    } catch {
-      parsed = {};
-    }
-    const hasActive = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche']
-      .some((jour) => parsed[jour]?.actif && parsed[jour]?.creneaux?.length);
-    if (!hasActive) {
-      await m.update({ horaires_consultation: DEFAULT_HORAIRES_MEDECIN });
-    }
-  }));
   if (created) {
     console.log('Identifiants admin démo : admin@e-sante.sn / Admin123!');
   }
@@ -410,4 +536,4 @@ const seedPharmacieProducts = async () => {
   }
 };
 
-module.exports = { seedDemoData, seedDemoAccounts, seedPublications, seedDispensaireDemo, seedAdminAccount, seedPharmacieProducts };
+module.exports = { seedDemoData, seedDemoAccounts, seedPublications, patchPublicationTranslations, seedDispensaireDemo, seedAdminAccount, seedPharmacieProducts };

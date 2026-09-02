@@ -122,6 +122,8 @@ const ENDPOINTS = {
         updateAffiliation: (id) => `/medecins/me/affiliations/${id}`,
         meParcours: '/medecins/me/parcours',
         parcoursById: (id) => `/medecins/me/parcours/${id}`,
+        meServices: '/medecins/me/services',
+        serviceById: (id) => `/medecins/me/services/${id}`,
         creneaux: (id) => `/rendez-vous/medecins/${id}/creneaux`,
     },
     rendezVous: {

@@ -11,6 +11,10 @@ router.get('/me/profile', authMiddleware, requireRole('medecin'), medecinControl
 router.get('/me/dashboard', authMiddleware, requireRole('medecin'), medecinController.getDashboard);
 router.put('/me/profile', authMiddleware, requireRole('medecin'), medecinController.updateProfil);
 router.put('/me/horaires', authMiddleware, requireRole('medecin'), medecinController.updateHoraires);
+router.get('/me/services', authMiddleware, requireRole('medecin'), medecinController.listServices);
+router.post('/me/services', authMiddleware, requireRole('medecin'), medecinController.createService);
+router.put('/me/services/:id', authMiddleware, requireRole('medecin'), medecinController.updateService);
+router.delete('/me/services/:id', authMiddleware, requireRole('medecin'), medecinController.deleteService);
 router.post('/me/photo', authMiddleware, requireRole('medecin'), handleUpload(uploadImage.single('photo')), medecinController.uploadPhoto);
 router.post('/me/cachet', authMiddleware, requireRole('medecin'), handleUpload(uploadImage.single('cachet')), medecinController.uploadCachet);
 router.post('/me/signature', authMiddleware, requireRole('medecin'), handleUpload(uploadImage.single('signature')), medecinController.uploadSignature);

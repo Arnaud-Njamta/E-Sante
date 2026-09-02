@@ -15,6 +15,17 @@ export function usePublications(params = {}) {
     });
 }
 
+export function usePublication(id) {
+    return useQuery({
+        queryKey: ['publications', id],
+        queryFn: async () => {
+            const { data } = await client.get(`/publications/${id}`);
+            return data.data;
+        },
+        enabled: !!id,
+    });
+}
+
 export function useFeaturedPublications() {
     return useQuery({
         queryKey: ['publications', 'featured'],
@@ -44,7 +55,10 @@ export function useToggleLike() {
             const { data } = await client.post(`/publications/${id}/like`);
             return data.data;
         },
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['publications'] }),
+        onSuccess: (_, id) => {
+            qc.invalidateQueries({ queryKey: ['publications'] });
+            qc.invalidateQueries({ queryKey: ['publications', id] });
+        },
     });
 }
 
@@ -57,6 +71,7 @@ export function useAddComment() {
         },
         onSuccess: (_, { id }) => {
             qc.invalidateQueries({ queryKey: ['publications'] });
+            qc.invalidateQueries({ queryKey: ['publications', id] });
             qc.invalidateQueries({ queryKey: ['publications', id, 'comments'] });
         },
     });

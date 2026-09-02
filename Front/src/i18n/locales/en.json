@@ -16,6 +16,10 @@
     "patient": "Patient",
     "brand_tagline": "Peace and health for Africa"
   },
+  "languages": {
+    "fr": "Français",
+    "en": "English"
+  },
   "greeting": {
     "morning": "Good morning",
     "afternoon": "Good afternoon",
@@ -61,6 +65,7 @@
     "location": "Location",
     "affiliated_doctors": "Affiliated doctors",
     "services_rates": "Services & rates",
+    "my_services": "My services",
     "care_requests": "Care requests",
     "health_alerts": "Health alerts",
     "dispensary": "Dispensary",
@@ -283,9 +288,18 @@
   },
   "patientHome": {
     "greeting": "Hello {{name}}",
-    "subtitle": "Find a caregiver, pharmacy or facility near you.",
-    "section_meds": "My medicines",
+    "subtitle": "Your dose reminders, care and pharmacy — in Cameroon.",
+    "mission_title": "What is DjamSanté for?",
+    "mission_lead": "Your daily health in three simple actions:",
+    "mission_meds_title": "Take your medicines on time",
+    "mission_meds_desc": "Reminders on home — confirm each dose with one tap.",
+    "mission_care_title": "Find a caregiver or pharmacy",
+    "mission_care_desc": "Doctor, home care aide or pharmacy near you, with GPS.",
+    "mission_records_title": "Track prescriptions & health record",
+    "mission_records_desc": "Signed prescriptions and record for teleconsultation.",
+    "section_meds": "Today — my medicines",
     "section_find": "Find care",
+    "section_records": "My health file",
     "who_looking": "What are you looking for today?",
     "find_doctor": "Doctor",
     "find_doctor_desc": "See a health professional",
@@ -339,12 +353,39 @@
     "contact_desc": "Message a pharmacist",
     "legal_note": "Online medicine sales are regulated. DjamSanté facilitates connection and in-pharmacy pickup reservations."
   },
-  "medecinCare": {
-    "notice_title": "Your patients — simplified app",
-    "notice_intro": "The patient experience was streamlined for field use in Cameroon. Essential clinical features remain active:",
-    "notice_reminders": "Medication reminders appear on their home screen — encourage them to confirm each dose.",
-    "notice_prescriptions": "Your e-prescriptions remain traceable; patients can view them and present them at the pharmacy.",
-    "notice_actualites": "The health news feed remains accessible — your posts inform the community."
+  "medecinServices": {
+    "title": "My services",
+    "subtitle": "Describe your consultations and procedures with FCFA prices. This powers the health directory and the AI assistant when guiding patients.",
+    "loading": "Loading your services…",
+    "add": "Add a service",
+    "new_service": "New service",
+    "name_label": "Service name *",
+    "category_label": "Category",
+    "price_label": "Indicative price (FCFA) *",
+    "duration_label": "Duration (minutes)",
+    "description_label": "Description",
+    "description_placeholder": "E.g. cardiology consultation, full check-up, post-op follow-up…",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Service saved",
+    "error": "Error while saving",
+    "remove": "Remove",
+    "on_request": "On request",
+    "duration_value": "{{minutes}} min",
+    "empty_title": "No services published",
+    "empty_desc": "Add consultations, teleconsultations or procedures so patients and DjamSanté AI can find you more easily.",
+    "categories": {
+      "consultation": "Consultation",
+      "teleconsultation": "Teleconsultation",
+      "follow_up": "Follow-up",
+      "emergency": "Emergency",
+      "surgery": "Surgery",
+      "imaging": "Imaging",
+      "lab": "Laboratory",
+      "vaccination": "Vaccination",
+      "pediatrics": "Pediatrics",
+      "other": "Other"
+    }
   },
   "carnetTeaser": {
     "create_title": "Create your health record",
@@ -500,6 +541,8 @@
     "create_account": "Create a patient account",
     "pro_access": "Doctor, pharmacy or facility?",
     "request_pro": "Request professional access",
+    "demo_accounts_title": "Demo accounts — each branch",
+    "demo_accounts_hint": "Click to fill email and password, then sign in.",
     "register_title": "Create an account",
     "register_hint": "Two quick steps — then you're ready in the app.",
     "step1": "Step 1/2 — Credentials",
@@ -824,7 +867,22 @@
     "comment_login": "Sign in to comment",
     "like_login": "Sign in to like",
     "publish_success": "Post published!",
-    "publish_error": "Publishing error"
+    "publish_error": "Publishing error",
+    "public_profile_hint": "Photo and details visible in the health directory and news feed.",
+    "photo_visible_feed": "Visible in the health directory and news feed",
+    "read_more": "Read more",
+    "back_feed": "Back to feed",
+    "like_action": "Like",
+    "comment_action": "Comment",
+    "likes_count": "{{count}} likes",
+    "comments_count": "{{count}} comments",
+    "not_found_title": "Post not found",
+    "not_found_desc": "This post no longer exists or has been removed."
+  },
+  "ordonnancesElecTeaser": {
+    "view_all": "View all",
+    "empty_title": "E-prescriptions",
+    "empty_desc": "Download your signed prescriptions after a consultation"
   },
   "ordonnancesElec": {
     "title": "Electronic prescriptions",

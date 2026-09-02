@@ -14,6 +14,11 @@ import AuthShell, {
 import AuthPasswordInput from '../components/auth/AuthPasswordInput';
 import BrandLogo from '../components/brand/BrandLogo';
 
+/** Chargé uniquement en `npm run dev` — exclu du build production (VPS). */
+const DevDemoAccountsPanel = import.meta.env.DEV
+  ? React.lazy(() => import('../components/auth/DemoAccountsPanel'))
+  : null;
+
 const TextLink = styled(Link)`
   align-self: flex-end;
   font-size: 0.84rem;
@@ -30,7 +35,7 @@ export default function LoginPage() {
   const { login, isAuthenticated, role, loading } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const branding = getBranding('patient');
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm();
 
   React.useEffect(() => {
     if (!loading && isAuthenticated) {
@@ -114,6 +119,18 @@ export default function LoginPage() {
         <p>{t('auth.no_account')} <Link to="/register">{t('auth.create_account')}</Link></p>
         <p>{t('auth.pro_access')} <Link to="/register/professionnel">{t('auth.request_pro')}</Link></p>
       </Footnotes>
+
+      {DevDemoAccountsPanel && (
+        <React.Suspense fallback={null}>
+          <DevDemoAccountsPanel
+            disabled={submitting}
+            onPick={(email, password) => {
+              setValue('email', email);
+              setValue('password', password);
+            }}
+          />
+        </React.Suspense>
+      )}
     </AuthShell>
   );
 }

@@ -134,6 +134,7 @@ const creerRdv = async (patientId, payload, meta = {}) => {
   const {
     medecin_id, date_rdv, heure_debut, motif, type_consultation,
     consentement_politique,
+    consentement_partage_carnet,
     consentement_teleconsultation,
     politique_version,
     ordonnance_scan_id,
@@ -176,6 +177,27 @@ const creerRdv = async (patientId, payload, meta = {}) => {
     const error = new Error('Le consentement à la téléconsultation est requis');
     error.statusCode = 400;
     throw error;
+  }
+  if (type === 'teleconsultation') {
+    if (!consentement_partage_carnet) {
+      const error = new Error(
+        'Pour une téléconsultation, vous devez autoriser l\'accès à votre carnet médical pour le médecin consulté',
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+    const carnetService = require('./carnet-medical.service');
+    const carnet = await carnetService.getMonCarnet(patientId);
+    const readiness = carnetService.carnetPretPourTeleconsultation(carnet);
+    if (!readiness.ok) {
+      const error = new Error(
+        readiness.reason === 'inactive'
+          ? 'Activez votre carnet médical avant une téléconsultation'
+          : 'Complétez votre carnet médical (groupe sanguin, allergies, pathologies ou contact d\'urgence) avant une téléconsultation',
+      );
+      error.statusCode = 400;
+      throw error;
+    }
   }
 
   const { creneaux } = await getCreneauxDisponibles(medecin_id, date_rdv);
@@ -220,7 +242,10 @@ const creerRdv = async (patientId, payload, meta = {}) => {
   await consentementService.enregistrerLot([
     { ...consentBase, type: CONSENTEMENT_TYPES.POLITIQUE },
     ...(type === 'teleconsultation'
-      ? [{ ...consentBase, type: CONSENTEMENT_TYPES.TELECONSULTATION }]
+      ? [
+        { ...consentBase, type: CONSENTEMENT_TYPES.TELECONSULTATION },
+        { ...consentBase, type: CONSENTEMENT_TYPES.PARTAGE_CARNET_RDV },
+      ]
       : []),
   ]);
 
@@ -315,6 +340,14 @@ const mettreAJourStatut = async (rdvId, medecinId, { statut, notes_medecin }) =>
   }
   if (statut === STATUT_RDV.ANNULE) {
     await commissionService.annulerTransaction('rendez_vous', rdvId);
+  }
+  if (statut === STATUT_RDV.TERMINE) {
+    const consentementService = require('./consentement.service');
+    await consentementService.revoquerAccesCarnetRdv({
+      patient_id: rdv.patient_id,
+      medecin_id: rdv.medecin_id,
+      rendez_vous_id: rdv.id,
+    });
   }
   await rdv.save();
   if (statut === STATUT_RDV.CONFIRME) {

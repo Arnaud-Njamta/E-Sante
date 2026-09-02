@@ -7,6 +7,7 @@ import Spinner from '../ui/Spinner';
 import { usePublications } from '../../hooks/usePublications';
 import { resolveFileUrl } from '../ui/PhotoUploadCard';
 import { getActiveLocale } from '../../i18n/syncLanguage';
+import { localizePublication } from '../../utils/publicationLocale';
 
 const Head = styled.div`
   display: flex;
@@ -160,7 +161,7 @@ function stripText(text = '') {
 }
 
 export default function PatientActualitesTeaser() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const locale = getActiveLocale();
   const { data, isLoading } = usePublications();
@@ -186,6 +187,7 @@ export default function PatientActualitesTeaser() {
       {!isLoading && posts.length > 0 && (
         <Track>
           {posts.map((post) => {
+            const localized = localizePublication(post, i18n.language);
             const imgUrl = resolveFileUrl(post.image_url, post.fichier_image_id);
             const isAchievement = post.type === 'realisation';
             const dateStr = post.created_at || post.createdAt
@@ -195,15 +197,21 @@ export default function PatientActualitesTeaser() {
               : '';
 
             return (
-              <NewsCard key={post.id} onClick={() => navigate('/actualites')} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && navigate('/actualites')}>
+              <NewsCard
+                key={post.id}
+                onClick={() => navigate(`/actualites/${post.id}`)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => e.key === 'Enter' && navigate(`/actualites/${post.id}`)}
+              >
                 <Cover $url={imgUrl}>
                   <Badge $achievement={isAchievement}>
                     {isAchievement ? <><Trophy size={10} /> {t('actualites.type_achievement')}</> : t('actualites.type_news')}
                   </Badge>
                 </Cover>
                 <CardBody>
-                  <h3>{post.titre}</h3>
-                  <p>{stripText(post.contenu)}</p>
+                  <h3>{localized.titre}</h3>
+                  <p>{stripText(localized.contenu)}</p>
                   {dateStr && (
                     <Meta><Calendar size={11} /> {dateStr}</Meta>
                   )}

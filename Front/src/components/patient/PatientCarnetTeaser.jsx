@@ -16,7 +16,7 @@ const pulse = keyframes`
 `;
 
 const Wrap = styled.div`
-  display: none;
+  display: ${({ $alwaysVisible }) => ($alwaysVisible ? 'block' : 'none')};
   margin-bottom: ${({ theme }) => theme.spacing[5]};
   animation: ${slideIn} 0.6s cubic-bezier(0.32, 0.72, 0, 1) both;
 
@@ -106,7 +106,7 @@ const Arrow = styled.div`
   svg { width: 20px; height: 20px; }
 `;
 
-export default function PatientCarnetTeaser() {
+export default function PatientCarnetTeaser({ alwaysVisible = false }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { data, isLoading } = useCarnetMedical();
@@ -118,7 +118,7 @@ export default function PatientCarnetTeaser() {
 
   if (!isActive) {
     return (
-      <Wrap>
+      <Wrap $alwaysVisible={alwaysVisible}>
         <CardBtn type="button" $active onClick={() => navigate('/carnet-medical')}>
           <IconBox $active><BookHeart /></IconBox>
           <Body>
@@ -132,7 +132,7 @@ export default function PatientCarnetTeaser() {
   }
 
   return (
-    <Wrap>
+    <Wrap $alwaysVisible={alwaysVisible}>
       <CardBtn type="button" onClick={() => navigate('/carnet-medical')}>
         <IconBox><BookHeart /></IconBox>
         <Body>

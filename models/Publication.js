@@ -28,7 +28,15 @@ const Publication = sequelize.define('Publication', {
     type: DataTypes.STRING(300),
     allowNull: false,
   },
+  titre_en: {
+    type: DataTypes.STRING(300),
+    allowNull: true,
+  },
   contenu: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
+  contenu_en: {
     type: DataTypes.TEXT,
     allowNull: true,
   },

@@ -3,13 +3,15 @@ import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  Stethoscope, Pill, Siren, Bot, MapPin, ChevronRight, HeartPulse,
+  Stethoscope, Pill, Siren, Bot, MapPin, ChevronRight, HeartPulse, Clock, FileText,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import UserAvatar from '../ui/UserAvatar';
 import HealthAlertBanner from './HealthAlertBanner';
 import PatientPrisesTodayTeaser from './PatientPrisesTodayTeaser';
 import PatientActualitesTeaser from './PatientActualitesTeaser';
+import PatientCarnetTeaser from './PatientCarnetTeaser';
+import PatientOrdonnancesElecTeaser from './PatientOrdonnancesElecTeaser';
 import { openAiAssistant } from '../../utils/openAiAssistant';
 
 const Page = styled.div`
@@ -47,10 +49,77 @@ const HeaderText = styled.div`
   }
 `;
 
+const MissionHero = styled.div`
+  padding: 16px 18px;
+  border-radius: 16px;
+  border: 1px solid ${({ theme }) => theme.colors.primary[100]};
+  background: linear-gradient(145deg, ${({ theme }) => theme.colors.primary[50]} 0%, ${({ theme }) => theme.colors.surface} 100%);
+
+  h2 {
+    margin: 0 0 4px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: ${({ theme }) => theme.colors.text};
+    letter-spacing: -0.01em;
+  }
+
+  > p {
+    margin: 0;
+    font-size: 0.8rem;
+    color: ${({ theme }) => theme.colors.textSecondary};
+    line-height: 1.45;
+  }
+`;
+
+const MissionList = styled.ul`
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+
+const MissionItem = styled.li`
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+
+  .dot {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: ${({ $bg }) => $bg};
+    color: ${({ $color }) => $color};
+  }
+
+  strong {
+    display: block;
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: ${({ theme }) => theme.colors.text};
+    margin-bottom: 1px;
+  }
+
+  span {
+    font-size: 0.76rem;
+    color: ${({ theme }) => theme.colors.textMuted};
+    line-height: 1.35;
+  }
+`;
+
 const Section = styled.section`
   display: flex;
   flex-direction: column;
   gap: 12px;
+`;
+
+const SecondarySection = styled(Section)`
+  gap: 16px;
 `;
 
 const SectionHead = styled.div`
@@ -248,14 +317,33 @@ export default function PatientSimplifiedHome() {
         </HeaderText>
       </HomeHeader>
 
-      <HealthAlertBanner region={user?.region} />
-
-      <Section>
-        <SectionHead>
-          <SectionTitle>{t('patientHome.section_meds')}</SectionTitle>
-        </SectionHead>
-        <PatientPrisesTodayTeaser />
-      </Section>
+      <MissionHero>
+        <h2>{t('patientHome.mission_title')}</h2>
+        <p>{t('patientHome.mission_lead')}</p>
+        <MissionList>
+          <MissionItem $bg="#ECFDF5" $color="#047857">
+            <div className="dot"><Clock size={16} /></div>
+            <div>
+              <strong>{t('patientHome.mission_meds_title')}</strong>
+              <span>{t('patientHome.mission_meds_desc')}</span>
+            </div>
+          </MissionItem>
+          <MissionItem $bg="#FFF7ED" $color="#C2410C">
+            <div className="dot"><Stethoscope size={16} /></div>
+            <div>
+              <strong>{t('patientHome.mission_care_title')}</strong>
+              <span>{t('patientHome.mission_care_desc')}</span>
+            </div>
+          </MissionItem>
+          <MissionItem $bg="#EFF6FF" $color="#1D4ED8">
+            <div className="dot"><FileText size={16} /></div>
+            <div>
+              <strong>{t('patientHome.mission_records_title')}</strong>
+              <span>{t('patientHome.mission_records_desc')}</span>
+            </div>
+          </MissionItem>
+        </MissionList>
+      </MissionHero>
 
       <Section>
         <SectionHead>
@@ -280,8 +368,13 @@ export default function PatientSimplifiedHome() {
         </ActionGrid>
       </Section>
 
+      <HealthAlertBanner region={user?.region} />
+
       <Section>
-        <PatientActualitesTeaser />
+        <SectionHead>
+          <SectionTitle>{t('patientHome.section_meds')}</SectionTitle>
+        </SectionHead>
+        <PatientPrisesTodayTeaser />
       </Section>
 
       <EmergencyStrip type="button" onClick={() => navigate('/urgence')}>
@@ -303,6 +396,18 @@ export default function PatientSimplifiedHome() {
         </div>
         <ChevronRight size={18} color="#94A3B8" />
       </AssistantStrip>
+
+      <SecondarySection>
+        <SectionHead>
+          <SectionTitle>{t('patientHome.section_records')}</SectionTitle>
+        </SectionHead>
+        <PatientCarnetTeaser alwaysVisible />
+        <PatientOrdonnancesElecTeaser />
+      </SecondarySection>
+
+      <Section>
+        <PatientActualitesTeaser />
+      </Section>
     </Page>
   );
 }

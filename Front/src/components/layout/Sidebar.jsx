@@ -219,6 +219,7 @@ const ROLE_NAV = {
   medecin: [
     { to: '/medecin/dashboard', icon: LayoutDashboard, labelKey: 'nav.dashboard', section: 'principal' },
     { to: '/medecin/rendez-vous', icon: Clock, labelKey: 'nav.appointments', section: 'principal' },
+    { to: '/medecin/services', icon: Heart, labelKey: 'nav.my_services', section: 'principal' },
     { to: '/medecin/ordonnances', icon: FileText, labelKey: 'nav.e_prescriptions', section: 'principal' },
     { to: '/medecin/qr-scan', icon: QrCode, labelKey: 'nav.scan_qr', section: 'principal' },
     { to: '/medecin/carriere', icon: Briefcase, labelKey: 'nav.career', section: 'principal' },

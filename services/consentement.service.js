@@ -1,5 +1,4 @@
 const { ConsentementPatient } = require('../models');
-const { Op } = require('sequelize');
 const { RendezVous } = require('../models');
 const {
   CONSENTEMENT_TYPES,
@@ -53,21 +52,37 @@ const aConsentementActif = async ({
 };
 
 const peutMedecinVoirCarnet = async (medecinId, patientId) => {
-  const rdvValide = await RendezVous.findOne({
+  const rdvActif = await RendezVous.findOne({
     where: {
       medecin_id: medecinId,
       patient_id: patientId,
-      statut: { [Op.in]: [STATUT_RDV.CONFIRME, STATUT_RDV.TERMINE] },
+      statut: STATUT_RDV.CONFIRME,
     },
-    order: [['updatedAt', 'DESC']],
+    order: [['date_rdv', 'DESC'], ['heure_debut', 'DESC']],
   });
-  if (!rdvValide) return false;
+  if (!rdvActif) return false;
 
   return aConsentementActif({
     patient_id: patientId,
     medecin_id: medecinId,
+    rendez_vous_id: rdvActif.id,
     type: CONSENTEMENT_TYPES.PARTAGE_CARNET_RDV,
   });
+};
+
+const revoquerAccesCarnetRdv = async ({ patient_id, medecin_id, rendez_vous_id }) => {
+  await ConsentementPatient.update(
+    { revoked_at: new Date() },
+    {
+      where: {
+        patient_id,
+        medecin_id,
+        rendez_vous_id,
+        type: CONSENTEMENT_TYPES.PARTAGE_CARNET_RDV,
+        revoked_at: null,
+      },
+    },
+  );
 };
 
 const listerPourPatient = async (patientId) => {
@@ -98,7 +113,7 @@ const getTextesConsentement = () => ({
     titre: 'Accès au carnet médical pour un rendez-vous',
     resume: 'J\'autorise le médecin consulté à accéder à mon carnet médical électronique '
       + '(allergies, antécédents, traitements) dans le cadre exclusif de cette consultation.',
-    duree: 'Valable pour la consultation concernée et 30 jours après le rendez-vous.',
+    duree: 'Valable uniquement pendant la consultation en cours. L\'accès est révoqué dès que la consultation est terminée (RGPD / secret médical).',
   },
   teleconsultation: {
     titre: 'Consentement téléconsultation',
@@ -117,6 +132,7 @@ module.exports = {
   enregistrerLot,
   aConsentementActif,
   peutMedecinVoirCarnet,
+  revoquerAccesCarnetRdv,
   listerPourPatient,
   getTextesConsentement,
   CONSENTEMENT_TYPES,

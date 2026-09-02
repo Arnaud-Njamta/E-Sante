@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { FileText, Plus, PenLine } from 'lucide-react';
-import MedecinPatientCareNotice from '../components/medecin/MedecinPatientCareNotice';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -34,8 +33,6 @@ export default function MedecinOrdonnancesPage() {
 
   return (
     <div>
-      <MedecinPatientCareNotice />
-
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
           <h1 style={{ margin: 0 }}><FileText size={24} style={{ verticalAlign: 'middle' }} /> Ordonnances électroniques</h1>

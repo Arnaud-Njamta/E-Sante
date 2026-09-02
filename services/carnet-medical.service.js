@@ -202,6 +202,22 @@ const ajouterObservation = async (patientId, { text, source = 'patient' }, famil
   return formatCarnet(patient);
 };
 
+const carnetPretPourTeleconsultation = (carnet) => {
+  if (!carnet?.actif) {
+    return { ok: false, reason: 'inactive' };
+  }
+  const rempli = !!(
+    carnet.groupe_sanguin
+    || (Array.isArray(carnet.allergies) && carnet.allergies.length > 0)
+    || (Array.isArray(carnet.pathologies) && carnet.pathologies.length > 0)
+    || carnet.contact_urgence
+  );
+  if (!rempli) {
+    return { ok: false, reason: 'incomplete' };
+  }
+  return { ok: true };
+};
+
 module.exports = {
   getMonCarnet,
   mettreAJourMonCarnet,
@@ -210,4 +226,5 @@ module.exports = {
   formatCarnet,
   formatFamilleCarnet,
   ajouterObservation,
+  carnetPretPourTeleconsultation,
 };

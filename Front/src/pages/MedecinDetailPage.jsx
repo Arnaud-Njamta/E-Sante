@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, MapPin, Phone, Award, Languages, Video, Shield, Building2, Briefcase, Radio } from 'lucide-react';
 import Card from '../components/ui/Card';
@@ -14,7 +14,7 @@ import ENDPOINTS from '../api/endpoints';
 import { useMedecin } from '../hooks/useMedecins';
 import { useAvis, useCreerAvis } from '../hooks/useMessagerie';
 import { useCreneaux, useCreerRdv } from '../hooks/useRendezVous';
-import { useTextesConsentement } from '../hooks/useCarnetMedical';
+import { useTextesConsentement, useCarnetMedical } from '../hooks/useCarnetMedical';
 import OrdonnanceScanPicker from '../components/rdv/OrdonnanceScanPicker';
 import { parseJsonArray } from '../utils/helpers';
 import { resolveFileUrl } from '../components/ui/PhotoUploadCard';
@@ -153,6 +153,40 @@ const RdvCard = styled(Card)`
   }
 `;
 
+const CarnetNotice = styled.div`
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  background: ${({ $warn }) => ($warn ? '#FFFBEB' : '#ECFDF5')};
+  border: 1px solid ${({ $warn }) => ($warn ? '#FDE68A' : '#A7F3D0')};
+  color: ${({ $warn }) => ($warn ? '#92400E' : '#047857')};
+
+  a {
+    color: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+  }
+`;
+
+const OptionalToggle = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #E2E8F0;
+  background: #F8FAFC;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+`;
+
 export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) {
   const { id: paramId } = useParams();
   const id = overrideId || paramId;
@@ -170,8 +204,11 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
   const [selectedAffiliation, setSelectedAffiliation] = useState('');
   const [consentPolitique, setConsentPolitique] = useState(false);
   const [consentTele, setConsentTele] = useState(false);
+  const [consentCarnet, setConsentCarnet] = useState(false);
   const [ordonnanceScan, setOrdonnanceScan] = useState(null);
+  const [showOrdonnanceScan, setShowOrdonnanceScan] = useState(false);
   const { data: textesConsent } = useTextesConsentement();
+  const { data: carnet } = useCarnetMedical();
   const { data: creneauxData, isLoading: creneauxLoading, isError: creneauxError } = useCreneaux(
     id, dateRdv, selectedAffiliation || null,
   );
@@ -180,6 +217,13 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
   useEffect(() => {
     setHeureRdv('');
   }, [dateRdv]);
+
+  useEffect(() => {
+    if (typeConsultation === 'presentiel') {
+      setConsentTele(false);
+      setConsentCarnet(false);
+    }
+  }, [typeConsultation]);
 
   const creneaux = creneauxData?.creneaux || [];
   const { data: commissionPreview } = useQuery({
@@ -219,15 +263,36 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
     }
   };
 
+  const carnetPretTele = !!carnet?.actif && !!(
+    carnet.groupe_sanguin
+    || (carnet.allergies?.length > 0)
+    || (carnet.pathologies?.length > 0)
+    || carnet.contact_urgence
+  );
+
   const handleRdv = async () => {
     if (!dateRdv || !heureRdv) { toast.error('Choisissez une date et un créneau'); return; }
     if (!consentPolitique) {
       toast.error('Vous devez accepter la politique de confidentialité');
       return;
     }
-    if (typeConsultation === 'teleconsultation' && !consentTele) {
-      toast.error('Consentement téléconsultation requis');
-      return;
+    if (typeConsultation === 'teleconsultation') {
+      if (!carnet?.actif) {
+        toast.error('Activez votre carnet médical avant une téléconsultation');
+        return;
+      }
+      if (!carnetPretTele) {
+        toast.error('Complétez votre carnet médical (groupe sanguin, allergies, pathologies ou contact d\'urgence)');
+        return;
+      }
+      if (!consentCarnet) {
+        toast.error('Vous devez autoriser l\'accès à votre carnet pour la téléconsultation');
+        return;
+      }
+      if (!consentTele) {
+        toast.error('Consentement téléconsultation requis');
+        return;
+      }
     }
     try {
       await creerRdv.mutateAsync({
@@ -237,6 +302,7 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
         motif,
         type_consultation: typeConsultation,
         consentement_politique: true,
+        consentement_partage_carnet: typeConsultation === 'teleconsultation',
         consentement_teleconsultation: typeConsultation === 'teleconsultation',
         politique_version: textesConsent?.version,
         ordonnance_scan_id: ordonnanceScan?.id,
@@ -358,6 +424,27 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
         </Card>
       </TwoColGrid>
 
+      {medecin.services?.length > 0 && (
+        <Card style={{ padding: 24, marginTop: 24 }}>
+          <h3 style={{ margin: '0 0 16px' }}>Prestations & tarifs</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
+            {medecin.services.map((s) => (
+              <div key={s.id} style={{ padding: '12px 14px', borderRadius: 10, border: '1px solid #E2E8F0', background: '#FAFAFA' }}>
+                <span style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 600 }}>{s.categorie}</span>
+                <p style={{ margin: '6px 0 4px', fontWeight: 700, fontSize: '0.95rem' }}>{s.nom}</p>
+                {s.description && <p style={{ margin: '0 0 8px', fontSize: '0.8rem', color: '#64748B' }}>{s.description}</p>}
+                <strong style={{ color: '#059669', fontSize: '0.95rem' }}>
+                  {s.prix_indicatif != null ? `${Number(s.prix_indicatif).toLocaleString()} FCFA` : 'Sur devis'}
+                </strong>
+                {s.duree_minutes && (
+                  <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#94A3B8' }}>{s.duree_minutes} min</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
       {medecin.parcours?.length > 0 && (
         <Card style={{ padding: 24, marginTop: 24 }}>
           <h3 style={{ margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -445,11 +532,17 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
               </SlotGrid>
             )}
           </FieldGroup>
-          <OrdonnanceScanPicker
-            value={ordonnanceScan}
-            onChange={setOrdonnanceScan}
-            disabled={creerRdv.isPending}
-          />
+          <OptionalToggle type="button" onClick={() => setShowOrdonnanceScan((v) => !v)}>
+            <span>Joindre une ordonnance papier (optionnel)</span>
+            <span>{showOrdonnanceScan ? '−' : '+'}</span>
+          </OptionalToggle>
+          {showOrdonnanceScan && (
+            <OrdonnanceScanPicker
+              value={ordonnanceScan}
+              onChange={setOrdonnanceScan}
+              disabled={creerRdv.isPending}
+            />
+          )}
           {medecin.accepte_teleconsultation && (
             <div style={{ marginTop: 16, display: 'flex', flexWrap: 'wrap', gap: 16 }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
@@ -483,15 +576,50 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
               {textesConsent?.politique_confidentialite?.resume || 'J\'accepte la politique de confidentialité DjamSanté'}
             </label>
             {typeConsultation === 'teleconsultation' && (
-              <label style={{ display: 'flex', gap: 8, cursor: 'pointer' }}>
-                <input type="checkbox" checked={consentTele} onChange={(e) => setConsentTele(e.target.checked)} />
-                {textesConsent?.teleconsultation?.resume || 'J\'accepte la téléconsultation'}
-              </label>
+              <>
+                {!carnet?.actif && (
+                  <CarnetNotice $warn>
+                    Téléconsultation : activez d&apos;abord votre{' '}
+                    <Link to="/carnet-medical">carnet médical</Link>.
+                  </CarnetNotice>
+                )}
+                {carnet?.actif && !carnetPretTele && (
+                  <CarnetNotice $warn>
+                    Complétez votre{' '}
+                    <Link to="/carnet-medical">carnet médical</Link>
+                    {' '}(groupe sanguin, allergies, pathologies ou contact d&apos;urgence).
+                  </CarnetNotice>
+                )}
+                {carnetPretTele && (
+                  <CarnetNotice>
+                    Votre carnet sera partagé avec le médecin pour cette consultation en visio.
+                  </CarnetNotice>
+                )}
+                <label style={{ display: 'flex', gap: 8, margin: '10px 0 8px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={consentCarnet}
+                    onChange={(e) => setConsentCarnet(e.target.checked)}
+                    disabled={!carnetPretTele}
+                  />
+                  {textesConsent?.partage_carnet_rdv?.resume || 'J\'autorise ce médecin à consulter mon carnet médical pour cette téléconsultation'}
+                </label>
+                <label style={{ display: 'flex', gap: 8, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={consentTele} onChange={(e) => setConsentTele(e.target.checked)} />
+                  {textesConsent?.teleconsultation?.resume || 'J\'accepte la téléconsultation'}
+                </label>
+              </>
             )}
           </div>
           <Button
             onClick={handleRdv}
-            disabled={creerRdv.isPending || !dateRdv || !heureRdv || !consentPolitique}
+            disabled={
+              creerRdv.isPending
+              || !dateRdv
+              || !heureRdv
+              || !consentPolitique
+              || (typeConsultation === 'teleconsultation' && (!consentTele || !consentCarnet || !carnetPretTele))
+            }
             style={{ marginTop: 12, width: '100%' }}
           >
             Demander un RDV

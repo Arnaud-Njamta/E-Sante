@@ -21,6 +21,8 @@ import { PATIENT_SIMPLIFIED_MODE } from '../config/patientSimplified';
 import PatientMobileProfileHero from '../components/patient/PatientMobileProfileHero';
 import UserAvatar from '../components/ui/UserAvatar';
 import LanguageSwitcher from '../components/ui/LanguageSwitcher';
+import { normalizeSupportedLang } from '../i18n/syncLanguage';
+import { useUploadPatientPhoto } from '../hooks/usePatientProfile';
 import { PushNotificationToggle } from '../components/patient/PushNotificationPrompt';
 import { BOTTOM_NAV_HEIGHT } from '../components/layout/PatientBottomNav';
 
@@ -399,7 +401,7 @@ export default function ProfilePage() {
         date_naissance: formData.dateNaissance,
         region: region || null,
         ville: ville || null,
-        langue: i18n.language?.split('-')[0] || 'fr',
+        langue: normalizeSupportedLang(i18n.language),
       });
       toast.success(t('toasts.profile_saved'));
     } catch (err) {

@@ -35,6 +35,7 @@ const MedecinProfilPage = React.lazy(() => import('./pages/MedecinProfilPage'));
 const MedecinRendezVousPage = React.lazy(() => import('./pages/MedecinRendezVousPage'));
 const MedecinParametresPage = React.lazy(() => import('./pages/MedecinParametresPage'));
 const MedecinOrdonnancesPage = React.lazy(() => import('./pages/MedecinOrdonnancesPage'));
+const MedecinServicesPage = React.lazy(() => import('./pages/MedecinServicesPage'));
 const PharmacieMessagesPage = React.lazy(() => import('./pages/PharmacieMessagesPage'));
 const PharmacieHorairesPage = React.lazy(() => import('./pages/PharmacieHorairesPage'));
 const PharmacieProduitsPage = React.lazy(() => import('./pages/PharmacieProduitsPage'));
@@ -54,6 +55,7 @@ const StructureMedecinsPage = React.lazy(() => import('./pages/StructureMedecins
 const StructureServicesPage = React.lazy(() => import('./pages/StructureServicesPage'));
 const StructureRendezVousPage = React.lazy(() => import('./pages/StructureRendezVousPage'));
 const ActualitesPage = React.lazy(() => import('./pages/ActualitesPage'));
+const PublicationDetailPage = React.lazy(() => import('./pages/PublicationDetailPage'));
 const TeleconsultationPage = React.lazy(() => import('./pages/TeleconsultationPage'));
 const AdminDashboardPage = React.lazy(() => import('./pages/AdminDashboardPage'));
 const AdminInscriptionsPage = React.lazy(() => import('./pages/AdminInscriptionsPage'));
@@ -109,6 +111,7 @@ export default function App() {
                                 <Route path="/confidentialite" element={<LazyRoute><PrivacyPolicyPage /></LazyRoute>} />
                                 <Route path="/cgu" element={<LazyRoute><TermsOfServicePage /></LazyRoute>} />
                                 <Route path="/actualites" element={<LazyRoute><ActualitesPage /></LazyRoute>} />
+                                <Route path="/actualites/:id" element={<LazyRoute><PublicationDetailPage /></LazyRoute>} />
                                 <Route path="/qr/:token" element={<LazyRoute><QrPublicPage /></LazyRoute>} />
 
                                 <Route element={<RoleRoute allowedRoles={[ROLES.PATIENT]} />}>
@@ -133,6 +136,7 @@ export default function App() {
                                     <Route path="/qr-medical" element={<QrMedicalPage />} />
                                     <Route path="/urgence" element={<UrgencePage />} />
                                     <Route path="/actualites" element={<ActualitesPage />} />
+                                    <Route path="/actualites/:id" element={<PublicationDetailPage />} />
                                     <Route path="/pharmacie/chat" element={<PharmacieChatPage />} />
                                     <Route path="/pharmacie/chat/:conversationId" element={<PharmacieChatPage />} />
                                     <Route path="/profil" element={<ProfilePage />} />
@@ -148,9 +152,11 @@ export default function App() {
                                     <Route path="/medecin/parametres" element={<MedecinParametresPage />} />
                                     <Route path="/medecin/carriere" element={<MedecinProfilProPage />} />
                                     <Route path="/medecin/ordonnances" element={<MedecinOrdonnancesPage />} />
+                                    <Route path="/medecin/services" element={<MedecinServicesPage />} />
                                     <Route path="/medecin/avis" element={<MedecinAvisPage />} />
                                     <Route path="/medecin/qr-scan" element={<ProQrScanPage />} />
                                     <Route path="/medecin/actualites" element={<ActualitesPage />} />
+                                    <Route path="/medecin/actualites/:id" element={<PublicationDetailPage />} />
                                     <Route path="/sante/medecin/:id" element={<MedecinDetailPage />} />
                                     </Route>
                                 </Route>
@@ -169,6 +175,7 @@ export default function App() {
                                     <Route path="/pharmacie/ordonnances" element={<PharmacieOrdonnanceVerifyPage />} />
                                     <Route path="/pharmacie/qr-scan" element={<ProQrScanPage />} />
                                     <Route path="/pharmacie/actualites" element={<ActualitesPage />} />
+                                    <Route path="/pharmacie/actualites/:id" element={<PublicationDetailPage />} />
                                     </Route>
                                 </Route>
 
@@ -191,6 +198,7 @@ export default function App() {
                                     <Route path="/hopital/ordonnances" element={<PharmacieOrdonnanceVerifyPage />} />
                                     <Route path="/hopital/qr-scan" element={<ProQrScanPage />} />
                                     <Route path="/hopital/actualites" element={<ActualitesPage />} />
+                                    <Route path="/hopital/actualites/:id" element={<PublicationDetailPage />} />
                                     </Route>
                                 </Route>
 
@@ -213,6 +221,7 @@ export default function App() {
                                     <Route path="/clinique/ordonnances" element={<PharmacieOrdonnanceVerifyPage />} />
                                     <Route path="/clinique/qr-scan" element={<ProQrScanPage />} />
                                     <Route path="/clinique/actualites" element={<ActualitesPage />} />
+                                    <Route path="/clinique/actualites/:id" element={<PublicationDetailPage />} />
                                     </Route>
                                 </Route>
 

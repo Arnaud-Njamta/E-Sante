@@ -2,13 +2,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import client from '../api/client';
 import ENDPOINTS from '../api/endpoints';
 
-export function useMesProduits() {
+export function useMesProduits(options = {}) {
     return useQuery({
         queryKey: ['produits', 'mes'],
         queryFn: async () => {
             const { data } = await client.get(ENDPOINTS.produits.mesProduits);
             return data.data;
         },
+        ...options,
     });
 }
 

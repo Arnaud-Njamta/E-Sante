@@ -34,6 +34,8 @@ export const PATIENT_SIMPLIFIED_SIDEBAR_KEYS = [
   { to: '/prises', labelKey: 'nav.prises', section: 'principal' },
   { to: '/sante', labelKey: 'nav.health_directory', section: 'principal' },
   { to: '/actualites', labelKey: 'nav.actualites', section: 'sante' },
+  { to: '/carnet-medical', labelKey: 'nav.carnet', section: 'sante' },
+  { to: '/ordonnances-electroniques', labelKey: 'nav.e_prescriptions', section: 'sante' },
   { to: '/rendez-vous', labelKey: 'nav.my_appointments', section: 'sante' },
   { to: '/reservations', labelKey: 'nav.my_reservations', section: 'sante' },
   { to: '/profil', labelKey: 'nav.profil', section: 'compte' },

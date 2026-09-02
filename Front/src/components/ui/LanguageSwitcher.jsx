@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { ROLES } from '../../config/branding';
 import client from '../../api/client';
 import ENDPOINTS from '../../api/endpoints';
+import { normalizeSupportedLang } from '../../i18n/syncLanguage';
 
 const Wrap = styled.div`
   display: flex;
@@ -37,7 +38,7 @@ export default function LanguageSwitcher({ compact = false }) {
   }, [isPatient, role]);
 
   const handleChange = async (e) => {
-    const lng = e.target.value;
+    const lng = normalizeSupportedLang(e.target.value);
     await i18n.changeLanguage(lng);
     if ((isPatient || role === ROLES.PATIENT) && user) {
       persistLanguage(lng);
@@ -48,16 +49,12 @@ export default function LanguageSwitcher({ compact = false }) {
     <Wrap>
       {!compact && <Globe size={16} />}
       <Select
-        value={i18n.language?.split('-')[0] || 'fr'}
+        value={normalizeSupportedLang(i18n.language)}
         onChange={handleChange}
         aria-label={t('common.language')}
       >
-        <option value="fr">Français</option>
-        <option value="en">English</option>
-        <option value="ewo">Ewondo</option>
-        <option value="bas">Bassa</option>
-        <option value="dua">Douala</option>
-        <option value="ff">Fulfulde</option>
+        <option value="fr">{t('languages.fr')}</option>
+        <option value="en">{t('languages.en')}</option>
       </Select>
     </Wrap>
   );

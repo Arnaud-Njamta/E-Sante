@@ -31,7 +31,7 @@ export const WELCOME_AI_MEDECIN = `Bonjour Docteur 👨‍⚕️ — **Dr. DjamS
 
 Je structure anamnèses et synthèses pour votre dossier — sans diagnostic définitif ni ordonnance.
 
-📱 Vos patients voient une **app simplifiée** : rappels de prise sur l'accueil, actualités santé, annuaire et pharmacie. Les **ordonnances électroniques** restent actives.
+💰 Gérez vos **prestations et tarifs** dans **Mes services** — l'annuaire et l'assistant IA s'en servent pour orienter les patients.
 
 🔐 **Mode formation** : « je suis docteur alors voici ce que tu dois intégrer dans ton apprentissage : … »
 

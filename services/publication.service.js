@@ -117,7 +117,29 @@ const creer = async (req, payload, file) => {
   });
 };
 
-const toggleLike = async (publicationId, userIdentity) => {
+const getById = async (publicationId, userIdentity) => {
+  const pub = await Publication.findOne({ where: { id: publicationId, actif: true } });
+  if (!pub) {
+    const error = new Error('Publication non trouvée');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  let userLike = false;
+  if (userIdentity) {
+    const like = await PublicationLike.findOne({
+      where: {
+        publication_id: publicationId,
+        utilisateur_type: userIdentity.type,
+        utilisateur_id: userIdentity.id,
+      },
+    });
+    userLike = !!like;
+  }
+
+  return formatPublication(pub, userLike);
+};
+
   const pub = await Publication.findByPk(publicationId);
   if (!pub) {
     const error = new Error('Publication non trouvée');
@@ -212,6 +234,6 @@ const listerAlertes = async (region) => {
 };
 
 module.exports = {
-  lister, creer, toggleLike, getComments, addComment, supprimer, getUserIdentity, formatPublication,
+  lister, getById, creer, toggleLike, getComments, addComment, supprimer, getUserIdentity, formatPublication,
   listerAlertes,
 };

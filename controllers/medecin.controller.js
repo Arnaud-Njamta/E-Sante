@@ -1,4 +1,5 @@
 const medecinService = require('../services/medecin.service');
+const medecinServicesService = require('../services/medecin-services.service');
 const { saveFichier } = require('../services/fichier.service');
 const { TYPE_FICHIER } = require('../utils/constants');
 
@@ -119,4 +120,36 @@ const uploadSignature = async (req, res, next) => {
 module.exports = {
   lister, getById, getProfile, getDashboard,
   updateProfil, updateHoraires, uploadPhoto, uploadCachet, uploadSignature,
+  listServices: async (req, res, next) => {
+    try {
+      const services = await medecinServicesService.listForMedecin(req.medecin.id);
+      res.json({ success: true, data: services });
+    } catch (error) {
+      next(error);
+    }
+  },
+  createService: async (req, res, next) => {
+    try {
+      const service = await medecinServicesService.create(req.medecin.id, req.body);
+      res.status(201).json({ success: true, data: service });
+    } catch (error) {
+      next(error);
+    }
+  },
+  updateService: async (req, res, next) => {
+    try {
+      const service = await medecinServicesService.update(req.medecin.id, req.params.id, req.body);
+      res.json({ success: true, data: service });
+    } catch (error) {
+      next(error);
+    }
+  },
+  deleteService: async (req, res, next) => {
+    try {
+      const result = await medecinServicesService.remove(req.medecin.id, req.params.id);
+      res.json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  },
 };

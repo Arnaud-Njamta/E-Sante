@@ -16,6 +16,10 @@
     "patient": "Patient",
     "brand_tagline": "Paix et santé pour l'Afrique"
   },
+  "languages": {
+    "fr": "Français",
+    "en": "English"
+  },
   "greeting": {
     "morning": "Bonjour",
     "afternoon": "Bon après-midi",
@@ -61,6 +65,7 @@
     "location": "Localisation",
     "affiliated_doctors": "Médecins affiliés",
     "services_rates": "Services & tarifs",
+    "my_services": "Mes services",
     "care_requests": "Demandes prise en charge",
     "health_alerts": "Alertes sanitaires",
     "dispensary": "Dispensaire",
@@ -283,9 +288,18 @@
   },
   "patientHome": {
     "greeting": "Bonjour {{name}}",
-    "subtitle": "Trouvez un soignant, une pharmacie ou un établissement près de chez vous.",
-    "section_meds": "Mes médicaments",
-    "section_find": "Trouver un soignant",
+    "subtitle": "Vos rappels de prise, vos soins et votre pharmacie — au Cameroun.",
+    "mission_title": "À quoi sert DjamSanté ?",
+    "mission_lead": "Votre santé au quotidien, en trois actions simples :",
+    "mission_meds_title": "Prendre vos médicaments à l'heure",
+    "mission_meds_desc": "Rappels sur l'accueil — confirmez chaque dose en un tap.",
+    "mission_care_title": "Trouver un soignant ou une pharmacie",
+    "mission_care_desc": "Médecin, aide à domicile ou officine près de vous, avec GPS.",
+    "mission_records_title": "Suivre vos ordonnances & carnet",
+    "mission_records_desc": "Ordonnances signées et carnet pour la téléconsultation.",
+    "section_meds": "Aujourd'hui — mes médicaments",
+    "section_find": "Trouver des soins",
+    "section_records": "Mon dossier santé",
     "who_looking": "Que cherchez-vous aujourd'hui ?",
     "find_doctor": "Médecin",
     "find_doctor_desc": "Consultez un professionnel de santé",
@@ -339,12 +353,39 @@
     "contact_desc": "Messagerie avec un pharmacien",
     "legal_note": "La vente de médicaments en ligne est encadrée. DjamSanté facilite la mise en relation et la réservation de retrait en officine."
   },
-  "medecinCare": {
-    "notice_title": "Vos patients — app simplifiée",
-    "notice_intro": "L'expérience patient a été allégée pour le terrain camerounais. Les fonctionnalités cliniques essentielles restent actives :",
-    "notice_reminders": "Les rappels de prise médicamenteuse s'affichent sur leur accueil — encouragez-les à confirmer chaque dose.",
-    "notice_prescriptions": "Vos ordonnances électroniques restent traçables ; le patient peut les consulter et les présenter en pharmacie.",
-    "notice_actualites": "Le fil d'actualités santé reste accessible — vos publications informent la communauté."
+  "medecinServices": {
+    "title": "Mes services",
+    "subtitle": "Décrivez vos consultations et actes avec leurs tarifs FCFA. Ces informations alimentent l'annuaire santé et l'assistant IA pour orienter les patients.",
+    "loading": "Chargement de vos services…",
+    "add": "Ajouter un service",
+    "new_service": "Nouveau service",
+    "name_label": "Nom du service *",
+    "category_label": "Catégorie",
+    "price_label": "Prix indicatif (FCFA) *",
+    "duration_label": "Durée (minutes)",
+    "description_label": "Description",
+    "description_placeholder": "Ex. Consultation cardiologie, bilan complet, suivi post-opératoire…",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "saved": "Service enregistré",
+    "error": "Erreur lors de l'enregistrement",
+    "remove": "Retirer",
+    "on_request": "Sur devis",
+    "duration_value": "{{minutes}} min",
+    "empty_title": "Aucun service publié",
+    "empty_desc": "Ajoutez vos consultations, téléconsultations ou actes pour que les patients et l'IA DjamSanté vous trouvent plus facilement.",
+    "categories": {
+      "consultation": "Consultation",
+      "teleconsultation": "Téléconsultation",
+      "follow_up": "Suivi",
+      "emergency": "Urgence",
+      "surgery": "Chirurgie",
+      "imaging": "Imagerie",
+      "lab": "Laboratoire",
+      "vaccination": "Vaccination",
+      "pediatrics": "Pédiatrie",
+      "other": "Autre"
+    }
   },
   "carnetTeaser": {
     "create_title": "Créez votre carnet médical",
@@ -500,6 +541,8 @@
     "create_account": "Créer un compte patient",
     "pro_access": "Médecin, pharmacie ou établissement ?",
     "request_pro": "Demander un accès pro",
+    "demo_accounts_title": "Comptes démo — chaque branche",
+    "demo_accounts_hint": "Cliquez pour remplir l'e-mail et le mot de passe, puis Entrer.",
     "register_title": "Créer un compte",
     "register_hint": "Deux étapes rapides — vous êtes soigné ensuite dans l'app.",
     "step1": "Étape 1/2 — Identifiants",
@@ -824,7 +867,22 @@
     "comment_login": "Connectez-vous pour commenter",
     "like_login": "Connectez-vous pour aimer",
     "publish_success": "Publication envoyée !",
-    "publish_error": "Erreur publication"
+    "publish_error": "Erreur publication",
+    "public_profile_hint": "Photo et informations visibles dans l'annuaire santé et le fil d'actualités.",
+    "photo_visible_feed": "Visible dans l'annuaire santé et les actualités",
+    "read_more": "Lire la suite",
+    "back_feed": "Retour au fil",
+    "like_action": "J'aime",
+    "comment_action": "Commenter",
+    "likes_count": "{{count}} J'aime",
+    "comments_count": "{{count}} commentaires",
+    "not_found_title": "Publication introuvable",
+    "not_found_desc": "Cette publication n'existe plus ou a été retirée."
+  },
+  "ordonnancesElecTeaser": {
+    "view_all": "Voir tout",
+    "empty_title": "Ordonnances électroniques",
+    "empty_desc": "Téléchargez vos ordonnances signées après consultation"
   },
   "ordonnancesElec": {
     "title": "Ordonnances électroniques",

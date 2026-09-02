@@ -38,11 +38,17 @@ VITE_API_URL=http://localhost:3000/api
 
 ## 3. Comptes de test
 
-| Rôle | Email | Mot de passe |
-|------|-------|--------------|
-| Admin | `admin@e-sante.sn` | `Admin123!` |
+| Branche | E-mail | Mot de passe |
+|---------|--------|--------------|
 | Patient | `patient@e-sante.sn` | `Patient123!` |
 | Médecin | `dr.fatou@e-sante.sn` | `Medecin123!` |
+| Aide-soignant(e) | `aide@e-sante.sn` | `Medecin123!` |
+| Pharmacie | `pharma@e-sante.sn` | `Pharmacie123!` |
+| Hôpital | `hopital@e-sante.sn` | `Pharmacie123!` |
+| Clinique | `clinique@e-sante.sn` | `Pharmacie123!` |
+| Admin MINSANTE | `admin@e-sante.sn` | `Admin123!` |
+
+En mode développement, la page de connexion affiche ces comptes en un clic.
 
 OTP SMS (mode mock) : **`123456`** — défini dans `.env` (`SMS_MODE=mock`).
 

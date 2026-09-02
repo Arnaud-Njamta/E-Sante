@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, MapPin, Phone, Mail, Clock, MessageCircle, ShoppingBag, Pill, Shield, CreditCard, Video, Newspaper, Users } from 'lucide-react';
 import Card from '../components/ui/Card';
 import StarRating from '../components/ui/StarRating';
@@ -21,6 +22,7 @@ import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
 import { resolveFileUrl } from '../components/ui/PhotoUploadCard';
+import { localizePublication } from '../utils/publicationLocale';
 
 const BackBtn = styled.button`
   display: flex;
@@ -196,6 +198,7 @@ const MapEmbed = styled.iframe`
 `;
 
 export default function EtablissementDetailPage() {
+  const { t, i18n } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -586,17 +589,28 @@ export default function EtablissementDetailPage() {
 
       {publications?.length > 0 && (
         <div style={{ marginTop: 32 }}>
-          <h3><Newspaper size={18} style={{ verticalAlign: 'middle' }} /> Actualités & réalisations</h3>
+          <h3><Newspaper size={18} style={{ verticalAlign: 'middle' }} /> {t('actualites.title')}</h3>
           <div style={{ display: 'grid', gap: 12, marginTop: 16 }}>
-            {publications.map((p) => (
-              <ServiceCard key={p.id}>
+            {publications.map((p) => {
+              const localized = localizePublication(p, i18n.language);
+              return (
+              <ServiceCard
+                key={p.id}
+                as="button"
+                type="button"
+                onClick={() => navigate(`/actualites/${p.id}`)}
+                style={{ cursor: 'pointer', textAlign: 'left', width: '100%' }}
+              >
                 <span style={{ fontSize: '0.7rem', color: '#0D9488', fontWeight: 600 }}>
-                  {p.type === 'realisation' ? 'Réalisation' : 'Actualité'}
+                  {p.type === 'realisation' ? t('actualites.type_achievement') : t('actualites.type_news')}
                 </span>
-                <ServiceName>{p.titre}</ServiceName>
-                <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748B' }}>{p.contenu}</p>
+                <ServiceName>{localized.titre}</ServiceName>
+                <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748B' }}>{localized.contenu}</p>
+                <span style={{ fontSize: '0.75rem', color: '#0D9488', fontWeight: 600, marginTop: 8, display: 'inline-block' }}>
+                  {t('actualites.read_more')} →
+                </span>
               </ServiceCard>
-            ))}
+            );})}
           </div>
         </div>
       )}

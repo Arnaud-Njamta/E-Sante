@@ -38,13 +38,14 @@ export function useUpdateStructureMedecin() {
   });
 }
 
-export function useStructureServices() {
+export function useStructureServices(options = {}) {
   return useQuery({
     queryKey: ['structure', 'services'],
     queryFn: async () => {
       const { data } = await client.get(ENDPOINTS.etablissements.meServices);
       return data.data;
     },
+    ...options,
   });
 }
 

@@ -165,3 +165,43 @@ export function useUploadEtabPhoto() {
         },
     });
 }
+
+export function useMedecinServices() {
+    return useQuery({
+        queryKey: ['medecin', 'services'],
+        queryFn: async () => {
+            const { data } = await client.get(ENDPOINTS.medecins.meServices);
+            return data.data;
+        },
+    });
+}
+
+export function useCreateMedecinService() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async (payload) => {
+            const { data } = await client.post(ENDPOINTS.medecins.meServices, payload);
+            return data.data;
+        },
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['medecin', 'services'] });
+            qc.invalidateQueries({ queryKey: ['medecin', 'dashboard'] });
+            qc.invalidateQueries({ queryKey: ['medecins'] });
+        },
+    });
+}
+
+export function useDeleteMedecinService() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async (id) => {
+            const { data } = await client.delete(ENDPOINTS.medecins.serviceById(id));
+            return data.data;
+        },
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['medecin', 'services'] });
+            qc.invalidateQueries({ queryKey: ['medecin', 'dashboard'] });
+            qc.invalidateQueries({ queryKey: ['medecins'] });
+        },
+    });
+}

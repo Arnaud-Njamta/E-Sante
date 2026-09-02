@@ -6,6 +6,7 @@ const HistoriquePrise = require('./HistoriquePrise');
 const Ordonnance = require('./Ordonnance');
 const Etablissement = require('./Etablissement');
 const ServiceEtablissement = require('./ServiceEtablissement');
+const ServiceMedecin = require('./ServiceMedecin');
 const Medecin = require('./Medecin');
 const Avis = require('./Avis');
 const Conversation = require('./Conversation');
@@ -121,6 +122,9 @@ MedecinAffiliation.belongsTo(Etablissement, { foreignKey: 'etablissement_id', as
 Medecin.hasMany(ParcoursProfessionnel, { foreignKey: 'medecin_id', as: 'parcours' });
 ParcoursProfessionnel.belongsTo(Medecin, { foreignKey: 'medecin_id', as: 'medecin' });
 
+Medecin.hasMany(ServiceMedecin, { foreignKey: 'medecin_id', as: 'services' });
+ServiceMedecin.belongsTo(Medecin, { foreignKey: 'medecin_id', as: 'medecin' });
+
 Etablissement.hasMany(MembreEquipeEtablissement, { foreignKey: 'etablissement_id', as: 'membres_equipe' });
 MembreEquipeEtablissement.belongsTo(Etablissement, { foreignKey: 'etablissement_id', as: 'etablissement' });
 
@@ -143,6 +147,7 @@ module.exports = {
   Ordonnance,
   Etablissement,
   ServiceEtablissement,
+  ServiceMedecin,
   Medecin,
   Avis,
   Conversation,

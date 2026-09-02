@@ -49,6 +49,16 @@ const creer = async (req, res, next) => {
   }
 };
 
+const getById = async (req, res, next) => {
+  try {
+    const userIdentity = req.user ? publicationService.getUserIdentity(req) : null;
+    const pub = await publicationService.getById(req.params.id, userIdentity);
+    res.json({ success: true, data: pub });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const toggleLike = async (req, res, next) => {
   try {
     const identity = publicationService.getUserIdentity(req);
@@ -88,5 +98,5 @@ const supprimer = async (req, res, next) => {
 };
 
 module.exports = {
-  optionalAuth, lister, listerFeatured, listerAlertes, creer, toggleLike, getComments, addComment, supprimer,
+  optionalAuth, lister, listerFeatured, listerAlertes, getById, creer, toggleLike, getComments, addComment, supprimer,
 };

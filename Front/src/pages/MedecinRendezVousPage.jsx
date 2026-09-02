@@ -190,7 +190,7 @@ export default function MedecinRendezVousPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <Badge $s={rdv.statut}>{STATUT_LABELS[rdv.statut] || rdv.statut}</Badge>
 
-            {rdv.patient?.id && ['confirme', 'termine'].includes(rdv.statut) && (
+            {rdv.patient?.id && rdv.statut === 'confirme' && (
               <>
                 <Button
                   size="sm"
@@ -235,7 +235,9 @@ export default function MedecinRendezVousPage() {
                     <Video size={14} /> Rejoindre
                   </Button>
                 )}
-                <Button size="sm" onClick={() => submitStatut(rdv.id, 'termine')}>Terminer</Button>
+                <Button size="sm" onClick={() => setConfirmAction({ rdv, statut: 'termine' })}>
+                  Terminer
+                </Button>
               </>
             )}
           </div>
@@ -246,28 +248,44 @@ export default function MedecinRendezVousPage() {
         <Modal onClick={() => setConfirmAction(null)}>
           <ModalBox onClick={(e) => e.stopPropagation()}>
             <h3 style={{ margin: '0 0 8px' }}>
-              {confirmAction.statut === 'confirme' ? 'Confirmer le rendez-vous' : 'Refuser le rendez-vous'}
+              {confirmAction.statut === 'confirme' && 'Confirmer le rendez-vous'}
+              {confirmAction.statut === 'annule' && 'Refuser le rendez-vous'}
+              {confirmAction.statut === 'termine' && 'Terminer la consultation'}
             </h3>
             <p style={{ fontSize: '0.85rem', color: '#64748B', marginBottom: 12 }}>
               {confirmAction.rdv.patient?.prenom} {confirmAction.rdv.patient?.nom} — {confirmAction.rdv.date_rdv} {confirmAction.rdv.heure_debut}
             </p>
-            <label style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-              <MessageSquare size={14} /> Message au patient (e-mail + notification)
-            </label>
-            <textarea
-              value={notesPatient}
-              onChange={(e) => setNotesPatient(e.target.value)}
-              placeholder="Ex. Préparez vos derniers examens, arrivez 10 min avant..."
-              rows={3}
-              style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #E2E8F0', marginBottom: 16 }}
-            />
+            {confirmAction.statut === 'termine' && (
+              <p style={{
+                fontSize: '0.82rem', color: '#92400E', marginBottom: 12,
+                padding: '10px 12px', borderRadius: 8, background: '#FFFBEB', border: '1px solid #FDE68A',
+              }}
+              >
+                Voulez-vous vraiment mettre fin à cette consultation ? L&apos;accès au carnet médical du patient
+                sera révoqué immédiatement (conformité RGPD / secret médical).
+              </p>
+            )}
+            {confirmAction.statut !== 'termine' && (
+              <>
+                <label style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                  <MessageSquare size={14} /> Message au patient (e-mail + notification)
+                </label>
+                <textarea
+                  value={notesPatient}
+                  onChange={(e) => setNotesPatient(e.target.value)}
+                  placeholder="Ex. Préparez vos derniers examens, arrivez 10 min avant..."
+                  rows={3}
+                  style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #E2E8F0', marginBottom: 16 }}
+                />
+              </>
+            )}
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <Button variant="secondary" onClick={() => setConfirmAction(null)}>Annuler</Button>
               <Button
                 onClick={() => submitStatut(confirmAction.rdv.id, confirmAction.statut, notesPatient)}
                 disabled={updateStatut.isPending}
               >
-                Confirmer
+                {confirmAction.statut === 'termine' ? 'Oui, terminer' : 'Confirmer'}
               </Button>
             </div>
           </ModalBox>

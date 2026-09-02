@@ -30,7 +30,7 @@ const errorMiddleware = require('./middlewares/error.middleware');
 
 const { isPrimaryPm2Instance } = require('./utils/pm2-primary');
 
-const { seedDemoData, seedDemoAccounts, seedPublications, seedDispensaireDemo, seedAdminAccount, seedPharmacieProducts } = require('./services/seed.service');
+const { seedDemoData, seedDemoAccounts, seedPublications, patchPublicationTranslations, seedDispensaireDemo, seedAdminAccount, seedPharmacieProducts } = require('./services/seed.service');
 const { ensureStorageDirs } = require('./services/fichier.service');
 
 
@@ -197,6 +197,7 @@ const runSeeds = async () => {
   await seedDemoData();
   await seedDemoAccounts();
   await seedPublications();
+  await patchPublicationTranslations();
   await seedDispensaireDemo();
 };
 

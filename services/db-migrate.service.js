@@ -493,6 +493,30 @@ const runPendingMigrations = async () => {
     `);
     console.log('Migration: table consentements_patients créée.');
   }
+
+  const [svcMedTables] = await sequelize.query(
+    "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'services_medecin'",
+  );
+  if (svcMedTables.length === 0) {
+    await sequelize.query(`
+      CREATE TABLE \`services_medecin\` (
+        \`id\` CHAR(36) NOT NULL,
+        \`medecin_id\` CHAR(36) NOT NULL,
+        \`nom\` VARCHAR(255) NOT NULL,
+        \`description\` TEXT NULL,
+        \`categorie\` VARCHAR(100) NULL,
+        \`prix_indicatif\` DECIMAL(10,2) NULL,
+        \`duree_minutes\` INT NULL,
+        \`disponible\` TINYINT(1) NOT NULL DEFAULT 1,
+        \`created_at\` DATETIME NOT NULL,
+        \`updated_at\` DATETIME NOT NULL,
+        PRIMARY KEY (\`id\`),
+        INDEX \`services_medecin_medecin\` (\`medecin_id\`),
+        INDEX \`services_medecin_categorie\` (\`categorie\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+    console.log('Migration: table services_medecin créée.');
+  }
   } finally {
     if (lockHeld) {
       await sequelize.query("SELECT RELEASE_LOCK('djamsante_migrate')");

@@ -5,6 +5,7 @@ const { parseJsonField } = require('../utils/helpers');
 const { parseGeoParams, haversineKm } = require('../utils/geo');
 const affiliationService = require('./medecin-affiliation.service');
 const parcoursService = require('./parcours-professionnel.service');
+const medecinServicesService = require('./medecin-services.service');
 
 const formatMedecin = (medecin) => {
   const data = medecin.toJSON ? medecin.toJSON() : { ...medecin };
@@ -35,11 +36,12 @@ const formatMedecinForStructure = (medecin) => {
 
 const enrichMedecinPublic = async (medecin) => {
   const formatted = formatMedecin(medecin);
-  const [affiliations, parcours] = await Promise.all([
+  const [affiliations, parcours, services] = await Promise.all([
     affiliationService.listerActivesPourMedecin(formatted.id),
     parcoursService.listerPourMedecin(formatted.id),
+    medecinServicesService.listForMedecin(formatted.id, { publicOnly: true }),
   ]);
-  return { ...formatted, affiliations, parcours };
+  return { ...formatted, affiliations, parcours, services };
 };
 
 const getMedecinCoords = (plain) => {
@@ -87,11 +89,13 @@ const lister = async ({
     where.disponible_maintenant = true;
   }
   if (recherche) {
+    const serviceMedIds = await medecinServicesService.findMedecinIdsByRecherche(recherche);
     andConditions.push({
       [Op.or]: [
         { nom: { [Op.like]: `%${recherche}%` } },
         { prenom: { [Op.like]: `%${recherche}%` } },
         { specialite: { [Op.like]: `%${recherche}%` } },
+        ...(serviceMedIds.length ? [{ id: { [Op.in]: serviceMedIds } }] : []),
       ],
     });
   }
@@ -145,6 +149,12 @@ const lister = async ({
     }
     return plain;
   });
+
+  const servicesByMedecin = await medecinServicesService.listByMedecinIds(medecins.map((m) => m.id));
+  medecins = medecins.map((m) => ({
+    ...m,
+    services: servicesByMedecin[m.id] || [],
+  }));
 
   if (useGeo) {
     medecins = medecins

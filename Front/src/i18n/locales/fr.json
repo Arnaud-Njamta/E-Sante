@@ -764,6 +764,11 @@
     "enabled": "Notifications activées",
     "denied": "Permission refusée"
   },
+  "ai": {
+    "limited_title": "IA limitée",
+    "limited_missing_key": "La clé Gemini n'est pas configurée sur le serveur. L'assistant fonctionne en mode basique.",
+    "limited_unavailable": "Le service Gemini est temporairement indisponible. Réponses de secours uniquement."
+  },
   "offline": {
     "pending": "{{count}} action(s) en attente de synchronisation",
     "sync": "Synchroniser"

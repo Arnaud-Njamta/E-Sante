@@ -14,7 +14,7 @@ import ENDPOINTS from '../api/endpoints';
 import {
   User, Mail, Phone, CalendarDays, Clock, Save,
   Shield, Bell, Sun, Sunset, Moon,
-  Camera, Download, Lock, Info, Trash2, MapPin, LogOut,
+  Camera, Download, Lock, Info, Trash2, MapPin, LogOut, Globe,
 } from 'lucide-react';
 import { CAMEROON_REGIONS, VILLES_PAR_REGION } from '../config/cameroonRegions';
 import { PATIENT_SIMPLIFIED_MODE } from '../config/patientSimplified';
@@ -48,7 +48,7 @@ const MobilePageHeader = styled.div`
 
   @media (max-width: ${({ theme }) => theme.breakpoints.md}) {
     display: block;
-    margin-bottom: ${({ theme }) => theme.spacing[4]};
+    margin-bottom: ${({ theme }) => theme.spacing[3]};
     animation: fadeIn 0.4s ease both;
 
     h1 {
@@ -64,6 +64,40 @@ const MobilePageHeader = styled.div`
       margin: 4px 0 0;
     }
   }
+`;
+
+const MobileProfileToolbar = styled.div`
+  display: none;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.md}) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: ${({ theme }) => theme.spacing[4]};
+    padding: 12px 14px;
+    border-radius: ${({ theme }) => theme.radii.lg};
+    border: 1px solid ${({ theme }) => theme.colors.border};
+    background: ${({ theme }) => theme.colors.surface};
+    animation: fadeIn 0.4s ease both;
+  }
+`;
+
+const MobileToolbarLabel = styled.span`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+const MobileToolbarActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 `;
 
 /* Personal Info Section */
@@ -498,6 +532,26 @@ export default function ProfilePage() {
       ) : (
         <PatientMobileProfileHero />
       )}
+
+      <MobileProfileToolbar>
+        <MobileToolbarLabel>
+          <Globe size={15} />
+          {t('common.language')}
+        </MobileToolbarLabel>
+        <MobileToolbarActions>
+          <LanguageSwitcher variant="toggle" />
+          <PushNotificationToggle />
+          <Button
+            size="sm"
+            icon={Save}
+            type="button"
+            onClick={handleSubmit(onSubmit)}
+            disabled={saving}
+          >
+            {saving ? t('profile.saving') : t('profile.save')}
+          </Button>
+        </MobileToolbarActions>
+      </MobileProfileToolbar>
 
       <PageHeader>
         <div>

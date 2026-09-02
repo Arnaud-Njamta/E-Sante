@@ -13,6 +13,14 @@ import AuthShell, {
 } from '../components/auth/AuthShell';
 import AuthPasswordInput from '../components/auth/AuthPasswordInput';
 import BrandLogo from '../components/brand/BrandLogo';
+import LanguageSwitcher from '../components/ui/LanguageSwitcher';
+
+const LoginLangRow = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin-bottom: 8px;
+`;
 
 /** Chargé uniquement en `npm run dev` — exclu du build production (VPS). */
 const DevDemoAccountsPanel = import.meta.env.DEV
@@ -72,6 +80,9 @@ export default function LoginPage() {
 
   return (
     <AuthShell>
+      <LoginLangRow>
+        <LanguageSwitcher variant="toggle" />
+      </LoginLangRow>
       <Wordmark>
         <BrandLogo variant="compact" tagline={branding.tagline} emblemSize={52} />
       </Wordmark>

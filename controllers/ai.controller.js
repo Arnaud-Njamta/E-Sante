@@ -42,7 +42,8 @@ const sendMessage = async (req, res, next) => {
 };
 
 const getStatus = async (req, res) => {
-  res.json({ success: true, data: aiService.healthCheck() });
+  const data = await aiService.probeGeminiHealth();
+  res.json({ success: true, data });
 };
 
 const bookRdv = async (req, res, next) => {

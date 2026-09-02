@@ -10,6 +10,7 @@ import { getPatientMobileTitle } from '../../config/patientMobileNav';
 import { Menu, Search, X } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import UserAvatar from '../ui/UserAvatar';
+import LanguageSwitcher from '../ui/LanguageSwitcher';
 
 const TopBarContainer = styled.header`
   height: ${({ $patientMobile }) => ($patientMobile ? 'auto' : '68px')};
@@ -200,6 +201,16 @@ const MobileSearchBtn = styled(IconButton)`
   }
 `;
 
+const MobileLangRow = styled.div`
+  display: none;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.md}) {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 ${({ theme }) => theme.spacing[4]} ${({ theme }) => theme.spacing[2]};
+  }
+`;
+
 const SEARCH_ROUTES = {
   [ROLES.PATIENT]: { path: '/sante', tab: 'medicaments' },
   [ROLES.MEDECIN]: { path: '/sante', tab: 'medecins' },
@@ -307,6 +318,12 @@ export default function TopBar({ onMenuToggle, patientMobile = false }) {
           )}
         </RightSection>
       </TopRow>
+
+      {patientMobile && (
+        <MobileLangRow>
+          <LanguageSwitcher variant="toggle" />
+        </MobileLangRow>
+      )}
 
       {patientMobile && showSearch && (
         <MobileSearchRow $open={mobileSearchOpen}>

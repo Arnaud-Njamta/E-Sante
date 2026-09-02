@@ -7,9 +7,9 @@ const geminiHttpsAgent = new https.Agent({
 });
 
 const FALLBACK_MODELS = [
-  'gemini-3.6-flash',
-  'gemini-2.5-flash',
   'gemini-2.0-flash',
+  'gemini-2.5-flash',
+  'gemini-1.5-flash',
 ];
 
 const callGeminiOnce = ({
@@ -94,13 +94,12 @@ const callGemini = async (opts) => {
       const isLast = i === models.length - 1;
       const retryable = !isLast && (
         err.statusCode === 404
+        || err.statusCode === 400
         || err.statusCode === 429
-        || /certificate|fetch failed|ECONNRESET|ETIMEDOUT|no longer available|not found/i.test(err.message)
+        || /certificate|fetch failed|ECONNRESET|ETIMEDOUT|no longer available|not found|is not found|not supported/i.test(err.message)
       );
       if (!retryable) throw err;
-      if (process.env.NODE_ENV === 'development') {
-        console.warn(`[Gemini] ${model} indisponible → essai ${models[i + 1]} (${err.message.slice(0, 100)})`);
-      }
+      console.warn(`[Gemini] ${model} indisponible → essai suivant (${err.message.slice(0, 120)})`);
     }
   }
   throw lastError || new Error('Service IA indisponible');

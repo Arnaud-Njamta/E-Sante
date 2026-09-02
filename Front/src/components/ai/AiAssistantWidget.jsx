@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Bot, X, Send, AlertTriangle, Loader2, Stethoscope,
   Shield, Video, UserRound, Calendar, BookHeart,
@@ -495,6 +496,7 @@ function MessageContent({ msg, onBookSlot, bookingKey, isPatient, onSaveToCarnet
 }
 
 export default function AiAssistantWidget() {
+  const { t } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(`(max-width: ${theme.breakpoints.md})`);
   const { role } = useAuth();
@@ -638,14 +640,17 @@ export default function AiAssistantWidget() {
             <span>Premiers secours & orientation. Urgence vitale → <strong>{EMERGENCY.national.number}</strong> ou <strong>{EMERGENCY.medical.number}</strong></span>
           </Disclaimer>
 
-          {aiStatus && !aiStatus.configured && (
+          {aiStatus && (!aiStatus.configured || !aiStatus.available) && (
             <div style={{
               margin: '0 12px 8px', padding: '10px 12px', borderRadius: 8,
               background: '#FEF3C7', border: '1px solid #FDE68A', fontSize: '0.75rem', color: '#92400E',
             }}
             >
-              <strong>IA limitée</strong> — La clé Gemini n&apos;est pas configurée sur le serveur.
-              L&apos;assistant fonctionne en mode basique. Contactez l&apos;administrateur pour activer l&apos;IA complète.
+              <strong>{t('ai.limited_title')}</strong>
+              {' — '}
+              {!aiStatus.configured
+                ? t('ai.limited_missing_key')
+                : t('ai.limited_unavailable')}
             </div>
           )}
 

@@ -12,7 +12,10 @@ const medecinServicesService = require('./medecin-services.service');
 const rendezvousService = require('./rendezvous.service');
 const { callGemini } = require('../utils/gemini-client');
 
-const MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
+const MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+
+let healthProbeCache = { at: 0, result: null };
+const HEALTH_PROBE_TTL_MS = 120_000;
 
 const buildUserContext = (userContext = {}) => {
   const parts = [];
@@ -323,9 +326,7 @@ const chat = async ({ message, history = [], userContext = {} }) => {
     };
   } catch (err) {
     const apiMsg = err.message || '';
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Erreur Gemini:', apiMsg);
-    }
+    console.warn('[AI] Gemini indisponible:', apiMsg.slice(0, 200));
 
     const violence = detectViolence(trimmed);
     const fallbackReply = buildOfflineFallback(trimmed, violence);
@@ -355,14 +356,65 @@ const buildOfflineFallback = (message, violence) => {
   return lines.join('\n');
 };
 
-const healthCheck = () => ({
-  configured: !!process.env.GEMINI_API_KEY,
-  model: MODEL,
-  available: !!process.env.GEMINI_API_KEY,
-  message: process.env.GEMINI_API_KEY
-    ? 'Assistant IA opérationnel'
-    : 'Ajoutez GEMINI_API_KEY dans le fichier .env du serveur pour activer l\'IA complète',
-});
+const healthCheck = () => {
+  const configured = !!process.env.GEMINI_API_KEY;
+  return {
+    configured,
+    model: MODEL,
+    available: configured && healthProbeCache.result?.available !== false,
+    message: configured
+      ? (healthProbeCache.result?.message || 'Assistant IA opérationnel')
+      : 'Ajoutez GEMINI_API_KEY dans le fichier .env du serveur pour activer l\'IA complète',
+    lastProbeAt: healthProbeCache.at || null,
+  };
+};
+
+const probeGeminiHealth = async () => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    const result = {
+      configured: false,
+      model: MODEL,
+      available: false,
+      message: 'GEMINI_API_KEY manquante dans .env — exécutez: node scripts/test-env.js',
+    };
+    healthProbeCache = { at: Date.now(), result };
+    return result;
+  }
+
+  const now = Date.now();
+  if (healthProbeCache.result && now - healthProbeCache.at < HEALTH_PROBE_TTL_MS) {
+    return healthProbeCache.result;
+  }
+
+  try {
+    await callGemini({
+      apiKey,
+      model: MODEL,
+      contents: [{ role: 'user', parts: [{ text: 'Réponds uniquement: OK' }] }],
+    });
+    const result = {
+      configured: true,
+      model: MODEL,
+      available: true,
+      message: 'Assistant IA opérationnel',
+    };
+    healthProbeCache = { at: now, result };
+    return result;
+  } catch (err) {
+    const hint = /certificate|UNABLE_TO_VERIFY/i.test(err.message)
+      ? ' — essayez GEMINI_SSL_INSECURE=true dans .env'
+      : '';
+    const result = {
+      configured: true,
+      model: MODEL,
+      available: false,
+      message: `${err.message || 'Service IA indisponible'}${hint}`,
+    };
+    healthProbeCache = { at: now, result };
+    return result;
+  }
+};
 
 const bookRdv = async (patientId, payload) => {
   if (!patientId) {
@@ -381,4 +433,4 @@ const bookRdv = async (patientId, payload) => {
   });
 };
 
-module.exports = { chat, healthCheck, bookRdv };
+module.exports = { chat, healthCheck, probeGeminiHealth, bookRdv };

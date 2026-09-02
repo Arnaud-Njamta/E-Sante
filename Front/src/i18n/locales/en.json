@@ -764,6 +764,11 @@
     "enabled": "Notifications enabled",
     "denied": "Permission denied"
   },
+  "ai": {
+    "limited_title": "Limited AI",
+    "limited_missing_key": "Gemini API key is not configured on the server. Basic mode only.",
+    "limited_unavailable": "Gemini service is temporarily unavailable. Fallback responses only."
+  },
   "offline": {
     "pending": "{{count}} action(s) pending sync",
     "sync": "Sync now"

@@ -13,6 +13,7 @@ import {
 } from '../hooks/useRendezVous';
 import { useAuth } from '../context/AuthContext';
 import { joinTeleconsultation } from '../utils/teleconsultation';
+import { resolveFileUrl } from '../components/ui/PhotoUploadCard';
 import toast from 'react-hot-toast';
 
 const RdvCard = styled(Card)`
@@ -142,7 +143,7 @@ export default function MedecinRendezVousPage() {
     <div>
       <h1 style={{ margin: '0 0 8px' }}><Calendar size={24} style={{ verticalAlign: 'middle' }} /> Mes rendez-vous</h1>
       <p style={{ color: '#64748B', marginBottom: 24 }}>
-        Validez, consultez le carnet patient (avec consentement) et communiquez par message.
+        Validez les demandes, consultez les ordonnances jointes et communiquez par message.
       </p>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
@@ -166,6 +167,18 @@ export default function MedecinRendezVousPage() {
                 : <><MapPin size={14} /> Présentiel</>}
             </p>
             {rdv.motif && <p style={{ margin: 0, fontSize: '0.8rem' }}>Motif : {rdv.motif}</p>}
+            {rdv.ordonnance_scan?.image_url && (
+              <p style={{ margin: '6px 0 0', fontSize: '0.8rem' }}>
+                <a
+                  href={resolveFileUrl(rdv.ordonnance_scan.image_url)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: '#3B82F6', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                >
+                  <FileText size={14} /> Ordonnance jointe par le patient
+                </a>
+              </p>
+            )}
             {rdv.statut === 'contre_proposition' && rdv.date_proposee && (
               <p style={{ margin: '6px 0 0', fontSize: '0.8rem', color: '#4338CA' }}>
                 Proposition : {rdv.date_proposee} à {rdv.heure_debut_proposee}

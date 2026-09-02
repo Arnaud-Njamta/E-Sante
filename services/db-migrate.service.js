@@ -73,6 +73,7 @@ const runPendingMigrations = async () => {
   await addColumnIfMissing('rendez_vous', 'heure_debut_proposee', '`heure_debut_proposee` VARCHAR(5) NULL AFTER `date_proposee`');
   await addColumnIfMissing('rendez_vous', 'heure_fin_proposee', '`heure_fin_proposee` VARCHAR(5) NULL AFTER `heure_debut_proposee`');
   await addColumnIfMissing('rendez_vous', 'message_contre_proposition', '`message_contre_proposition` TEXT NULL AFTER `heure_fin_proposee`');
+  await addColumnIfMissing('rendez_vous', 'ordonnance_scan_id', '`ordonnance_scan_id` CHAR(36) NULL AFTER `message_contre_proposition`');
 
   await addColumnIfMissing('medecins', 'coordonnees_paiement', '`coordonnees_paiement` JSON NULL');
   await addColumnIfMissing('etablissements', 'coordonnees_paiement', '`coordonnees_paiement` JSON NULL');

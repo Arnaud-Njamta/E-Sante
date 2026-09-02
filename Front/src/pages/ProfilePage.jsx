@@ -17,6 +17,7 @@ import {
   Camera, Download, Lock, Info, Trash2, MapPin,
 } from 'lucide-react';
 import { CAMEROON_REGIONS, VILLES_PAR_REGION } from '../config/cameroonRegions';
+import { PATIENT_SIMPLIFIED_MODE } from '../config/patientSimplified';
 import PatientMobileProfileHero from '../components/patient/PatientMobileProfileHero';
 import UserAvatar from '../components/ui/UserAvatar';
 import LanguageSwitcher from '../components/ui/LanguageSwitcher';
@@ -37,6 +38,29 @@ const PageHeader = styled.div`
 
   @media (max-width: ${({ theme }) => theme.breakpoints.md}) {
     display: none;
+  }
+`;
+
+const MobilePageHeader = styled.div`
+  display: none;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.md}) {
+    display: block;
+    margin-bottom: ${({ theme }) => theme.spacing[4]};
+    animation: fadeIn 0.4s ease both;
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: ${({ theme }) => theme.colors.text};
+      margin: 0;
+    }
+
+    p {
+      font-size: 0.85rem;
+      color: ${({ theme }) => theme.colors.textSecondary};
+      margin: 4px 0 0;
+    }
   }
 `;
 
@@ -435,7 +459,14 @@ export default function ProfilePage() {
 
   return (
     <>
-      <PatientMobileProfileHero />
+      {role === 'patient' && PATIENT_SIMPLIFIED_MODE ? (
+        <MobilePageHeader>
+          <h1>{t('profile.title')}</h1>
+          <p>{t('profile.subtitle')}</p>
+        </MobilePageHeader>
+      ) : (
+        <PatientMobileProfileHero />
+      )}
 
       <PageHeader>
         <div>

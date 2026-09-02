@@ -77,6 +77,10 @@ const RendezVous = sequelize.define('RendezVous', {
     type: DataTypes.TEXT,
     allowNull: true,
   },
+  ordonnance_scan_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+  },
 }, {
   tableName: 'rendez_vous',
 });

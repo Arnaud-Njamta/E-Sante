@@ -1,5 +1,5 @@
 const { Op } = require('sequelize');
-const { RendezVous, Patient, Medecin, Etablissement, MedecinAffiliation } = require('../models');
+const { RendezVous, Patient, Medecin, Etablissement, MedecinAffiliation, Ordonnance } = require('../models');
 const { STATUT_RDV, JOURS_SEMAINE } = require('../utils/constants');
 const { parseJsonField } = require('../utils/helpers');
 const commissionService = require('./commission.service');
@@ -134,9 +134,9 @@ const creerRdv = async (patientId, payload, meta = {}) => {
   const {
     medecin_id, date_rdv, heure_debut, motif, type_consultation,
     consentement_politique,
-    consentement_partage_carnet,
     consentement_teleconsultation,
     politique_version,
+    ordonnance_scan_id,
   } = payload;
 
   const consentementService = require('./consentement.service');
@@ -147,12 +147,16 @@ const creerRdv = async (patientId, payload, meta = {}) => {
     error.statusCode = 400;
     throw error;
   }
-  if (!consentement_partage_carnet) {
-    const error = new Error(
-      'Vous devez autoriser l\'accès à votre carnet médical pour le médecin consulté (secret médical / RGPD)',
-    );
-    error.statusCode = 400;
-    throw error;
+
+  if (ordonnance_scan_id) {
+    const ordonnance = await Ordonnance.findOne({
+      where: { id: ordonnance_scan_id, patient_id: patientId },
+    });
+    if (!ordonnance) {
+      const error = new Error('Ordonnance introuvable ou non associée à votre compte');
+      error.statusCode = 400;
+      throw error;
+    }
   }
 
   const medecin = await Medecin.findByPk(medecin_id);
@@ -201,6 +205,7 @@ const creerRdv = async (patientId, payload, meta = {}) => {
     motif,
     type_consultation: type,
     statut: STATUT_RDV.EN_ATTENTE,
+    ordonnance_scan_id: ordonnance_scan_id || null,
   });
 
   const version = politique_version || POLITIQUE_CONFIDENTIALITE_VERSION;
@@ -214,7 +219,6 @@ const creerRdv = async (patientId, payload, meta = {}) => {
   };
   await consentementService.enregistrerLot([
     { ...consentBase, type: CONSENTEMENT_TYPES.POLITIQUE },
-    { ...consentBase, type: CONSENTEMENT_TYPES.PARTAGE_CARNET_RDV },
     ...(type === 'teleconsultation'
       ? [{ ...consentBase, type: CONSENTEMENT_TYPES.TELECONSULTATION }]
       : []),
@@ -247,6 +251,7 @@ const listerPatient = async (patientId, { statut, page = 1, limit = 20 }) => {
     include: [
       { model: Medecin, as: 'medecin', attributes: ['id', 'nom', 'prenom', 'specialite', 'fichier_photo_id'] },
       { model: Etablissement, as: 'etablissement', attributes: ['id', 'nom', 'ville', 'adresse'], required: false },
+      { model: Ordonnance, as: 'ordonnance_scan', attributes: ['id', 'image_url', 'statut', 'date_scan'], required: false },
     ],
     order: [['date_rdv', 'DESC'], ['heure_debut', 'DESC']],
     limit,
@@ -273,6 +278,7 @@ const listerMedecin = async (medecinId, { statut, date, page = 1, limit = 50 }) 
     where,
     include: [
       { model: Patient, as: 'patient', attributes: ['id', 'nom', 'prenom', 'telephone', 'email'] },
+      { model: Ordonnance, as: 'ordonnance_scan', attributes: ['id', 'image_url', 'statut', 'date_scan'], required: false },
     ],
     order: [['date_rdv', 'ASC'], ['heure_debut', 'ASC']],
     limit,

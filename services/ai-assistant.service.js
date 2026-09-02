@@ -360,7 +360,6 @@ const bookRdv = async (patientId, payload) => {
   return rendezvousService.creerRdv(patientId, {
     ...payload,
     consentement_politique: true,
-    consentement_partage_carnet: true,
     consentement_teleconsultation: payload.type_consultation === 'teleconsultation' ? true : undefined,
     politique_version: POLITIQUE_CONFIDENTIALITE_VERSION,
   });

@@ -15,6 +15,7 @@ import { useMedecin } from '../hooks/useMedecins';
 import { useAvis, useCreerAvis } from '../hooks/useMessagerie';
 import { useCreneaux, useCreerRdv } from '../hooks/useRendezVous';
 import { useTextesConsentement } from '../hooks/useCarnetMedical';
+import OrdonnanceScanPicker from '../components/rdv/OrdonnanceScanPicker';
 import { parseJsonArray } from '../utils/helpers';
 import { resolveFileUrl } from '../components/ui/PhotoUploadCard';
 import { useAuth } from '../context/AuthContext';
@@ -102,6 +103,56 @@ const SlotBtn = styled.button`
   &:hover { border-color: #059669; }
 `;
 
+const TwoColGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  @media (max-width: 700px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const RdvFormGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+`;
+
+const FieldGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #334155;
+  }
+
+  input, select, textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #E2E8F0;
+    font-size: 0.95rem;
+    box-sizing: border-box;
+    background: #fff;
+  }
+`;
+
+const RdvCard = styled(Card)`
+  padding: 24px;
+  margin-top: 24px;
+
+  @media (max-width: 600px) {
+    padding: 18px 16px;
+  }
+`;
+
 export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) {
   const { id: paramId } = useParams();
   const id = overrideId || paramId;
@@ -118,8 +169,8 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
   const [typeConsultation, setTypeConsultation] = useState('presentiel');
   const [selectedAffiliation, setSelectedAffiliation] = useState('');
   const [consentPolitique, setConsentPolitique] = useState(false);
-  const [consentCarnet, setConsentCarnet] = useState(false);
   const [consentTele, setConsentTele] = useState(false);
+  const [ordonnanceScan, setOrdonnanceScan] = useState(null);
   const { data: textesConsent } = useTextesConsentement();
   const { data: creneauxData, isLoading: creneauxLoading, isError: creneauxError } = useCreneaux(
     id, dateRdv, selectedAffiliation || null,
@@ -170,8 +221,8 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
 
   const handleRdv = async () => {
     if (!dateRdv || !heureRdv) { toast.error('Choisissez une date et un créneau'); return; }
-    if (!consentPolitique || !consentCarnet) {
-      toast.error('Vous devez accepter la politique de confidentialité et autoriser l\'accès au carnet médical');
+    if (!consentPolitique) {
+      toast.error('Vous devez accepter la politique de confidentialité');
       return;
     }
     if (typeConsultation === 'teleconsultation' && !consentTele) {
@@ -186,9 +237,9 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
         motif,
         type_consultation: typeConsultation,
         consentement_politique: true,
-        consentement_partage_carnet: true,
         consentement_teleconsultation: typeConsultation === 'teleconsultation',
         politique_version: textesConsent?.version,
+        ordonnance_scan_id: ordonnanceScan?.id,
       });
       toast.success('Demande de rendez-vous envoyée !');
       navigate('/rendez-vous');
@@ -251,7 +302,7 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
         </div>
       </ProfileHeader>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+      <TwoColGrid>
         <Card style={{ padding: 24 }}>
           <h3 style={{ margin: '0 0 12px' }}>À propos</h3>
           <p style={{ color: '#64748B', lineHeight: 1.6 }}>{medecin.bio}</p>
@@ -305,7 +356,7 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
             </div>
           )}
         </Card>
-      </div>
+      </TwoColGrid>
 
       {medecin.parcours?.length > 0 && (
         <Card style={{ padding: 24, marginTop: 24 }}>
@@ -328,15 +379,14 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
       )}
 
       {!isPreview && isPatient && (
-        <Card style={{ padding: 24, marginTop: 24 }}>
+        <RdvCard>
           <h3 style={{ margin: '0 0 16px' }}>Prendre rendez-vous</h3>
           {medecin.affiliations?.length > 0 && (
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: '0.85rem', display: 'block', marginBottom: 4 }}>Lieu de consultation</label>
+            <FieldGroup style={{ marginBottom: 16 }}>
+              <label>Lieu de consultation</label>
               <select
                 value={selectedAffiliation}
                 onChange={(e) => { setSelectedAffiliation(e.target.value); setHeureRdv(''); }}
-                style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #E2E8F0' }}
               >
                 <option value="">Horaires généraux</option>
                 {medecin.affiliations.map((a) => (
@@ -346,39 +396,37 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
                   </option>
                 ))}
               </select>
-            </div>
+            </FieldGroup>
           )}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div>
-              <label style={{ fontSize: '0.85rem', display: 'block', marginBottom: 4 }}>Date</label>
+          <RdvFormGrid>
+            <FieldGroup>
+              <label>Date</label>
               <input
                 type="date"
                 value={dateRdv}
                 onChange={(e) => setDateRdv(e.target.value)}
                 min={new Date().toISOString().split('T')[0]}
-                style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #E2E8F0' }}
               />
-            </div>
-            <div>
-              <label style={{ fontSize: '0.85rem', display: 'block', marginBottom: 4 }}>Motif</label>
+            </FieldGroup>
+            <FieldGroup>
+              <label>Motif</label>
               <input
                 type="text"
                 value={motif}
                 onChange={(e) => setMotif(e.target.value)}
-                placeholder="Consultation..."
-                style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #E2E8F0' }}
+                placeholder="Consultation, renouvellement..."
               />
-            </div>
-          </div>
-          <div style={{ marginTop: 16 }}>
-            <label style={{ fontSize: '0.85rem' }}>Créneau disponible</label>
+            </FieldGroup>
+          </RdvFormGrid>
+          <FieldGroup style={{ marginTop: 16 }}>
+            <label>Créneau disponible</label>
             {!dateRdv && (
-              <p style={{ margin: '8px 0 0', fontSize: '0.85rem', color: '#94A3B8' }}>Sélectionnez une date pour voir les créneaux.</p>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: '#94A3B8' }}>Sélectionnez une date pour voir les créneaux.</p>
             )}
-            {dateRdv && creneauxLoading && <p style={{ margin: '8px 0 0', fontSize: '0.85rem', color: '#64748B' }}>Chargement des créneaux...</p>}
-            {dateRdv && creneauxError && <p style={{ margin: '8px 0 0', fontSize: '0.85rem', color: '#DC2626' }}>Impossible de charger les créneaux.</p>}
+            {dateRdv && creneauxLoading && <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748B' }}>Chargement des créneaux...</p>}
+            {dateRdv && creneauxError && <p style={{ margin: 0, fontSize: '0.85rem', color: '#DC2626' }}>Impossible de charger les créneaux.</p>}
             {dateRdv && !creneauxLoading && !creneauxError && creneaux.length === 0 && (
-              <p style={{ margin: '8px 0 0', fontSize: '0.85rem', color: '#B45309' }}>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: '#B45309' }}>
                 Aucun créneau ce jour-là. Essayez une autre date (lun–ven, 8h–18h).
               </p>
             )}
@@ -396,9 +444,14 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
                 ))}
               </SlotGrid>
             )}
-          </div>
+          </FieldGroup>
+          <OrdonnanceScanPicker
+            value={ordonnanceScan}
+            onChange={setOrdonnanceScan}
+            disabled={creerRdv.isPending}
+          />
           {medecin.accepte_teleconsultation && (
-            <div style={{ marginTop: 16, display: 'flex', gap: 16 }}>
+            <div style={{ marginTop: 16, display: 'flex', flexWrap: 'wrap', gap: 16 }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                 <input type="radio" name="type" checked={typeConsultation === 'presentiel'} onChange={() => setTypeConsultation('presentiel')} />
                 Présentiel
@@ -410,7 +463,7 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
             </div>
           )}
           {medecin.tarif_consultation_fcfa != null && (
-            <p style={{ fontSize: '0.85rem', color: '#64748B', marginTop: 8 }}>
+            <p style={{ fontSize: '0.85rem', color: '#64748B', marginTop: 12 }}>
               Tarif consultation : {Number(medecin.tarif_consultation_fcfa).toLocaleString()} FCFA
             </p>
           )}
@@ -423,15 +476,11 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
             background: '#F8FAFC', border: '1px solid #E2E8F0', fontSize: '0.82rem',
           }}>
             <p style={{ margin: '0 0 10px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Shield size={14} /> Consentements obligatoires (RGPD / secret médical)
+              <Shield size={14} /> Consentements (RGPD)
             </p>
             <label style={{ display: 'flex', gap: 8, marginBottom: 8, cursor: 'pointer' }}>
               <input type="checkbox" checked={consentPolitique} onChange={(e) => setConsentPolitique(e.target.checked)} />
               {textesConsent?.politique_confidentialite?.resume || 'J\'accepte la politique de confidentialité DjamSanté'}
-            </label>
-            <label style={{ display: 'flex', gap: 8, marginBottom: 8, cursor: 'pointer' }}>
-              <input type="checkbox" checked={consentCarnet} onChange={(e) => setConsentCarnet(e.target.checked)} />
-              {textesConsent?.partage_carnet_rdv?.resume || 'J\'autorise ce médecin à consulter mon carnet médical pour cette consultation'}
             </label>
             {typeConsultation === 'teleconsultation' && (
               <label style={{ display: 'flex', gap: 8, cursor: 'pointer' }}>
@@ -440,10 +489,14 @@ export default function MedecinDetailPage({ overrideId, isOwnProfile = false }) 
               </label>
             )}
           </div>
-          <Button onClick={handleRdv} disabled={creerRdv.isPending || !dateRdv || !heureRdv || !consentPolitique || !consentCarnet} style={{ marginTop: 12 }}>
+          <Button
+            onClick={handleRdv}
+            disabled={creerRdv.isPending || !dateRdv || !heureRdv || !consentPolitique}
+            style={{ marginTop: 12, width: '100%' }}
+          >
             Demander un RDV
           </Button>
-        </Card>
+        </RdvCard>
       )}
 
       <Card style={{ padding: 24, marginTop: 24 }}>

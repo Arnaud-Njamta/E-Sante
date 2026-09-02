@@ -74,6 +74,7 @@ Medecin.hasMany(RendezVous, { foreignKey: 'medecin_id', as: 'rendez_vous' });
 RendezVous.belongsTo(Medecin, { foreignKey: 'medecin_id', as: 'medecin' });
 Etablissement.hasMany(RendezVous, { foreignKey: 'etablissement_id', as: 'rendez_vous' });
 RendezVous.belongsTo(Etablissement, { foreignKey: 'etablissement_id', as: 'etablissement' });
+RendezVous.belongsTo(Ordonnance, { foreignKey: 'ordonnance_scan_id', as: 'ordonnance_scan' });
 
 Patient.hasMany(ConsentementPatient, { foreignKey: 'patient_id', as: 'consentements' });
 ConsentementPatient.belongsTo(Patient, { foreignKey: 'patient_id', as: 'patient' });

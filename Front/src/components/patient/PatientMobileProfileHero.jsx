@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import UserAvatar from '../ui/UserAvatar';
+import { PATIENT_SIMPLIFIED_MODE } from '../../config/patientSimplified';
 import {
   Calendar, Heart, Wallet, FileText, Package, BookHeart,
 } from 'lucide-react';
@@ -93,6 +94,7 @@ const LINKS = [
 export default function PatientMobileProfileHero() {
   const { user, role } = useAuth();
   const navigate = useNavigate();
+  const showQuickLinks = !PATIENT_SIMPLIFIED_MODE;
 
   return (
     <Hero>
@@ -109,14 +111,16 @@ export default function PatientMobileProfileHero() {
         </AvatarWrap>
         <HeroName>{user?.prenom || 'Patient'} {user?.nom || ''}</HeroName>
         <HeroEmail>{user?.email}</HeroEmail>
-        <QuickGrid>
-          {LINKS.map((link) => (
-            <QuickItem key={link.to} type="button" onClick={() => navigate(link.to)}>
-              <link.icon />
-              {link.label}
-            </QuickItem>
-          ))}
-        </QuickGrid>
+        {showQuickLinks && (
+          <QuickGrid>
+            {LINKS.map((link) => (
+              <QuickItem key={link.to} type="button" onClick={() => navigate(link.to)}>
+                <link.icon />
+                {link.label}
+              </QuickItem>
+            ))}
+          </QuickGrid>
+        )}
       </HeroCard>
     </Hero>
   );

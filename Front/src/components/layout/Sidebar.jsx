@@ -12,7 +12,7 @@ import BrandLogo from '../brand/BrandLogo';
 import UserAvatar from '../ui/UserAvatar';
 import {
   LayoutDashboard, Heart, BookHeart, Clock, FileText, BarChart3, User, LogOut,
-  ChevronLeft, Building2, MessageCircle, Stethoscope, Star, Pill, Newspaper, Camera, Package, Shield, Wallet, ScrollText, Briefcase, Users, Inbox, QrCode, Siren, Activity,
+  ChevronLeft, Building2, MessageCircle, Stethoscope, Star, Pill, Newspaper, Camera, Package, Shield, Wallet, ScrollText, Briefcase, Users, Inbox, QrCode, Siren, Activity, Calendar,
 } from 'lucide-react';
 
 const SidebarContainer = styled.aside`
@@ -187,8 +187,10 @@ const LogoutBtn = styled.button`
 const PATIENT_SIDEBAR_ICONS = {
   '/dashboard': LayoutDashboard,
   '/pharmacie-hub': Pill,
+  '/prises': Clock,
   '/sante': Building2,
-  '/rendez-vous': Clock,
+  '/actualites': Newspaper,
+  '/rendez-vous': Calendar,
   '/reservations': Package,
   '/profil': User,
 };

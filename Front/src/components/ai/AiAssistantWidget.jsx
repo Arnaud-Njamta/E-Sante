@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { Link } from 'react-router-dom';
 import {
@@ -543,7 +543,7 @@ export default function AiAssistantWidget() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, chat.isPending]);
 
-  const send = async (text) => {
+  const send = useCallback(async (text) => {
     const message = (text || input).trim();
     if (!message || chat.isPending) return;
 
@@ -575,7 +575,19 @@ export default function AiAssistantWidget() {
         content: `⚠️ ${msg}\n\n${EMERGENCY_FOOTER}`,
       }]);
     }
-  };
+  }, [chat, input, messages]);
+
+  useEffect(() => {
+    const handler = (event) => {
+      setOpen(true);
+      const prompt = event.detail?.message;
+      if (prompt) {
+        window.setTimeout(() => send(prompt), 50);
+      }
+    };
+    window.addEventListener('djamsante:ai-open', handler);
+    return () => window.removeEventListener('djamsante:ai-open', handler);
+  }, [send]);
 
   const showSuggestions = useMemo(
     () => messages.length === 1 && messages[0].role === 'assistant',

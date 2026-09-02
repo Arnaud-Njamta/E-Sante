@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FileText, Plus, PenLine } from 'lucide-react';
+import MedecinPatientCareNotice from '../components/medecin/MedecinPatientCareNotice';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -33,10 +34,12 @@ export default function MedecinOrdonnancesPage() {
 
   return (
     <div>
+      <MedecinPatientCareNotice />
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
           <h1 style={{ margin: 0 }}><FileText size={24} style={{ verticalAlign: 'middle' }} /> Ordonnances électroniques</h1>
-          <p style={{ color: '#64748B', margin: '4px 0 0' }}>Remplacez WhatsApp — ordonnances traçables avec code de vérification</p>
+          <p style={{ color: '#64748B', margin: '4px 0 0' }}>Ordonnances traçables — le patient retrouve ses rappels de prise sur son accueil DjamSanté</p>
         </div>
         <Button onClick={() => setShowForm(!showForm)}><Plus size={16} /> Nouvelle ordonnance</Button>
       </div>

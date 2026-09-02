@@ -2,6 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { Star, Award, Users, TrendingUp, Stethoscope } from 'lucide-react';
+import MedecinPatientCareNotice from '../components/medecin/MedecinPatientCareNotice';
 import Card from '../components/ui/Card';
 import StarRating from '../components/ui/StarRating';
 import Spinner from '../components/ui/Spinner';
@@ -67,6 +68,8 @@ export default function MedecinDashboardPage() {
 
   return (
     <div>
+      <MedecinPatientCareNotice />
+
       <PageHeader>
         <h1>Tableau de bord — Dr. {user?.prenom} {user?.nom}</h1>
         <p>{profil?.specialite} — {profil?.etablissement?.nom}</p>

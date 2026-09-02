@@ -298,7 +298,19 @@
     "assistant_hint": "Need help? Tap the assistant at the bottom right for guidance (not a diagnosis).",
     "nav_home": "Home",
     "nav_pharmacy": "Pharmacy",
-    "nav_me": "Me"
+    "nav_me": "Me",
+    "prises_title": "My medicines today",
+    "prises_empty": "No reminders for today. Add a treatment or scan a prescription.",
+    "prises_add_treatment": "Add a treatment",
+    "prises_view_all": "View all",
+    "prises_more": "+ {{count}} more to confirm",
+    "prises_ai_label": "Need help?",
+    "prises_ai_desc": "The assistant explains how to take your medicines",
+    "prises_ai_help": "Ask the assistant how to set up your reminders",
+    "ai_prises_prompt": "Help me understand how to take my medicines today and what to do if I miss a dose.",
+    "news_title": "Health news",
+    "news_view_all": "Read all",
+    "news_empty": "No news yet — check back soon."
   },
   "pharmacyHub": {
     "title": "Pharmacy",
@@ -313,6 +325,13 @@
     "contact": "Contact a pharmacy",
     "contact_desc": "Message a pharmacist",
     "legal_note": "Online medicine sales are regulated. DjamSanté facilitates connection and in-pharmacy pickup reservations."
+  },
+  "medecinCare": {
+    "notice_title": "Your patients — simplified app",
+    "notice_intro": "The patient experience was streamlined for field use in Cameroon. Essential clinical features remain active:",
+    "notice_reminders": "Medication reminders appear on their home screen — encourage them to confirm each dose.",
+    "notice_prescriptions": "Your e-prescriptions remain traceable; patients can view them and present them at the pharmacy.",
+    "notice_actualites": "The health news feed remains accessible — your posts inform the community."
   },
   "carnetTeaser": {
     "create_title": "Create your health record",

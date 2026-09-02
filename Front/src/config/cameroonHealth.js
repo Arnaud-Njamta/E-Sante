@@ -19,15 +19,19 @@ export const EMERGENCY_SHORT = `${EMERGENCY.national.number} ou ${EMERGENCY.medi
 
 export const WELCOME_AI_PATIENT = `Bonjour, je suis **Dr. DjamSanté** 🇨🇲.
 
-Je recueille vos symptômes pour préparer une **synthèse utile à votre médecin**, puis je peux vous aider à **prendre rendez-vous**. Je ne prescrit pas de médicaments et je ne remplace pas une consultation.
+Je vous aide à **vous orienter** (symptômes, rendez-vous) et à **comprendre vos médicaments** — quand les prendre, quoi faire si vous oubliez une dose. Je ne prescrit pas et je ne remplace pas votre médecin.
+
+💊 Vos **rappels de prise** sont sur l'accueil : appuyez sur **Confirmer** quand vous avez pris votre médicament.
 
 ⚠️ Urgence vitale → **${EMERGENCY.national.number}** ou **${EMERGENCY.medical.number}** immédiatement.
 
-Que souhaitez-vous décrire aujourd'hui ?`;
+Comment puis-je vous aider ?`;
 
 export const WELCOME_AI_MEDECIN = `Bonjour Docteur 👨‍⚕️ — **Dr. DjamSanté** à votre service.
 
 Je structure anamnèses et synthèses pour votre dossier — sans diagnostic définitif ni ordonnance.
+
+📱 Vos patients voient une **app simplifiée** : rappels de prise sur l'accueil, actualités santé, annuaire et pharmacie. Les **ordonnances électroniques** restent actives.
 
 🔐 **Mode formation** : « je suis docteur alors voici ce que tu dois intégrer dans ton apprentissage : … »
 
@@ -38,13 +42,14 @@ export const WELCOME_AI = WELCOME_AI_PATIENT;
 export const EMERGENCY_FOOTER = `En cas d'urgence vitale au Cameroun : appelez le **${EMERGENCY.national.number}** ou le **${EMERGENCY.medical.number}**, ou rendez-vous aux urgences de l'hôpital le plus proche.`;
 
 export const SUGGESTIONS_PATIENT = [
+  'Comment prendre mes médicaments aujourd\'hui ?',
+  'J\'ai oublié une dose — que faire ?',
   'Fièvre depuis 2 jours — préparer ma synthèse',
   'Douleur persistante, je veux un RDV',
-  'Aide pour décrire mes symptômes au médecin',
-  'Besoin d\'écoute / orientation vers un praticien',
 ];
 
 export const SUGGESTIONS_MEDECIN = [
+  'Expliquer à un patient comment utiliser les rappels de prise',
   'Structurer une anamnèse patient',
   'Formater une synthèse clinique courte',
   'je suis docteur alors voici ce que tu dois intégrer dans ton apprentissage :',

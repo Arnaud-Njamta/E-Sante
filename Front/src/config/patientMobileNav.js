@@ -22,7 +22,7 @@ export const PATIENT_MOBILE_NAV = PATIENT_SIMPLIFIED_MODE
       center: true,
       match: (p) => p === '/pharmacie-hub' || p.startsWith('/reservations') || p.startsWith('/pharmacie/chat'),
     },
-    { to: '/profil', icon: User, labelKey: 'patientHome.nav_me', match: (p) => p === '/profil' },
+    { to: '/profil', icon: User, labelKey: 'patientHome.nav_me', match: (p) => p === '/profil' || p === '/prises' || p === '/actualites' || p.startsWith('/actualites') },
   ]
   : [
     { to: '/dashboard', icon: LayoutDashboard, labelKey: 'nav.home', match: (p) => p === '/dashboard' },

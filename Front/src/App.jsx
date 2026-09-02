@@ -132,6 +132,7 @@ export default function App() {
                                     <Route path="/famille" element={<FamillePage />} />
                                     <Route path="/qr-medical" element={<QrMedicalPage />} />
                                     <Route path="/urgence" element={<UrgencePage />} />
+                                    <Route path="/actualites" element={<ActualitesPage />} />
                                     <Route path="/pharmacie/chat" element={<PharmacieChatPage />} />
                                     <Route path="/pharmacie/chat/:conversationId" element={<PharmacieChatPage />} />
                                     <Route path="/profil" element={<ProfilePage />} />

@@ -298,7 +298,19 @@
     "assistant_hint": "Besoin d'aide ? Appuyez sur l'assistant en bas à droite pour vous orienter (sans diagnostic).",
     "nav_home": "Accueil",
     "nav_pharmacy": "Pharmacie",
-    "nav_me": "Moi"
+    "nav_me": "Moi",
+    "prises_title": "Mes médicaments aujourd'hui",
+    "prises_empty": "Aucun rappel pour aujourd'hui. Ajoutez un traitement ou scannez une ordonnance.",
+    "prises_add_treatment": "Ajouter un traitement",
+    "prises_view_all": "Tout voir",
+    "prises_more": "+ {{count}} autre(s) à confirmer",
+    "prises_ai_label": "Besoin d'aide ?",
+    "prises_ai_desc": "L'assistant vous explique comment prendre vos médicaments",
+    "prises_ai_help": "Demandez à l'assistant comment configurer vos rappels",
+    "ai_prises_prompt": "Aide-moi à comprendre comment prendre mes médicaments aujourd'hui et quoi faire si j'oublie une dose.",
+    "news_title": "Actualités santé",
+    "news_view_all": "Tout lire",
+    "news_empty": "Aucune actualité pour le moment — revenez bientôt."
   },
   "pharmacyHub": {
     "title": "Pharmacie",
@@ -313,6 +325,13 @@
     "contact": "Contacter une pharmacie",
     "contact_desc": "Messagerie avec un pharmacien",
     "legal_note": "La vente de médicaments en ligne est encadrée. DjamSanté facilite la mise en relation et la réservation de retrait en officine."
+  },
+  "medecinCare": {
+    "notice_title": "Vos patients — app simplifiée",
+    "notice_intro": "L'expérience patient a été allégée pour le terrain camerounais. Les fonctionnalités cliniques essentielles restent actives :",
+    "notice_reminders": "Les rappels de prise médicamenteuse s'affichent sur leur accueil — encouragez-les à confirmer chaque dose.",
+    "notice_prescriptions": "Vos ordonnances électroniques restent traçables ; le patient peut les consulter et les présenter en pharmacie.",
+    "notice_actualites": "Le fil d'actualités santé reste accessible — vos publications informent la communauté."
   },
   "carnetTeaser": {
     "create_title": "Créez votre carnet médical",

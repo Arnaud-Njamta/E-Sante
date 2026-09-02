@@ -31,7 +31,9 @@ export const PATIENT_SIMPLIFIED_MOBILE_NAV = [
 export const PATIENT_SIMPLIFIED_SIDEBAR_KEYS = [
   { to: '/dashboard', labelKey: 'patientHome.nav_home', section: 'principal' },
   { to: '/pharmacie-hub', labelKey: 'patientHome.nav_pharmacy', section: 'principal' },
+  { to: '/prises', labelKey: 'nav.prises', section: 'principal' },
   { to: '/sante', labelKey: 'nav.health_directory', section: 'principal' },
+  { to: '/actualites', labelKey: 'nav.actualites', section: 'sante' },
   { to: '/rendez-vous', labelKey: 'nav.my_appointments', section: 'sante' },
   { to: '/reservations', labelKey: 'nav.my_reservations', section: 'sante' },
   { to: '/profil', labelKey: 'nav.profil', section: 'compte' },

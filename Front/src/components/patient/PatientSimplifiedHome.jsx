@@ -9,6 +9,8 @@ import Card from '../ui/Card';
 import { useAuth } from '../../context/AuthContext';
 import HealthAlertBanner from './HealthAlertBanner';
 import PatientMobileProfileHero from './PatientMobileProfileHero';
+import PatientPrisesTodayTeaser from './PatientPrisesTodayTeaser';
+import PatientActualitesTeaser from './PatientActualitesTeaser';
 
 const Greeting = styled.div`
   margin-bottom: 20px;
@@ -173,6 +175,8 @@ export default function PatientSimplifiedHome() {
 
       <HealthAlertBanner region={user?.region} />
 
+      <PatientPrisesTodayTeaser />
+
       <Greeting>
         <h1>{t('patientHome.greeting', { name: user?.prenom || t('common.patient') })}</h1>
         <p>{t('patientHome.subtitle')}</p>
@@ -205,6 +209,8 @@ export default function PatientSimplifiedHome() {
           <ArrowRight size={22} />
         </div>
       </EmergencyCard>
+
+      <PatientActualitesTeaser />
 
       <AssistantHint>
         <div className="icon"><Bot size={22} /></div>

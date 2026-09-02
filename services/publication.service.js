@@ -140,6 +140,7 @@ const getById = async (publicationId, userIdentity) => {
   return formatPublication(pub, userLike);
 };
 
+const toggleLike = async (publicationId, userIdentity) => {
   const pub = await Publication.findByPk(publicationId);
   if (!pub) {
     const error = new Error('Publication non trouvée');

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { Siren, Plus, Send } from 'lucide-react';
+import { Siren, Plus, Send, Image as ImageIcon } from 'lucide-react';
 import PageHeader from '../components/ui/PageHeader';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Spinner from '../components/ui/Spinner';
+import { resolveFileUrl } from '../components/ui/PhotoUploadCard';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import client from '../api/client';
 import ENDPOINTS from '../api/endpoints';
@@ -23,10 +24,22 @@ const AlerteItem = styled(Card)`
   border-left: 4px solid ${({ $p }) => (
     $p === 'critique' ? '#DC2626' : $p === 'attention' ? '#D97706' : '#2563EB'
   )};
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
 
   h4 { margin: 0 0 4px; font-size: 0.95rem; }
   p { margin: 0; font-size: 0.82rem; color: #64748B; }
   .meta { font-size: 0.72rem; color: #94A3B8; margin-top: 6px; }
+`;
+
+const AlerteThumb = styled.img`
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid #E2E8F0;
 `;
 
 const PRIORITES = ['info', 'attention', 'critique'];
@@ -37,6 +50,7 @@ export default function AdminAlertesPage() {
   const [form, setForm] = useState({
     titre: '', contenu: '', region: '', priorite: 'attention', expire_at: '',
   });
+  const [image, setImage] = useState(null);
 
   const { data: regions } = useQuery({
     queryKey: ['admin', 'regions'],
@@ -55,8 +69,11 @@ export default function AdminAlertesPage() {
   });
 
   const creer = useMutation({
-    mutationFn: async (payload) => {
-      const { data } = await client.post(ENDPOINTS.admin.alertes, payload);
+    mutationFn: async ({ payload, image: imageFile }) => {
+      const fd = new FormData();
+      fd.append('data', JSON.stringify(payload));
+      if (imageFile) fd.append('image', imageFile);
+      const { data } = await client.post(ENDPOINTS.admin.alertes, fd);
       return data.data;
     },
     onSuccess: (res) => {
@@ -64,6 +81,7 @@ export default function AdminAlertesPage() {
       toast.success(`Alerte publiée — ${res.push?.sent || 0} notification(s) push envoyée(s)`);
       setShowForm(false);
       setForm({ titre: '', contenu: '', region: '', priorite: 'attention', expire_at: '' });
+      setImage(null);
     },
     onError: (err) => toast.error(err.response?.data?.message || 'Erreur'),
   });
@@ -90,9 +108,12 @@ export default function AdminAlertesPage() {
             onSubmit={(e) => {
               e.preventDefault();
               creer.mutate({
-                ...form,
-                region: form.region || null,
-                expire_at: form.expire_at || null,
+                payload: {
+                  ...form,
+                  region: form.region || null,
+                  expire_at: form.expire_at || null,
+                },
+                image,
               });
             }}
             style={{ display: 'grid', gap: 12 }}
@@ -130,6 +151,15 @@ export default function AdminAlertesPage() {
               </select>
             </label>
             <Input label="Expiration (optionnel)" type="datetime-local" value={form.expire_at} onChange={(e) => setForm({ ...form, expire_at: e.target.value })} />
+            <label style={{ fontSize: '0.82rem', color: '#64748B' }}>
+              <ImageIcon size={14} style={{ verticalAlign: 'middle' }} /> Illustration (optionnel)
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setImage(e.target.files?.[0] || null)}
+                style={{ display: 'block', marginTop: 6, fontSize: '0.8rem' }}
+              />
+            </label>
             <Button type="submit" disabled={creer.isPending}>
               <Send size={14} /> Publier & notifier
             </Button>
@@ -138,15 +168,21 @@ export default function AdminAlertesPage() {
       )}
 
       <List>
-        {list.map((a) => (
+        {list.map((a) => {
+          const thumbUrl = resolveFileUrl(a.image_url, a.fichier_image_id);
+          return (
           <AlerteItem key={a.id} $p={a.priorite}>
-            <h4>{a.titre}</h4>
-            <p>{a.contenu}</p>
-            <div className="meta">
-              {a.region || 'National'} · {a.priorite} · {new Date(a.createdAt).toLocaleString('fr-FR')}
+            {thumbUrl && <AlerteThumb src={thumbUrl} alt="" />}
+            <div>
+              <h4>{a.titre}</h4>
+              <p>{a.contenu}</p>
+              <div className="meta">
+                {a.region || 'National'} · {a.priorite} · {new Date(a.createdAt).toLocaleString('fr-FR')}
+              </div>
             </div>
           </AlerteItem>
-        ))}
+          );
+        })}
         {list.length === 0 && <p style={{ color: '#94A3B8', fontStyle: 'italic' }}>Aucune alerte publiée</p>}
       </List>
     </>

@@ -41,7 +41,8 @@ const listerAlertes = async (_req, res, next) => {
 
 const creerAlerte = async (req, res, next) => {
   try {
-    const result = await adminAlerteService.creerAlerte(req.admin.id, req.body);
+    const payload = typeof req.body.data === 'string' ? JSON.parse(req.body.data) : req.body;
+    const result = await adminAlerteService.creerAlerte(req.admin.id, payload, req.file);
     res.status(201).json({ success: true, data: result });
   } catch (error) {
     next(error);

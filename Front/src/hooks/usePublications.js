@@ -69,9 +69,7 @@ export function useCreerPublication() {
             const fd = new FormData();
             fd.append('data', JSON.stringify(payload));
             if (image) fd.append('image', image);
-            const { data } = await client.post('/publications', fd, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
+            const { data } = await client.post('/publications', fd);
             return data;
         },
         onSuccess: () => qc.invalidateQueries({ queryKey: ['publications'] }),

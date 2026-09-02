@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { Siren, Send } from 'lucide-react';
+import { Siren, Send, Image as ImageIcon } from 'lucide-react';
 import PageHeader from '../components/ui/PageHeader';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -18,6 +18,7 @@ export default function StructureAlertesPage() {
   const [form, setForm] = useState({
     titre: '', contenu: '', region: user?.region || '', priorite: 'attention',
   });
+  const [image, setImage] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,9 +32,11 @@ export default function StructureAlertesPage() {
           priorite: form.priorite,
           mis_en_avant: true,
         },
+        image,
       });
       toast.success('Alerte sanitaire publiée — patients notifiés');
       setForm({ titre: '', contenu: '', region: user?.region || '', priorite: 'attention' });
+      setImage(null);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur publication');
     }
@@ -80,6 +83,15 @@ export default function StructureAlertesPage() {
             >
               {PRIORITES.map((p) => <option key={p} value={p}>{p}</option>)}
             </select>
+          </label>
+          <label style={{ fontSize: '0.82rem', color: '#64748B' }}>
+            <ImageIcon size={14} style={{ verticalAlign: 'middle' }} /> Illustration (optionnel)
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setImage(e.target.files?.[0] || null)}
+              style={{ display: 'block', marginTop: 6, fontSize: '0.8rem' }}
+            />
           </label>
           <Button type="submit" disabled={creer.isPending}>
             <Send size={14} /> Publier l&apos;alerte

@@ -14,7 +14,7 @@ import ENDPOINTS from '../api/endpoints';
 import {
   User, Mail, Phone, CalendarDays, Clock, Save,
   Shield, Bell, Sun, Sunset, Moon,
-  Camera, Download, Lock, Info, Trash2, MapPin,
+  Camera, Download, Lock, Info, Trash2, MapPin, LogOut,
 } from 'lucide-react';
 import { CAMEROON_REGIONS, VILLES_PAR_REGION } from '../config/cameroonRegions';
 import { PATIENT_SIMPLIFIED_MODE } from '../config/patientSimplified';
@@ -22,7 +22,7 @@ import PatientMobileProfileHero from '../components/patient/PatientMobileProfile
 import UserAvatar from '../components/ui/UserAvatar';
 import LanguageSwitcher from '../components/ui/LanguageSwitcher';
 import { PushNotificationToggle } from '../components/patient/PushNotificationPrompt';
-import { useUploadPatientPhoto } from '../hooks/usePatientProfile';
+import { BOTTOM_NAV_HEIGHT } from '../components/layout/PatientBottomNav';
 
 /* ─── Styles ─── */
 const PageHeader = styled.div`
@@ -307,6 +307,35 @@ const SaveBar = styled.div`
   justify-content: flex-end;
   gap: 12px;
   padding-top: ${({ theme }) => theme.spacing[4]};
+`;
+
+const MobileLogoutBtn = styled.button`
+  display: none;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.md}) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    margin-top: ${({ theme }) => theme.spacing[5]};
+    margin-bottom: calc(${BOTTOM_NAV_HEIGHT}px + 20px + env(safe-area-inset-bottom, 0px));
+    padding: 14px 16px;
+    border-radius: ${({ theme }) => theme.radii.xl};
+    border: 1px solid ${({ theme }) => theme.colors.danger[200]};
+    background: ${({ theme }) => theme.colors.danger[50]};
+    color: ${({ theme }) => theme.colors.danger[700]};
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+
+    &:active {
+      transform: scale(0.98);
+      background: ${({ theme }) => theme.colors.danger[100]};
+    }
+
+    svg { width: 18px; height: 18px; }
+  }
 `;
 
 const Modal = styled.div`
@@ -706,6 +735,17 @@ export default function ProfilePage() {
             {saving ? t('profile.saving') : t('profile.save_all')}
           </Button>
         </SaveBar>
+
+        <MobileLogoutBtn
+          type="button"
+          onClick={() => {
+            logout();
+            navigate('/login', { replace: true });
+          }}
+        >
+          <LogOut />
+          {t('common.logout')}
+        </MobileLogoutBtn>
       </form>
     </>
   );

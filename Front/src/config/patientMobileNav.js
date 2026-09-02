@@ -1,29 +1,48 @@
 import {
-  LayoutDashboard, Clock, Building2, MessageCircle,
+  LayoutDashboard, Pill, User, Stethoscope, Building2, MessageCircle,
   Heart, Calendar, Package, Wallet, FileText, ScanLine,
-  BarChart3, Newspaper, User, Stethoscope, BookHeart, Siren, Users, QrCode,
+  BarChart3, Newspaper, BookHeart, Siren, Users, QrCode, Clock,
 } from 'lucide-react';
+import { PATIENT_SIMPLIFIED_MODE } from './patientSimplified';
+
+const ICON_MAP = {
+  home: LayoutDashboard,
+  pharmacy: Pill,
+  profile: User,
+};
 
 /** Barre de navigation bas — mobile patient */
-export const PATIENT_MOBILE_NAV = [
-  { to: '/dashboard', icon: LayoutDashboard, labelKey: 'nav.home', match: (p) => p === '/dashboard' },
-  { to: '/prises', icon: Clock, labelKey: 'nav.prises', match: (p) => p === '/prises' },
-  {
-    to: '/sante',
-    icon: Building2,
-    labelKey: 'nav.health_directory',
-    center: true,
-    match: (p) => p === '/sante' || p.startsWith('/sante/'),
-  },
-  {
-    to: '/pharmacie/chat',
-    icon: MessageCircle,
-    labelKey: 'nav.chat',
-    match: (p) => p.startsWith('/pharmacie/chat'),
-  },
-];
+export const PATIENT_MOBILE_NAV = PATIENT_SIMPLIFIED_MODE
+  ? [
+    { to: '/dashboard', icon: LayoutDashboard, labelKey: 'patientHome.nav_home', match: (p) => p === '/dashboard' },
+    {
+      to: '/pharmacie-hub',
+      icon: Pill,
+      labelKey: 'patientHome.nav_pharmacy',
+      center: true,
+      match: (p) => p === '/pharmacie-hub' || p.startsWith('/reservations') || p.startsWith('/pharmacie/chat'),
+    },
+    { to: '/profil', icon: User, labelKey: 'patientHome.nav_me', match: (p) => p === '/profil' },
+  ]
+  : [
+    { to: '/dashboard', icon: LayoutDashboard, labelKey: 'nav.home', match: (p) => p === '/dashboard' },
+    { to: '/prises', icon: Clock, labelKey: 'nav.prises', match: (p) => p === '/prises' },
+    {
+      to: '/sante',
+      icon: Building2,
+      labelKey: 'nav.health_directory',
+      center: true,
+      match: (p) => p === '/sante' || p.startsWith('/sante/'),
+    },
+    {
+      to: '/pharmacie/chat',
+      icon: MessageCircle,
+      labelKey: 'nav.chat',
+      match: (p) => p.startsWith('/pharmacie/chat'),
+    },
+  ];
 
-/** Menu « Plus » — routes secondaires */
+/** Menu « Plus » — routes secondaires (mode classique uniquement) */
 export const PATIENT_MORE_SECTIONS = [
   {
     titleKey: 'nav.more_sections.care',
@@ -59,6 +78,7 @@ export const PATIENT_MORE_SECTIONS = [
 /** Titres contextuels pour la TopBar mobile */
 export const PATIENT_ROUTE_TITLES = [
   { path: '/dashboard', titleKey: null },
+  { path: '/pharmacie-hub', titleKey: 'pharmacyHub.title', subtitleKey: 'pharmacyHub.subtitle' },
   { path: '/prises', titleKey: 'nav.routes.prises', subtitleKey: 'nav.routes.prises_sub' },
   { path: '/medications', titleKey: 'nav.routes.medications', subtitleKey: 'nav.routes.medications_sub' },
   { path: '/ordonnances', titleKey: 'nav.routes.prescriptions', subtitleKey: 'nav.routes.prescriptions_sub' },
@@ -81,6 +101,12 @@ export const PATIENT_ROUTE_TITLES = [
 
 export function getPatientMobileTitle(pathname, user, todayFormatted, t) {
   if (pathname === '/dashboard') {
+    if (PATIENT_SIMPLIFIED_MODE) {
+      return {
+        title: t('patientHome.greeting', { name: user?.prenom || t('common.patient') }),
+        subtitle: todayFormatted,
+      };
+    }
     return {
       title: t('greeting.hello_name', { name: user?.prenom || t('common.patient') }),
       subtitle: todayFormatted,
@@ -109,3 +135,5 @@ export function isPatientNavActive(pathname, item) {
   if (item.match) return item.match(pathname);
   return pathname === item.to || pathname.startsWith(`${item.to}/`);
 }
+
+export { PATIENT_SIMPLIFIED_MODE, ICON_MAP };

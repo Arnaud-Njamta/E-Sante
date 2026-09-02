@@ -6,6 +6,8 @@ import {
   Calendar, ScanLine, Heart, Wallet, Package, BarChart3, BookHeart, Siren,
 } from 'lucide-react';
 
+import { PATIENT_SIMPLIFIED_MODE } from '../../config/patientSimplified';
+
 const Scroll = styled.div`
   display: none;
 
@@ -81,6 +83,8 @@ const ACTIONS = [
 export default function PatientMobileQuickActions() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+
+  if (PATIENT_SIMPLIFIED_MODE) return null;
 
   return (
     <Scroll aria-label={t('quickActions.aria')}>

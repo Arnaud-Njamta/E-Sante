@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { PATIENT_MOBILE_NAV, PATIENT_MORE_SECTIONS, isPatientNavActive } from '../../config/patientMobileNav';
+import { PATIENT_MOBILE_NAV, PATIENT_MORE_SECTIONS, isPatientNavActive, PATIENT_SIMPLIFIED_MODE } from '../../config/patientMobileNav';
 import { prefetchRoute } from '../../utils/routePrefetch';
 import PatientMoreSheet from '../patient/PatientMoreSheet';
 import { LayoutGrid } from 'lucide-react';
@@ -199,19 +199,23 @@ export default function PatientBottomNav() {
           );
         })}
 
-        <MoreBtn
-          type="button"
-          $open={moreOpen || isMoreRoute}
-          onClick={() => setMoreOpen(true)}
-          aria-label={t('nav.more_options')}
-          aria-expanded={moreOpen}
-        >
-          <LayoutGrid />
-          {t('nav.more')}
-        </MoreBtn>
+        {!PATIENT_SIMPLIFIED_MODE && (
+          <MoreBtn
+            type="button"
+            $open={moreOpen || isMoreRoute}
+            onClick={() => setMoreOpen(true)}
+            aria-label={t('nav.more_options')}
+            aria-expanded={moreOpen}
+          >
+            <LayoutGrid />
+            {t('nav.more')}
+          </MoreBtn>
+        )}
       </Nav>
 
-      <PatientMoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
+      {!PATIENT_SIMPLIFIED_MODE && (
+        <PatientMoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
+      )}
     </>
   );
 }

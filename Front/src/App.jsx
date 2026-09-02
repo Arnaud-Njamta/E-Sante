@@ -18,6 +18,7 @@ const RegisterProfessionnelPage = React.lazy(() => import('./pages/RegisterProfe
 const PrivacyPolicyPage = React.lazy(() => import('./pages/PrivacyPolicyPage'));
 const TermsOfServicePage = React.lazy(() => import('./pages/TermsOfServicePage'));
 const DashboardPage = React.lazy(() => import('./pages/DashboardPage'));
+const PatientPharmacyHubPage = React.lazy(() => import('./pages/PatientPharmacyHubPage'));
 const MedicationsPage = React.lazy(() => import('./pages/MedicationsPage'));
 const PrisesPage = React.lazy(() => import('./pages/PrisesPage'));
 const OrdonnancePage = React.lazy(() => import('./pages/OrdonnancePage'));
@@ -113,6 +114,7 @@ export default function App() {
                                 <Route element={<RoleRoute allowedRoles={[ROLES.PATIENT]} />}>
                                     <Route element={<AppLayout />}>
                                     <Route path="/dashboard" element={<DashboardPage />} />
+                                    <Route path="/pharmacie-hub" element={<PatientPharmacyHubPage />} />
                                     <Route path="/medications" element={<MedicationsPage />} />
                                     <Route path="/prises" element={<PrisesPage />} />
                                     <Route path="/ordonnances" element={<OrdonnancePage />} />

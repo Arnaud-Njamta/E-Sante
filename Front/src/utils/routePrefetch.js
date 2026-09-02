@@ -14,6 +14,7 @@ const prefetchers = {
   '/qr-medical': () => import('../pages/QrMedicalPage'),
   '/urgence': () => import('../pages/UrgencePage'),
   '/ordonnances-electroniques': () => import('../pages/PatientOrdonnancesElecPage'),
+  '/pharmacie-hub': () => import('../pages/PatientPharmacyHubPage'),
   '/pharmacie/chat': () => import('../pages/PharmacieChatPage'),
   '/profil': () => import('../pages/ProfilePage'),
   '/actualites': () => import('../pages/ActualitesPage'),
@@ -36,7 +37,7 @@ export function prefetchRoute(path) {
 }
 
 export function prefetchPatientCore() {
-  ['/dashboard', '/prises', '/sante', '/medications', '/profil'].forEach(prefetchRoute);
+  ['/dashboard', '/pharmacie-hub', '/sante', '/profil'].forEach(prefetchRoute);
 }
 
 export const navPrefetchHandlers = {

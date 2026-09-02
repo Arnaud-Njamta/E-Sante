@@ -185,6 +185,7 @@ export default function SantePage() {
     clinique: t('sante.type_clinique'),
   }), [t]);
   const initialTab = searchParams.get('tab');
+  const initialType = searchParams.get('type');
   const initialQ = searchParams.get('q') || '';
   const [tab, setTab] = useState(() => {
     if (initialTab === 'medecins') return 'medecins';
@@ -203,7 +204,10 @@ export default function SantePage() {
     if (q) setSearch(q);
   }, [searchParams]);
 
-  const [typeFilter, setTypeFilter] = useState('');
+  const validTypes = ['pharmacie', 'hopital', 'clinique'];
+  const [typeFilter, setTypeFilter] = useState(() => (
+    validTypes.includes(initialType) ? initialType : ''
+  ));
   const [search, setSearch] = useState(initialQ);
   const debouncedSearch = useDebounce(search, 350);
   const [villeMed, setVilleMed] = useState('');
@@ -211,6 +215,15 @@ export default function SantePage() {
   const [dispoOnly, setDispoOnly] = useState(false);
   const [competenceFilter, setCompetenceFilter] = useState('');
   const [etablissementFilter, setEtablissementFilter] = useState('');
+
+  useEffect(() => {
+    const typeParam = searchParams.get('type');
+    if (validTypes.includes(typeParam)) {
+      setTypeFilter(typeParam);
+      setTab('etablissements');
+    }
+  }, [searchParams]);
+
   const {
     coords, cityLabel, loading: geoLoading, hasLocation,
   } = useGeolocation({ enabled: tab === 'etablissements' });

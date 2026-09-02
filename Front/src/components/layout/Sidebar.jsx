@@ -7,6 +7,7 @@ import { getBranding, getDisplayName } from '../../config/branding';
 import { getInitials } from '../../utils/helpers';
 import { SECTION_KEYS } from '../../config/navKeys';
 import { prefetchRoute } from '../../utils/routePrefetch';
+import { PATIENT_SIMPLIFIED_MODE, PATIENT_SIMPLIFIED_SIDEBAR_KEYS } from '../../config/patientSimplified';
 import BrandLogo from '../brand/BrandLogo';
 import UserAvatar from '../ui/UserAvatar';
 import {
@@ -183,6 +184,15 @@ const LogoutBtn = styled.button`
   svg { width: 18px; height: 18px; }
 `;
 
+const PATIENT_SIDEBAR_ICONS = {
+  '/dashboard': LayoutDashboard,
+  '/pharmacie-hub': Pill,
+  '/sante': Building2,
+  '/rendez-vous': Clock,
+  '/reservations': Package,
+  '/profil': User,
+};
+
 const ROLE_NAV = {
   patient: [
     { to: '/dashboard', icon: LayoutDashboard, labelKey: 'nav.dashboard', section: 'principal' },
@@ -287,7 +297,12 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen }) {
   const { t } = useTranslation();
   const { user, role, logout } = useAuth();
   const branding = getBranding(role);
-  const navItems = ROLE_NAV[role] || ROLE_NAV.patient;
+  const navItems = role === 'patient' && PATIENT_SIMPLIFIED_MODE
+    ? PATIENT_SIMPLIFIED_SIDEBAR_KEYS.map((item) => ({
+      ...item,
+      icon: PATIENT_SIDEBAR_ICONS[item.to] || LayoutDashboard,
+    }))
+    : (ROLE_NAV[role] || ROLE_NAV.patient);
   const RoleIcon = ROLE_ICONS[role] || Heart;
 
   const sections = [...new Set(navItems.map((i) => i.section))];

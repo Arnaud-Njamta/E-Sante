@@ -27,6 +27,8 @@ import FamilleProfilSwitcher from '../components/patient/FamilleProfilSwitcher';
 import PushNotificationPrompt from '../components/patient/PushNotificationPrompt';
 import PwaInstallPrompt from '../components/patient/PwaInstallPrompt';
 import OfflineStatusBar from '../components/patient/OfflineStatusBar';
+import PatientSimplifiedHome from '../components/patient/PatientSimplifiedHome';
+import { PATIENT_SIMPLIFIED_MODE } from '../config/patientSimplified';
 
 /* ─── Keyframes ─── */
 const drawCircle = keyframes`
@@ -299,6 +301,10 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
+
+  if (PATIENT_SIMPLIFIED_MODE) {
+    return <PatientSimplifiedHome />;
+  }
 
   // API hooks
   const { data: obsData, isLoading: obsLoading, error: obsError } = useObservanceStats({ jours: 30 });

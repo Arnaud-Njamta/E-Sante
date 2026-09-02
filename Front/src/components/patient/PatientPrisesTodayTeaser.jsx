@@ -12,24 +12,27 @@ import { openAiAssistant } from '../../utils/openAiAssistant';
 import toast from 'react-hot-toast';
 
 const Wrap = styled(Card)`
-  padding: 18px 20px;
-  margin-bottom: 16px;
-  border-color: ${({ theme }) => theme.colors.primary[100]};
-  background: linear-gradient(180deg, ${({ theme }) => theme.colors.primary[50]} 0%, ${({ theme }) => theme.colors.surface} 100%);
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid ${({ theme }) => theme.colors.primary[100]};
 `;
 
-const Header = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
+const Top = styled.div`
+  padding: 16px 18px 12px;
+  background: ${({ theme }) => theme.colors.primary[600]};
+  color: white;
 
-  h2 {
+  .row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  h3 {
     margin: 0;
-    font-size: 1.05rem;
+    font-size: 1rem;
     font-weight: 800;
-    color: ${({ theme }) => theme.colors.text};
     display: flex;
     align-items: center;
     gap: 8px;
@@ -37,35 +40,61 @@ const Header = styled.div`
 
   p {
     margin: 4px 0 0;
-    font-size: 0.8rem;
-    color: ${({ theme }) => theme.colors.textSecondary};
+    font-size: 0.78rem;
+    opacity: 0.9;
   }
 `;
 
-const ProgressBar = styled.div`
-  height: 8px;
+const ViewAll = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: none;
+  background: rgba(255, 255, 255, 0.18);
+  color: white;
+  padding: 6px 10px;
   border-radius: 999px;
-  background: ${({ theme }) => theme.colors.neutral[100]};
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+`;
+
+const ProgressWrap = styled.div`
+  padding: 0 18px;
+  margin-top: -1px;
+  background: ${({ theme }) => theme.colors.primary[600]};
+  padding-bottom: 14px;
+`;
+
+const ProgressBar = styled.div`
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
   overflow: hidden;
-  margin-bottom: 14px;
 
   div {
     height: 100%;
     width: ${({ $percent }) => $percent}%;
-    background: linear-gradient(90deg, #007A5E, #10B981);
+    background: white;
+    border-radius: 999px;
     transition: width 0.4s ease;
   }
+`;
+
+const Body = styled.div`
+  padding: 4px 18px 16px;
 `;
 
 const PriseRow = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 12px 0;
-  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
 
-  &:first-of-type { border-top: none; padding-top: 0; }
+  &:last-child { border-bottom: none; padding-bottom: 0; }
 
   .info {
     flex: 1;
@@ -73,47 +102,50 @@ const PriseRow = styled.div`
 
     strong {
       display: block;
-      font-size: 0.92rem;
+      font-size: 0.95rem;
+      font-weight: 700;
       color: ${({ theme }) => theme.colors.text};
     }
 
     span {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 4px;
       font-size: 0.78rem;
       color: ${({ theme }) => theme.colors.textSecondary};
     }
   }
 `;
 
-const AiHint = styled.button`
+const EmptyBody = styled.div`
+  padding: 18px;
+  text-align: center;
+
+  p {
+    margin: 0 0 14px;
+    font-size: 0.88rem;
+    color: ${({ theme }) => theme.colors.textSecondary};
+    line-height: 1.5;
+  }
+`;
+
+const AiRow = styled.button`
   display: flex;
   align-items: center;
   gap: 10px;
-  width: 100%;
-  margin-top: 14px;
+  width: calc(100% - 36px);
+  margin: 0 18px 16px;
   padding: 12px 14px;
   border-radius: 12px;
   border: 1px dashed ${({ theme }) => theme.colors.primary[200]};
-  background: white;
+  background: ${({ theme }) => theme.colors.primary[50]};
   cursor: pointer;
   text-align: left;
   font-size: 0.8rem;
   color: ${({ theme }) => theme.colors.textSecondary};
-  line-height: 1.4;
 
   strong { color: ${({ theme }) => theme.colors.primary[700]}; }
-`;
-
-const ViewAll = styled.button`
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  border: none;
-  background: none;
-  padding: 0;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: ${({ theme }) => theme.colors.primary[600]};
-  cursor: pointer;
 `;
 
 export default function PatientPrisesTodayTeaser() {
@@ -141,7 +173,7 @@ export default function PatientPrisesTodayTeaser() {
 
   if (isLoading) {
     return (
-      <Wrap>
+      <Wrap style={{ padding: 24 }}>
         <Spinner size={22} text={t('prises.loading')} />
       </Wrap>
     );
@@ -150,65 +182,70 @@ export default function PatientPrisesTodayTeaser() {
   if (total === 0) {
     return (
       <Wrap>
-        <Header>
-          <div>
-            <h2><Pill size={18} /> {t('patientHome.prises_title')}</h2>
-            <p>{t('patientHome.prises_empty')}</p>
-          </div>
-        </Header>
-        <Button size="sm" variant="outline" onClick={() => navigate('/medications')}>
-          {t('patientHome.prises_add_treatment')}
-        </Button>
-        <AiHint type="button" onClick={() => openAiAssistant({ message: t('patientHome.ai_prises_prompt') })}>
+        <Top>
+          <h3><Pill size={18} /> {t('patientHome.prises_title')}</h3>
+        </Top>
+        <EmptyBody>
+          <p>{t('patientHome.prises_empty')}</p>
+          <Button size="sm" onClick={() => navigate('/medications')}>
+            {t('patientHome.prises_add_treatment')}
+          </Button>
+        </EmptyBody>
+        <AiRow type="button" onClick={() => openAiAssistant({ message: t('patientHome.ai_prises_prompt') })}>
           <Bot size={18} />
           <span>{t('patientHome.prises_ai_help')}</span>
-        </AiHint>
+        </AiRow>
       </Wrap>
     );
   }
 
   return (
     <Wrap>
-      <Header>
-        <div>
-          <h2><Pill size={18} /> {t('patientHome.prises_title')}</h2>
-          <p>{t('prises.progress', { taken, total })}</p>
-        </div>
-        <ViewAll type="button" onClick={() => navigate('/prises')}>
-          {t('patientHome.prises_view_all')} <ChevronRight size={14} />
-        </ViewAll>
-      </Header>
-
-      <ProgressBar $percent={percent}><div /></ProgressBar>
-
-      {shown.map((prise) => (
-        <PriseRow key={prise.prise_programmee_id}>
-          <div className="info">
-            <strong>{prise.nom_medicament} {prise.dosage}</strong>
-            <span><Clock size={12} style={{ verticalAlign: 'middle' }} /> {formatHeurePrise(prise.heure_prevue)}</span>
+      <Top>
+        <div className="row">
+          <div>
+            <h3><Pill size={18} /> {t('patientHome.prises_title')}</h3>
+            <p>{t('prises.progress', { taken, total })}</p>
           </div>
-          <Button
-            size="sm"
-            variant="success"
-            icon={CheckCircle}
-            onClick={() => handleConfirm(prise.prise_programmee_id)}
-            disabled={confirmerMutation.isPending}
-          >
-            {t('prises.confirm')}
-          </Button>
-        </PriseRow>
-      ))}
+          <ViewAll type="button" onClick={() => navigate('/prises')}>
+            {t('patientHome.prises_view_all')} <ChevronRight size={12} />
+          </ViewAll>
+        </div>
+      </Top>
 
-      {pending.length > 3 && (
-        <p style={{ margin: '8px 0 0', fontSize: '0.78rem', color: '#64748B' }}>
-          {t('patientHome.prises_more', { count: pending.length - 3 })}
-        </p>
-      )}
+      <ProgressWrap>
+        <ProgressBar $percent={percent}><div /></ProgressBar>
+      </ProgressWrap>
 
-      <AiHint type="button" onClick={() => openAiAssistant({ message: t('patientHome.ai_prises_prompt') })}>
+      <Body>
+        {shown.map((prise) => (
+          <PriseRow key={prise.prise_programmee_id}>
+            <div className="info">
+              <strong>{prise.nom_medicament} {prise.dosage}</strong>
+              <span><Clock size={13} /> {formatHeurePrise(prise.heure_prevue)}</span>
+            </div>
+            <Button
+              size="sm"
+              variant="success"
+              icon={CheckCircle}
+              onClick={() => handleConfirm(prise.prise_programmee_id)}
+              disabled={confirmerMutation.isPending}
+            >
+              {t('prises.confirm')}
+            </Button>
+          </PriseRow>
+        ))}
+        {pending.length > 3 && (
+          <p style={{ margin: '10px 0 0', fontSize: '0.78rem', color: '#64748B', textAlign: 'center' }}>
+            {t('patientHome.prises_more', { count: pending.length - 3 })}
+          </p>
+        )}
+      </Body>
+
+      <AiRow type="button" onClick={() => openAiAssistant({ message: t('patientHome.ai_prises_prompt') })}>
         <Bot size={18} />
         <span><strong>{t('patientHome.prises_ai_label')}</strong> — {t('patientHome.prises_ai_desc')}</span>
-      </AiHint>
+      </AiRow>
     </Wrap>
   );
 }

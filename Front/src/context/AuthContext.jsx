@@ -110,7 +110,7 @@ export function AuthProvider({ children }) {
         const { data } = await client.put(ENDPOINTS.patients.profile, payload);
         const result = data.data || data;
         const profile = result.user || result.patient || result;
-        setUser(profile);
+        setUser((prev) => ({ ...prev, ...profile }));
         if (payload.langue) applyLanguageFromProfile(profile);
         return result;
     }, []);

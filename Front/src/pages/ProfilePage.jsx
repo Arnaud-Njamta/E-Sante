@@ -393,17 +393,24 @@ export default function ProfilePage() {
   const onSubmit = async (formData) => {
     setSaving(true);
     try {
-      await updateProfile({
-        prenom: formData.prenom,
-        nom: formData.nom,
-        telephone: formData.telephone,
-        date_naissance: formData.dateNaissance,
-        region: region || null,
-        ville: ville || null,
-      });
+      const payload = {
+        prenom: formData.prenom?.trim(),
+        nom: formData.nom?.trim(),
+        telephone: formData.telephone?.trim() || '',
+        region: region?.trim() || '',
+        ville: ville?.trim() || '',
+      };
+      if (formData.dateNaissance?.trim()) {
+        payload.date_naissance = formData.dateNaissance.trim();
+      }
+      await updateProfile(payload);
       toast.success(t('toasts.profile_saved'));
     } catch (err) {
-      toast.error(err.response?.data?.message || t('errors.update'));
+      const details = err.response?.data?.errors;
+      const message = Array.isArray(details) && details.length
+        ? details.join(' · ')
+        : (err.response?.data?.message || t('errors.update'));
+      toast.error(message);
     } finally {
       setSaving(false);
     }

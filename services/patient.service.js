@@ -51,7 +51,16 @@ const updateProfile = async (patientId, data) => {
   const allowed = ['nom', 'prenom', 'date_naissance', 'telephone', 'contact_urgence', 'allergies', 'pathologies', 'preferences_notification', 'region', 'ville', 'langue'];
   const updateData = {};
   allowed.forEach((key) => {
-    if (data[key] !== undefined) updateData[key] = data[key];
+    if (data[key] === undefined) return;
+    if ((key === 'region' || key === 'ville') && data[key] === null) {
+      updateData[key] = '';
+      return;
+    }
+    if (key === 'date_naissance' && (data[key] === '' || data[key] === null)) {
+      updateData[key] = null;
+      return;
+    }
+    updateData[key] = data[key];
   });
 
   if (data.consentement_recherche !== undefined) {

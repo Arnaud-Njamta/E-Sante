@@ -341,13 +341,42 @@ const PUBLICATION_EN_PATCHES = [
 ];
 
 const patchPublicationTranslations = async () => {
+  const { Op } = require('sequelize');
   const { Publication } = require('../models');
+  let updated = 0;
+
   await Promise.all(PUBLICATION_EN_PATCHES.map(async (patch) => {
     const pub = await Publication.findOne({ where: { titre: patch.titre } });
-    if (pub && (!pub.titre_en || !pub.contenu_en)) {
+    if (!pub) return;
+    if (!pub.titre_en || !pub.contenu_en) {
       await pub.update({ titre_en: patch.titre_en, contenu_en: patch.contenu_en });
+      updated += 1;
     }
   }));
+
+  const missing = await Publication.findAll({
+    where: {
+      [Op.or]: [
+        { titre_en: null },
+        { titre_en: '' },
+        { contenu_en: null },
+        { contenu_en: '' },
+      ],
+    },
+    attributes: ['id', 'titre', 'titre_en', 'contenu_en'],
+  });
+
+  for (const pub of missing) {
+    const patch = PUBLICATION_EN_PATCHES.find((p) => p.titre === pub.titre);
+    if (patch) {
+      await pub.update({ titre_en: patch.titre_en, contenu_en: patch.contenu_en });
+      updated += 1;
+    }
+  }
+
+  if (updated > 0) {
+    console.log(`Publications : ${updated} traduction(s) EN appliquée(s).`);
+  }
 };
 
 const seedPublications = async () => {

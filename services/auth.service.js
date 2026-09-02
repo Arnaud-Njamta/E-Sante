@@ -87,7 +87,6 @@ const login = async ({ email, password }) => {
     pharmacie,
     hopital,
     clinique,
-    pendingInscription,
   ] = await Promise.all([
     Admin.findOne({ where: { email: normalizedEmail, actif: true } }),
     Patient.findOne({ where: { email: normalizedEmail } }),
@@ -95,14 +94,20 @@ const login = async ({ email, password }) => {
     Etablissement.findOne({ where: { email: normalizedEmail, type: TYPE_ETABLISSEMENT.PHARMACIE } }),
     Etablissement.findOne({ where: { email: normalizedEmail, type: TYPE_ETABLISSEMENT.HOPITAL } }),
     Etablissement.findOne({ where: { email: normalizedEmail, type: TYPE_ETABLISSEMENT.CLINIQUE } }),
-    InscriptionProfessionnel.findOne({
+  ]);
+
+  let pendingInscription = null;
+  try {
+    pendingInscription = await InscriptionProfessionnel.findOne({
       where: {
         email: normalizedEmail,
         statut: ['en_attente', 'en_revision', 'documents_manquants'],
       },
       order: [['createdAt', 'DESC']],
-    }),
-  ]);
+    });
+  } catch (err) {
+    console.warn('Login: recherche inscription pro ignorée:', err.message);
+  }
 
   if (admin) return loginEntity(admin, password, USER_ROLES.ADMIN);
   if (patient) return loginEntity(patient, password, USER_ROLES.PATIENT);

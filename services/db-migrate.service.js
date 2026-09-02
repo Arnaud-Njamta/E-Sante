@@ -390,6 +390,8 @@ const runPendingMigrations = async () => {
   await addColumnIfMissing('publications', 'region', '`region` VARCHAR(100) NULL');
   await addColumnIfMissing('publications', 'priorite', "`priorite` ENUM('info','attention','critique') NULL");
   await addColumnIfMissing('publications', 'expire_at', '`expire_at` DATETIME NULL');
+  await addColumnIfMissing('publications', 'titre_en', '`titre_en` VARCHAR(300) NULL');
+  await addColumnIfMissing('publications', 'contenu_en', '`contenu_en` TEXT NULL');
 
   try {
     await sequelize.query(

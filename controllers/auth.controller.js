@@ -26,18 +26,25 @@ const register = async (req, res, next) => {
 const login = async (req, res, next) => {
   try {
     const result = await authService.login(req.body);
-    await adminAudit.log({
-      categorie: adminAudit.CATEGORIES.AUTH,
-      action: adminAudit.ACTIONS.CONNEXION,
-      acteur: { id: result.user?.id, role: result.role, profile: result.user },
-      details: {
-        email: (req.body.email || '').trim().toLowerCase(),
-        role: result.role,
-      },
-      ip: req.ip || req.headers['x-forwarded-for'] || null,
-    });
+    try {
+      await adminAudit.log({
+        categorie: adminAudit.CATEGORIES.AUTH,
+        action: adminAudit.ACTIONS.CONNEXION,
+        acteur: { id: result.user?.id, role: result.role, profile: result.user },
+        details: {
+          email: (req.body.email || '').trim().toLowerCase(),
+          role: result.role,
+        },
+        ip: req.ip || req.headers['x-forwarded-for'] || null,
+      });
+    } catch (auditErr) {
+      console.warn('Login audit ignoré:', auditErr.message);
+    }
     res.json({ success: true, data: result });
   } catch (error) {
+    if (!error.statusCode) {
+      console.error('Login error:', error.message, error.stack);
+    }
     next(error);
   }
 };

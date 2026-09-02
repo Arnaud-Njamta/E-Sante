@@ -10,7 +10,9 @@ import AuthShell, {
   FieldInput, FieldSelect, SelectWrap, AuthSubmit, Footnotes, Notice, SubSection,
   TypeGrid, TypeCard, FormGrid, DocZone, OperateurGrid, OperateurOption,
 } from '../components/auth/AuthShell';
+import AuthPasswordInput from '../components/auth/AuthPasswordInput';
 import BrandLogo from '../components/brand/BrandLogo';
+import { SPECIALITES_BY_PROFIL } from '../config/cameroonSpecialties';
 import PasswordStrengthMeter, { scorePassword } from '../components/ui/PasswordStrengthMeter';
 
 const SuccessWrap = styled.div`
@@ -70,10 +72,16 @@ export default function RegisterProfessionnelPage() {
   });
   const [success, setSuccess] = useState(null);
   const [acceptCgu, setAcceptCgu] = useState(false);
+  const [declarationCasierVierge, setDeclarationCasierVierge] = useState(false);
 
   useEffect(() => {
     fetchDocumentsRequis().then(setDocsRequis).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    setForm((f) => ({ ...f, specialite: '' }));
+    setDeclarationCasierVierge(false);
+  }, [type]);
 
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
 
@@ -92,6 +100,22 @@ export default function RegisterProfessionnelPage() {
       toast.error('Renseignez le numéro Mobile Money et le titulaire du compte');
       return;
     }
+    if (!files.piece_identite) {
+      toast.error(
+        isSoignantType(type)
+          ? 'La pièce d\'identité est obligatoire (CNI, passeport ou carte de séjour)'
+          : 'La pièce d\'identité du représentant légal est obligatoire',
+      );
+      return;
+    }
+    if (isSoignantType(type) && !files.casier_judiciaire && !declarationCasierVierge) {
+      toast.error('Joignez votre casier judiciaire ou cochez la déclaration sur l\'honneur');
+      return;
+    }
+    if (isSoignantType(type) && !form.specialite?.trim()) {
+      toast.error('Sélectionnez votre spécialité ou domaine d\'exercice');
+      return;
+    }
     try {
       const { operateur_mobile, numero_mobile_money, titulaire_compte, numero_marchand, ...rest } = form;
       const result = await mutation.mutateAsync({
@@ -99,6 +123,7 @@ export default function RegisterProfessionnelPage() {
           ...rest,
           type_profil: type,
           accept_cgu: true,
+          declaration_casier_vierge: isSoignantType(type) ? declarationCasierVierge : false,
           paiement: {
             operateur: operateur_mobile,
             numero: numero_mobile_money,
@@ -140,6 +165,15 @@ export default function RegisterProfessionnelPage() {
   }
 
   const requiredDocs = docsRequis.documents?.[type] || docsRequis[type] || [];
+  const optionalDocs = docsRequis.documents_optionnels?.[type] || [];
+  const docLabels = {
+    ...(docsRequis.labels || {}),
+    ...(docsRequis.labels_by_profil?.[type] || {}),
+  };
+  const specialtyOptions = docsRequis.specialites?.[type] || SPECIALITES_BY_PROFIL[type] || [];
+  const documentsNotice = isSoignantType(type)
+    ? (docsRequis.notes_documents?.soignant || docsRequis.note_documents)
+    : (docsRequis.notes_documents?.structure || docsRequis.note_documents);
   const operateurs = docsRequis.operateurs_mobile_money || [
     { id: 'orange_money', label: 'Orange Money' },
     { id: 'mtn_momo', label: 'MTN MoMo' },
@@ -154,7 +188,10 @@ export default function RegisterProfessionnelPage() {
 
       <SectionTitle>Créer mon compte pro</SectionTitle>
       <SectionHint>
-        Compte créé tout de suite. Les documents (diplôme, carte d&apos;ordre, agréments…) se complètent ensuite pour la validation.
+        {isSoignantType(type)
+          ? 'Compte créé tout de suite. CNI et casier judiciaire obligatoires pour les soignants.'
+          : 'Compte créé tout de suite. CNI du représentant légal + agréments MINSANTE pour la structure.'}
+        {' '}Diplôme, carte d&apos;ordre et autres pièces complètent la validation.
       </SectionHint>
 
       <Notice>
@@ -187,11 +224,14 @@ export default function RegisterProfessionnelPage() {
               </Field>
               <Field>
                 <FieldLabel>{type === 'medecin' ? 'Spécialité' : 'Domaine / service'}</FieldLabel>
-                <FieldInput
-                  value={form.specialite}
-                  onChange={set('specialite')}
-                  placeholder={type === 'medecin' ? 'Ex. Cardiologie' : 'Ex. Urgences, maternité…'}
-                />
+                <SelectWrap>
+                  <FieldSelect value={form.specialite} onChange={set('specialite')} required>
+                    <option value="">— Choisir —</option>
+                    {specialtyOptions.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </FieldSelect>
+                </SelectWrap>
               </Field>
               <Field>
                 <FieldLabel>
@@ -222,8 +262,7 @@ export default function RegisterProfessionnelPage() {
           </Field>
           <Field>
             <FieldLabel>Mot de passe</FieldLabel>
-            <FieldInput
-              type="password"
+            <AuthPasswordInput
               value={form.password}
               onChange={set('password')}
               required
@@ -299,13 +338,32 @@ export default function RegisterProfessionnelPage() {
           )}
         </FormGrid>
 
-        <SubSection>Documents justificatifs (optionnel maintenant)</SubSection>
+        <SubSection>Documents justificatifs</SubSection>
         <Notice style={{ marginBottom: 16 }}>
-          Vous pourrez les ajouter après connexion. Requis pour la validation finale : diplôme + carte d&apos;ordre (médecin) ou agrément + autorisation (structure).
+          {documentsNotice}
         </Notice>
         {requiredDocs.map((doc) => (
           <DocZone key={doc}>
-            <label>{doc.replace(/_/g, ' ')}</label>
+            <label>
+              {docLabels[doc] || doc.replace(/_/g, ' ')}
+              {doc === 'piece_identite' && ' *'}
+              {isSoignantType(type) && doc === 'casier_judiciaire' && ' *'}
+            </label>
+            <input
+              type="file"
+              accept="image/*,.pdf"
+              required={doc === 'piece_identite' || (isSoignantType(type) && doc === 'casier_judiciaire')}
+              onChange={(e) => setFiles({ ...files, [doc]: e.target.files[0] })}
+            />
+          </DocZone>
+        ))}
+
+        {optionalDocs.map((doc) => (
+          <DocZone key={doc}>
+            <label>
+              {docLabels[doc] || doc.replace(/_/g, ' ')}
+              {' '}(optionnel)
+            </label>
             <input
               type="file"
               accept="image/*,.pdf"
@@ -313,6 +371,30 @@ export default function RegisterProfessionnelPage() {
             />
           </DocZone>
         ))}
+
+        {isSoignantType(type) && (
+        <Field style={{ marginTop: 12 }}>
+          <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: '0.84rem', color: '#6B6560', lineHeight: 1.45 }}>
+            <input
+              type="checkbox"
+              checked={declarationCasierVierge}
+              onChange={(e) => setDeclarationCasierVierge(e.target.checked)}
+              style={{ marginTop: 3 }}
+            />
+            <span>
+              Je déclare sur l&apos;honneur ne pas avoir de condamnation figurant au casier judiciaire
+              (à la place de l&apos;extrait bulletin n°3, si non disponible immédiatement).
+            </span>
+          </label>
+        </Field>
+        )}
+
+        {docsRequis.sources_verification?.length > 0 && (
+          <Notice style={{ marginTop: 12, fontSize: '0.78rem' }}>
+            <strong>Vérification officielle :</strong>{' '}
+            {docsRequis.sources_verification.map((s) => s.nom).join(' · ')}
+          </Notice>
+        )}
 
         <Field style={{ marginTop: 20 }}>
           <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: '0.84rem', color: '#6B6560', lineHeight: 1.45 }}>

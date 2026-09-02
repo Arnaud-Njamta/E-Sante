@@ -128,6 +128,17 @@ export function useUpdateEtabHoraires() {
     });
 }
 
+export function useUpdateEtabGarde() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async (payload) => {
+            const { data } = await client.put(ENDPOINTS.etablissements.meGarde, payload);
+            return data.data;
+        },
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['pharmacie', 'dashboard'] }),
+    });
+}
+
 export function useUpdateEtabLocalisation() {
     const qc = useQueryClient();
     return useMutation({

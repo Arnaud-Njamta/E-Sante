@@ -107,6 +107,15 @@ const Etablissement = sequelize.define('Etablissement', {
     allowNull: false,
     defaultValue: false,
   },
+  de_garde: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  },
+  garde_jusqu_a: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
   actif: {
     type: DataTypes.BOOLEAN,
     allowNull: false,

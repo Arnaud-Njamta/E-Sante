@@ -90,6 +90,7 @@ const ENDPOINTS = {
         structureDashboard: '/etablissements/structure/dashboard',
         meProfil: '/etablissements/me/profil',
         meHoraires: '/etablissements/me/horaires',
+        meGarde: '/etablissements/me/garde',
         meLocalisation: '/etablissements/me/localisation',
         mePhoto: '/etablissements/me/photo',
         meMedecins: '/etablissements/me/medecins',

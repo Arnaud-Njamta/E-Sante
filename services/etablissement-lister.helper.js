@@ -1,22 +1,13 @@
 const { Op } = require('sequelize');
 const { Etablissement, ServiceEtablissement } = require('../models');
 const { STATUT_VALIDATION } = require('../utils/constants');
+const { haversineKm, parseGeoParams } = require('../utils/geo');
 
 const serviceInclude = {
   model: ServiceEtablissement,
   as: 'services',
   where: { disponible: true },
   required: false,
-};
-
-const haversineKm = (lat1, lon1, lat2, lon2) => {
-  const toRad = (d) => (d * Math.PI) / 180;
-  const R = 6371;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a = Math.sin(dLat / 2) ** 2
-    + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
 const fetchRows = async (where, order, limit, offset = 0, serviceCategorie = null) => {
@@ -49,9 +40,12 @@ const fetchRows = async (where, order, limit, offset = 0, serviceCategorie = nul
   });
 };
 
-const buildWhere = ({ type, recherche, ville, useGeo }) => {
+const buildWhere = ({ type, recherche, ville, useGeo, de_garde }) => {
   const where = { actif: true, statut_validation: STATUT_VALIDATION.VALIDE };
   if (type) where.type = type;
+  if (de_garde === true || de_garde === 'true' || de_garde === '1') {
+    where.de_garde = true;
+  }
   if (recherche) {
     where[Op.or] = [
       { nom: { [Op.like]: `%${recherche}%` } },
@@ -66,20 +60,17 @@ const buildWhere = ({ type, recherche, ville, useGeo }) => {
 
 const lister = async ({
   type, ville, recherche, page = 1, limit = 20,
-  latitude, longitude, radius_km = 25, nearby, service_categorie,
+  latitude, longitude, radius_km = 25, nearby, service_categorie, de_garde,
 } = {}) => {
   try {
     const pageNum = Math.max(parseInt(page, 10) || 1, 1);
     const limitNum = Math.min(parseInt(limit, 10) || 20, 100);
     const offset = (pageNum - 1) * limitNum;
 
-    const lat = latitude != null && latitude !== '' ? Number(latitude) : null;
-    const lng = longitude != null && longitude !== '' ? Number(longitude) : null;
-    const useGeo = Number.isFinite(lat) && Number.isFinite(lng)
-      && (nearby === true || nearby === 'true' || nearby === '1');
+    const { lat, lng, useGeo, radius } = parseGeoParams({ latitude, longitude, nearby, radius_km });
 
-    const where = buildWhere({ type, recherche, ville, useGeo });
-    const defaultOrder = [['note_moyenne', 'DESC'], ['nom', 'ASC']];
+    const where = buildWhere({ type, recherche, ville, useGeo, de_garde });
+    const defaultOrder = [['de_garde', 'DESC'], ['note_moyenne', 'DESC'], ['nom', 'ASC']];
 
     if (!useGeo) {
       const [rows, total] = await Promise.all([
@@ -109,7 +100,7 @@ const lister = async ({
       };
     }
 
-    const radius = Number(radius_km) || 25;
+    const radiusKm = radius;
     const rows = await fetchRows(where, defaultOrder, 150, 0, service_categorie);
 
     let etablissements = rows.map((r) => {
@@ -123,8 +114,11 @@ const lister = async ({
     });
 
     etablissements = etablissements
-      .filter((e) => e.distance_km != null && e.distance_km <= radius)
-      .sort((a, b) => a.distance_km - b.distance_km);
+      .filter((e) => e.distance_km != null && e.distance_km <= radiusKm)
+      .sort((a, b) => {
+        if (a.de_garde !== b.de_garde) return b.de_garde - a.de_garde;
+        return a.distance_km - b.distance_km;
+      });
 
     if (etablissements.length === 0 && ville) {
       const villeWhere = buildWhere({ type, recherche, ville, useGeo: false });
@@ -142,7 +136,7 @@ const lister = async ({
 
     return {
       etablissements,
-      geo: { latitude: lat, longitude: lng, radius_km: radius, ville: ville || null },
+      geo: { latitude: lat, longitude: lng, radius_km: radiusKm, ville: ville || null },
       pagination: {
         total,
         page: pageNum,

@@ -4,8 +4,13 @@ import ENDPOINTS from '../api/endpoints';
 
 export function useAiChat() {
   return useMutation({
-    mutationFn: async ({ message, history }) => {
-      const { data } = await client.post(ENDPOINTS.ai.chat, { message, history });
+    mutationFn: async ({ message, history, latitude, longitude }) => {
+      const payload = { message, history };
+      if (latitude != null && longitude != null) {
+        payload.latitude = latitude;
+        payload.longitude = longitude;
+      }
+      const { data } = await client.post(ENDPOINTS.ai.chat, payload);
       return data.data;
     },
   });

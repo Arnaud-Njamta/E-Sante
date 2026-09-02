@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
-import { Building2, Hospital, Pill, Stethoscope, Search, MapPin } from 'lucide-react';
+import { Building2, Hospital, Pill, Stethoscope, Search, MapPin, Moon } from 'lucide-react';
 import Card from '../components/ui/Card';
 import StarRating from '../components/ui/StarRating';
 import Spinner from '../components/ui/Spinner';
@@ -15,6 +15,7 @@ import useDebounce from '../hooks/useDebounce';
 import useGeolocation from '../hooks/useGeolocation';
 import { parseJsonArray } from '../utils/helpers';
 import { resolveFileUrl } from '../components/ui/PhotoUploadCard';
+import { PROFESSION_LABELS, PROFESSIONS_LIST } from '../config/cameroonSpecialties';
 
 const NearbyBar = styled.div`
   display: flex;
@@ -39,6 +40,19 @@ const DistBadge = styled.span`
   font-weight: 600;
   background: #DCFCE7;
   color: #166534;
+`;
+
+const GardeBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: #FEF3C7;
+  color: #92400E;
 `;
 
 
@@ -187,16 +201,24 @@ export default function SantePage() {
   const initialTab = searchParams.get('tab');
   const initialType = searchParams.get('type');
   const initialQ = searchParams.get('q') || '';
+  const initialProfession = searchParams.get('profession') || '';
+  const initialDeGarde = searchParams.get('de_garde') === '1' || searchParams.get('de_garde') === 'true';
   const [tab, setTab] = useState(() => {
-    if (initialTab === 'medecins') return 'medecins';
+    if (initialTab === 'soignants' || initialTab === 'medecins') return 'soignants';
     if (initialTab === 'medicaments') return 'medicaments';
     return 'etablissements';
   });
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam === 'medecins' || tabParam === 'medicaments') setTab(tabParam);
+    if (tabParam === 'soignants' || tabParam === 'medecins') setTab('soignants');
+    else if (tabParam === 'medicaments') setTab('medicaments');
     else if (!tabParam) setTab('etablissements');
+  }, [searchParams]);
+
+  useEffect(() => {
+    const prof = searchParams.get('profession');
+    if (PROFESSIONS_LIST.includes(prof)) setProfessionFilter(prof);
   }, [searchParams]);
 
   useEffect(() => {
@@ -215,6 +237,10 @@ export default function SantePage() {
   const [dispoOnly, setDispoOnly] = useState(false);
   const [competenceFilter, setCompetenceFilter] = useState('');
   const [etablissementFilter, setEtablissementFilter] = useState('');
+  const [professionFilter, setProfessionFilter] = useState(() => (
+    PROFESSIONS_LIST.includes(initialProfession) ? initialProfession : ''
+  ));
+  const [deGardeOnly, setDeGardeOnly] = useState(initialDeGarde);
 
   useEffect(() => {
     const typeParam = searchParams.get('type');
@@ -222,32 +248,39 @@ export default function SantePage() {
       setTypeFilter(typeParam);
       setTab('etablissements');
     }
+    const dg = searchParams.get('de_garde');
+    if (dg === '1' || dg === 'true') {
+      setDeGardeOnly(true);
+      setTab('etablissements');
+      if (!typeParam) setTypeFilter('pharmacie');
+    }
   }, [searchParams]);
 
   const {
     coords, cityLabel, loading: geoLoading, hasLocation,
-  } = useGeolocation({ enabled: tab === 'etablissements' });
+  } = useGeolocation({ enabled: true });
+
+  const geoParams = hasLocation && coords
+    ? {
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+      nearby: true,
+      radius_km: 30,
+    }
+    : {};
 
   const etabFilters = {
     type: typeFilter || undefined,
     recherche: search || undefined,
+    de_garde: deGardeOnly || undefined,
     limit: 50,
-    ...(hasLocation && coords
-      ? {
-        latitude: coords.latitude,
-        longitude: coords.longitude,
-        nearby: true,
-        radius_km: 25,
-        ville: cityLabel || undefined,
-      }
-      : cityLabel
-        ? { ville: cityLabel }
-        : {}),
+    ...geoParams,
+    ...(!hasLocation && cityLabel ? { ville: cityLabel } : {}),
   };
 
   const { data: etabData, isLoading: etabLoading, error: etabError, refetch: refetchEtab } = useEtablissements(
     etabFilters,
-    { enabled: tab === 'etablissements' || tab === 'medecins' },
+    { enabled: tab === 'etablissements' || tab === 'soignants' },
   );
 
   const etabOptions = (etabData?.etablissements || []).filter(
@@ -259,13 +292,16 @@ export default function SantePage() {
     disponible_maintenant: dispoOnly || undefined,
     competence: competenceFilter || undefined,
     etablissement_id: etablissementFilter || undefined,
-  }, { enabled: tab === 'medecins' });
+    profession: professionFilter || undefined,
+    ...geoParams,
+  }, { enabled: tab === 'soignants' });
 
   const { data: produitsData, isLoading: prodLoading, error: prodError, refetch: refetchProd } = useRechercheProduits(
     {
       recherche: tab === 'medicaments' ? debouncedSearch.trim() : '',
-      ville: villeMed || undefined,
+      ville: !hasLocation && villeMed ? villeMed : undefined,
       type_etablissement: typeMed || undefined,
+      ...geoParams,
     },
     { enabled: tab === 'medicaments' },
   );
@@ -280,23 +316,23 @@ export default function SantePage() {
         <p>{t('sante.subtitle')}</p>
       </PageHeader>
 
-      {tab === 'etablissements' && (
-        <NearbyBar>
-          <MapPin size={16} />
-          {geoLoading && !hasLocation
-            ? t('sante.geo_loading')
+      <NearbyBar>
+        <MapPin size={16} />
+        {geoLoading && !hasLocation
+          ? t('sante.geo_loading')
+          : hasLocation
+            ? t('sante.geo_gps_active')
             : cityLabel
               ? t('sante.geo_near', { city: cityLabel })
               : t('sante.geo_default')}
-        </NearbyBar>
-      )}
+      </NearbyBar>
 
       <Tabs>
         <Tab $active={tab === 'etablissements'} onClick={() => setTab('etablissements')}>
           <Building2 size={16} /> {t('sante.tab_establishments')}
         </Tab>
-        <Tab $active={tab === 'medecins'} onClick={() => setTab('medecins')}>
-          <Stethoscope size={16} /> {t('sante.tab_doctors')}
+        <Tab $active={tab === 'soignants'} onClick={() => setTab('soignants')}>
+          <Stethoscope size={16} /> {t('sante.tab_caregivers')}
         </Tab>
         <Tab $active={tab === 'medicaments'} onClick={() => setTab('medicaments')}>
           <Pill size={16} /> {t('sante.tab_medicines')}
@@ -318,10 +354,26 @@ export default function SantePage() {
           <Tab $active={typeFilter === 'pharmacie'} onClick={() => setTypeFilter('pharmacie')}>{t('sante.pharmacies')}</Tab>
           <Tab $active={typeFilter === 'hopital'} onClick={() => setTypeFilter('hopital')}>{t('sante.hospitals')}</Tab>
           <Tab $active={typeFilter === 'clinique'} onClick={() => setTypeFilter('clinique')}>{t('sante.clinics')}</Tab>
+          {(typeFilter === 'pharmacie' || !typeFilter) && (
+            <Tab $active={deGardeOnly} onClick={() => setDeGardeOnly((v) => !v)}>
+              <Moon size={14} /> {t('sante.on_duty')}
+            </Tab>
+          )}
         </Tabs>
       )}
 
-      {tab === 'medecins' && (
+      {tab === 'soignants' && (
+        <Tabs>
+          <Tab $active={!professionFilter} onClick={() => setProfessionFilter('')}>{t('sante.all_caregivers')}</Tab>
+          {PROFESSIONS_LIST.map((p) => (
+            <Tab key={p} $active={professionFilter === p} onClick={() => setProfessionFilter(p)}>
+              {PROFESSION_LABELS[p]}
+            </Tab>
+          ))}
+        </Tabs>
+      )}
+
+      {tab === 'soignants' && (
         <Tabs>
           <Tab $active={!dispoOnly} onClick={() => setDispoOnly(false)}>{t('sante.all')}</Tab>
           <Tab $active={dispoOnly} onClick={() => setDispoOnly(true)}>{t('sante.available_now')}</Tab>
@@ -335,13 +387,13 @@ export default function SantePage() {
             placeholder={
               tab === 'medicaments' ? t('sante.search_medicine')
                 : tab === 'etablissements' ? t('sante.search_establishment')
-                  : t('sante.search_doctor')
+                  : t('sante.search_caregiver')
             }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </SearchWrap>
-        {tab === 'medicaments' && (
+        {tab === 'medicaments' && !hasLocation && (
           <>
             <input
               placeholder={cityLabel ? t('sante.city_optional', { city: cityLabel }) : t('sante.city_douala')}
@@ -360,7 +412,7 @@ export default function SantePage() {
             )}
           </>
         )}
-        {tab === 'medecins' && (
+        {tab === 'soignants' && (
           <>
             <input
               placeholder={t('sante.competence')}
@@ -405,6 +457,9 @@ export default function SantePage() {
             return (
               <ItemCard key={e.id} onClick={() => navigate(`/sante/etablissement/${e.id}`)}>
                 <TypeBadge $type={e.type}><Icon size={12} /> {typeLabels[e.type]}</TypeBadge>
+                {e.de_garde && (
+                  <GardeBadge><Moon size={11} /> {t('sante.on_duty_badge')}</GardeBadge>
+                )}
                 <CardTitle>{e.nom}</CardTitle>
                 <Location>
                   <MapPin /> {e.ville}{e.adresse ? ` — ${e.adresse}` : ''}
@@ -451,7 +506,16 @@ export default function SantePage() {
                     {etab && (
                       <TypeBadge $type={etab.type}><Icon size={12} /> {typeLabels[etab.type]} — {etab.nom}</TypeBadge>
                     )}
-                    <Location><MapPin /> {etab?.ville}{etab?.adresse ? ` — ${etab.adresse}` : ''}</Location>
+                    <Location><MapPin /> {etab?.ville}{etab?.adresse ? ` — ${etab.adresse}` : ''}
+                      {(p.distance_km ?? etab?.distance_km) != null && (
+                        <DistBadge>
+                          {(p.distance_km ?? etab.distance_km) < 1
+                            ? `${Math.round((p.distance_km ?? etab.distance_km) * 1000)} m`
+                            : `${p.distance_km ?? etab.distance_km} km`}
+                        </DistBadge>
+                      )}
+                      {etab?.de_garde && <GardeBadge><Moon size={11} /> {t('sante.on_duty_badge')}</GardeBadge>}
+                    </Location>
                     <strong style={{ color: '#059669', fontSize: '1rem' }}>{Number(p.prix_fcfa || 0).toLocaleString()} FCFA</strong>
                     <ServiceCount style={{ display: 'block', marginTop: 6 }}>
                       {t('sante.in_stock', { count: p.stock_disponible })}
@@ -475,23 +539,41 @@ export default function SantePage() {
         )
       )}
 
-      {tab === 'medecins' && (
+      {tab === 'soignants' && (
         medLoading ? <Spinner /> :
-        medError ? <ErrorState message={t('sante.load_doctors_error')} onRetry={refetchMed} /> :
+        medError ? <ErrorState message={t('sante.load_caregivers_error')} onRetry={refetchMed} /> :
         <Grid>
           {medecins.map((m) => {
             const competences = parseJsonArray(m.competences);
+            const profLabel = PROFESSION_LABELS[m.profession] || m.specialite;
+            const namePrefix = m.profession === 'medecin' ? 'Dr. ' : '';
             return (
             <ItemCard key={m.id} onClick={() => navigate(`/sante/medecin/${m.id}`)}>
-              <TypeBadge $type="clinique"><Stethoscope size={12} /> {m.specialite}</TypeBadge>
-              <CardTitle>Dr. {m.prenom} {m.nom}</CardTitle>
+              <TypeBadge $type="clinique"><Stethoscope size={12} /> {profLabel}</TypeBadge>
+              <CardTitle>{namePrefix}{m.prenom} {m.nom}</CardTitle>
+              {m.specialite && m.profession !== 'medecin' && (
+                <p style={{ margin: '0 0 6px', fontSize: '0.8rem', color: '#64748B' }}>{m.specialite}</p>
+              )}
               {m.disponible_maintenant && (
                 <span style={{ display: 'inline-block', marginBottom: 6, padding: '2px 8px', borderRadius: 12, background: '#DCFCE7', color: '#166534', fontSize: '0.7rem', fontWeight: 600 }}>
                   {t('sante.available')}
                 </span>
               )}
-              {m.etablissement && (
-                <Location><MapPin /> {m.etablissement.nom} — {m.etablissement.ville}</Location>
+              {m.joignable_urgence && (
+                <span style={{ display: 'inline-block', marginBottom: 6, marginLeft: 6, padding: '2px 8px', borderRadius: 12, background: '#FEE2E2', color: '#991B1B', fontSize: '0.7rem', fontWeight: 600 }}>
+                  {t('sante.emergency_reachable')}
+                </span>
+              )}
+              {(m.etablissement || m.distance_km != null) && (
+                <Location>
+                  <MapPin />
+                  {m.etablissement ? `${m.etablissement.nom} — ${m.etablissement.ville}` : t('sante.home_care')}
+                  {m.distance_km != null && (
+                    <DistBadge>
+                      {m.distance_km < 1 ? `${Math.round(m.distance_km * 1000)} m` : `${m.distance_km} km`}
+                    </DistBadge>
+                  )}
+                </Location>
               )}
               <CardDesc>{m.bio}</CardDesc>
               <StarRating rating={m.note_moyenne} count={m.nombre_avis} />

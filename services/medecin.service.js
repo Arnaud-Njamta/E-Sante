@@ -2,6 +2,7 @@ const { Op } = require('sequelize');
 const { Medecin, Etablissement, Avis, MedecinAffiliation } = require('../models');
 const { TYPE_CIBLE_AVIS, STATUT_VALIDATION } = require('../utils/constants');
 const { parseJsonField } = require('../utils/helpers');
+const { parseGeoParams, haversineKm } = require('../utils/geo');
 const affiliationService = require('./medecin-affiliation.service');
 const parcoursService = require('./parcours-professionnel.service');
 
@@ -41,12 +42,33 @@ const enrichMedecinPublic = async (medecin) => {
   return { ...formatted, affiliations, parcours };
 };
 
+const getMedecinCoords = (plain) => {
+  if (plain.etablissement?.latitude != null && plain.etablissement?.longitude != null) {
+    return { lat: Number(plain.etablissement.latitude), lng: Number(plain.etablissement.longitude) };
+  }
+  const affs = plain.affiliations || [];
+  for (const aff of affs) {
+    const e = aff.etablissement;
+    if (e?.latitude != null && e?.longitude != null) {
+      return { lat: Number(e.latitude), lng: Number(e.longitude) };
+    }
+  }
+  return null;
+};
+
 const lister = async ({
-  specialite, recherche, etablissement_id, competence, disponible_maintenant, page = 1, limit = 20,
+  specialite, recherche, etablissement_id, competence, disponible_maintenant,
+  profession, joignable_urgence,
+  latitude, longitude, radius_km = 25, nearby,
+  page = 1, limit = 20,
 }) => {
   const where = { actif: true, statut_validation: STATUT_VALIDATION.VALIDE };
 
   if (specialite) where.specialite = { [Op.like]: `%${specialite}%` };
+  if (profession) where.profession = profession;
+  if (joignable_urgence === 'true' || joignable_urgence === true) {
+    where.joignable_urgence = true;
+  }
   const andConditions = [];
   if (etablissement_id) {
     const affRows = await MedecinAffiliation.findAll({
@@ -81,6 +103,9 @@ const lister = async ({
   }
 
   const offset = (page - 1) * limit;
+  const { lat, lng, useGeo, radius } = parseGeoParams({ latitude, longitude, nearby, radius_km });
+  const fetchLimit = useGeo ? 150 : limit;
+  const fetchOffset = useGeo ? 0 : offset;
 
   const { rows, count } = await Medecin.findAndCountAll({
     where,
@@ -89,17 +114,56 @@ const lister = async ({
       {
         model: Etablissement,
         as: 'etablissement',
-        attributes: ['id', 'nom', 'type', 'ville', 'adresse'],
+        attributes: ['id', 'nom', 'type', 'ville', 'adresse', 'latitude', 'longitude', 'telephone'],
         required: false,
       },
+      {
+        model: MedecinAffiliation,
+        as: 'affiliations',
+        where: { statut: 'actif' },
+        required: false,
+        include: [{
+          model: Etablissement,
+          as: 'etablissement',
+          attributes: ['id', 'nom', 'type', 'ville', 'latitude', 'longitude'],
+        }],
+      },
     ],
-    order: [['note_moyenne', 'DESC'], ['nom', 'ASC']],
-    limit,
-    offset,
+    order: [['joignable_urgence', 'DESC'], ['note_moyenne', 'DESC'], ['nom', 'ASC']],
+    limit: fetchLimit,
+    offset: fetchOffset,
+    distinct: true,
   });
 
+  let medecins = rows.map((r) => {
+    const plain = formatMedecin(r);
+    if (useGeo) {
+      const coords = getMedecinCoords(plain);
+      if (coords) {
+        plain.distance_km = Math.round(haversineKm(lat, lng, coords.lat, coords.lng) * 10) / 10;
+      }
+    }
+    return plain;
+  });
+
+  if (useGeo) {
+    medecins = medecins
+      .filter((m) => m.distance_km != null && m.distance_km <= radius)
+      .sort((a, b) => {
+        if (a.joignable_urgence !== b.joignable_urgence) return b.joignable_urgence - a.joignable_urgence;
+        return a.distance_km - b.distance_km;
+      });
+    const total = medecins.length;
+    medecins = medecins.slice(offset, offset + limit);
+    return {
+      medecins,
+      geo: { latitude: lat, longitude: lng, radius_km: radius },
+      pagination: { total, page, limit, pages: Math.ceil(total / limit) || 1 },
+    };
+  }
+
   return {
-    medecins: rows.map(formatMedecin),
+    medecins,
     pagination: { total: count, page, limit, pages: Math.ceil(count / limit) },
   };
 };

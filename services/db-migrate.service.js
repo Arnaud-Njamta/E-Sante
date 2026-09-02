@@ -265,6 +265,8 @@ const runPendingMigrations = async () => {
 
   await addColumnIfMissing('etablissements', 'latitude', '`latitude` DECIMAL(10, 8) NULL');
   await addColumnIfMissing('etablissements', 'longitude', '`longitude` DECIMAL(11, 8) NULL');
+  await addColumnIfMissing('etablissements', 'de_garde', '`de_garde` TINYINT(1) NOT NULL DEFAULT 0');
+  await addColumnIfMissing('etablissements', 'garde_jusqu_a', '`garde_jusqu_a` DATETIME NULL');
 
   try {
     await sequelize.query(

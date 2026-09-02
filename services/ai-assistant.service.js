@@ -19,6 +19,9 @@ const buildUserContext = (userContext = {}) => {
   if (userContext.medecinName) parts.push(`Médecin : ${userContext.medecinName}`);
   if (userContext.specialite) parts.push(`Spécialité : ${userContext.specialite}`);
   if (userContext.ville) parts.push(`Ville : ${userContext.ville}`);
+  if (userContext.latitude != null && userContext.longitude != null) {
+    parts.push(`Position GPS patient : ${userContext.latitude}, ${userContext.longitude} (prioriser les soignants et établissements les plus proches)`);
+  }
   if (userContext.allergies?.length) parts.push(`Allergies connues : ${userContext.allergies.join(', ')}`);
   if (userContext.pathologies?.length) parts.push(`Pathologies connues : ${userContext.pathologies.join(', ')}`);
   if (!parts.length) return '';
@@ -98,9 +101,17 @@ const detectViolence = (message) => {
   return VIOLENCE_PATTERNS.some((p) => p.test(text));
 };
 
-const buildMedecinCatalog = async () => {
+const buildListerGeo = (userContext = {}) => {
+  const { latitude, longitude, radius_km } = userContext;
+  if (latitude != null && longitude != null) {
+    return { latitude, longitude, nearby: true, radius_km: radius_km || 30 };
+  }
+  return {};
+};
+
+const buildMedecinCatalog = async (userContext = {}) => {
   try {
-    const { medecins } = await medecinService.lister({ limit: 30 });
+    const { medecins } = await medecinService.lister({ limit: 30, ...buildListerGeo(userContext) });
     return medecins.map((m) => (
       `- ID ${m.id} : Dr ${m.prenom} ${m.nom} — ${m.specialite}`
       + `${m.etablissement ? ` (${m.etablissement.nom}, ${m.etablissement.ville || 'Cameroun'})` : ''}`
@@ -141,6 +152,7 @@ const enrichRecommendations = async (rawRecs) => {
         note: m.note_moyenne,
         etablissement: m.etablissement?.nom,
         ville: m.etablissement?.ville,
+        distance_km: m.distance_km,
         accepte_teleconsultation: m.accepte_teleconsultation,
         tarif_fcfa: m.tarif_consultation_fcfa,
         creneaux,
@@ -174,12 +186,12 @@ const getUpcomingSlots = async (medecinId, maxSlots = 2) => {
   return slots;
 };
 
-const fallbackRecommendations = async (message) => {
+const fallbackRecommendations = async (message, userContext = {}) => {
   const specialties = matchSpecialties(message);
   if (!specialties.length) return [];
 
   try {
-    const { medecins } = await medecinService.lister({ limit: 20 });
+    const { medecins } = await medecinService.lister({ limit: 40, ...buildListerGeo(userContext) });
     const matched = medecins.filter((m) => specialties.some((s) => (
       m.specialite?.toLowerCase().includes(s.toLowerCase().split('-')[0])
     )));
@@ -194,6 +206,7 @@ const fallbackRecommendations = async (message) => {
           note: m.note_moyenne,
           etablissement: m.etablissement?.nom,
           ville: m.etablissement?.ville,
+          distance_km: m.distance_km,
           accepte_teleconsultation: m.accepte_teleconsultation,
           tarif_fcfa: m.tarif_consultation_fcfa,
           creneaux,
@@ -251,7 +264,7 @@ const chat = async ({ message, history = [], userContext = {} }) => {
   }
 
   const [medecinCatalog, doctorKnowledge] = await Promise.all([
-    buildMedecinCatalog(),
+    buildMedecinCatalog(userContext),
     Promise.resolve(getKnowledgeBlock()),
   ]);
 
@@ -277,7 +290,7 @@ const chat = async ({ message, history = [], userContext = {} }) => {
     const { cleanReply, recommandations: parsedRecs } = parseRecommendations(rawReply);
     let recommandations = await enrichRecommendations(parsedRecs);
     if (!recommandations.length) {
-      recommandations = await fallbackRecommendations(trimmed);
+      recommandations = await fallbackRecommendations(trimmed, userContext);
     }
 
     const violence = detectViolence(trimmed);
@@ -306,7 +319,7 @@ const chat = async ({ message, history = [], userContext = {} }) => {
     return {
       reply: fallbackReply,
       model: 'offline-fallback',
-      recommandations: await fallbackRecommendations(trimmed),
+      recommandations: await fallbackRecommendations(trimmed, userContext),
       videos: [],
       violence: violence || undefined,
       offline: true,

@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  Stethoscope, Pill, Hospital, Siren, Bot, MapPin, ChevronRight,
+  Stethoscope, Pill, Siren, Bot, MapPin, ChevronRight, HeartPulse,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import UserAvatar from '../ui/UserAvatar';
@@ -194,7 +194,15 @@ const AssistantStrip = styled.button`
 
 const ACTIONS = [
   {
-    to: '/sante?tab=medecins',
+    to: '/sante?tab=soignants&profession=aide_soignant',
+    icon: HeartPulse,
+    titleKey: 'patientHome.find_home_care',
+    descKey: 'patientHome.find_home_care_short',
+    bg: '#FFF7ED',
+    color: '#C2410C',
+  },
+  {
+    to: '/sante?tab=soignants&profession=medecin',
     icon: Stethoscope,
     titleKey: 'patientHome.find_doctor',
     descKey: 'patientHome.find_doctor_short',
@@ -210,20 +218,12 @@ const ACTIONS = [
     color: '#1D4ED8',
   },
   {
-    to: '/sante?type=hopital',
-    icon: Hospital,
-    titleKey: 'patientHome.find_hospital',
-    descKey: 'patientHome.find_hospital_short',
-    bg: '#FEF2F2',
-    color: '#B91C1C',
-  },
-  {
-    to: '/sante',
+    to: '/sante?tab=etablissements&type=pharmacie&de_garde=1',
     icon: MapPin,
-    titleKey: 'patientHome.directory',
-    descKey: 'patientHome.directory_short',
-    bg: '#F5F3FF',
-    color: '#6D28D9',
+    titleKey: 'patientHome.pharmacy_on_duty',
+    descKey: 'patientHome.pharmacy_on_duty_short',
+    bg: '#FEF3C7',
+    color: '#B45309',
   },
 ];
 

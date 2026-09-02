@@ -11,6 +11,7 @@ import AuthShell, {
   Wordmark, SectionTitle, SectionHint, AuthForm, Field, FieldLabel,
   FieldInput, FieldError, AuthSubmit, Footnotes, DEEP,
 } from '../components/auth/AuthShell';
+import AuthPasswordInput from '../components/auth/AuthPasswordInput';
 import BrandLogo from '../components/brand/BrandLogo';
 
 const TextLink = styled(Link)`
@@ -89,9 +90,8 @@ export default function LoginPage() {
 
         <Field>
           <FieldLabel htmlFor="password">{t('auth.password')}</FieldLabel>
-          <FieldInput
+          <AuthPasswordInput
             id="password"
-            type="password"
             placeholder={t('auth.password_placeholder')}
             autoComplete="current-password"
             $error={!!errors.password}

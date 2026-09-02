@@ -1,5 +1,6 @@
 const { Op } = require('sequelize');
 const { ProduitPharmacie, Fichier, sequelize: db } = require('../models');
+const { parseGeoParams, haversineKm } = require('../utils/geo');
 
 const sansAccent = (s) => (s || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
 
@@ -56,7 +57,7 @@ const mapProduit = (p) => ({
 
 const etabInclude = (etabWhere = {}) => ({
   association: 'pharmacie',
-  attributes: ['id', 'nom', 'type', 'ville', 'adresse', 'telephone', 'latitude', 'longitude'],
+  attributes: ['id', 'nom', 'type', 'ville', 'adresse', 'telephone', 'latitude', 'longitude', 'de_garde', 'garde_jusqu_a'],
   where: { actif: true, ...etabWhere },
   required: true,
 });
@@ -131,12 +132,15 @@ const supprimer = async (pharmacieId, produitId) => {
   return { message: 'Produit désactivé' };
 };
 
-const rechercherDisponibilite = async ({ recherche, ville, type, type_etablissement }) => {
+const rechercherDisponibilite = async ({
+  recherche, ville, type, type_etablissement, latitude, longitude, nearby, radius_km = 25,
+}) => {
   const typeEtab = type_etablissement || type;
   const where = { actif: true, stock_disponible: { [Op.gt]: 0 } };
+  const { lat, lng, useGeo, radius } = parseGeoParams({ latitude, longitude, nearby, radius_km });
 
   const etabWhere = {};
-  if (ville && ville.trim()) {
+  if (!useGeo && ville && ville.trim()) {
     const v = ville.trim();
     const plain = sansAccent(v);
     etabWhere[Op.or] = [
@@ -161,10 +165,30 @@ const rechercherDisponibilite = async ({ recherche, ville, type, type_etablissem
     where,
     include: [etabInclude(etabWhere)],
     order: [['nom', 'ASC']],
-    limit: recherche?.trim() ? 50 : 24,
+    limit: recherche?.trim() ? 80 : 40,
   });
 
-  return produits.map(mapProduit);
+  let mapped = produits.map(mapProduit);
+
+  if (useGeo) {
+    mapped = mapped
+      .map((p) => {
+        const etab = p.etablissement || p.pharmacie;
+        if (!etab?.latitude || !etab?.longitude) return p;
+        const distance_km = Math.round(haversineKm(lat, lng, Number(etab.latitude), Number(etab.longitude)) * 10) / 10;
+        return { ...p, distance_km, etablissement: { ...etab, distance_km } };
+      })
+      .filter((p) => p.distance_km != null && p.distance_km <= radius)
+      .sort((a, b) => {
+        if (a.etablissement?.de_garde !== b.etablissement?.de_garde) {
+          return (b.etablissement?.de_garde ? 1 : 0) - (a.etablissement?.de_garde ? 1 : 0);
+        }
+        return a.distance_km - b.distance_km;
+      })
+      .slice(0, 50);
+  }
+
+  return mapped;
 };
 
 module.exports = {

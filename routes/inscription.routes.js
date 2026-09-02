@@ -11,6 +11,8 @@ router.get('/documents-requis', inscriptionController.getDocumentsRequis);
 router.post(
   '/professionnel',
   handleUpload(uploadDocument.fields([
+    { name: 'piece_identite', maxCount: 1 },
+    { name: 'casier_judiciaire', maxCount: 1 },
     { name: 'diplome', maxCount: 1 },
     { name: 'carte_ordre', maxCount: 1 },
     { name: 'agrement', maxCount: 1 },

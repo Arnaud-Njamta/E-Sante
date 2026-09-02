@@ -150,6 +150,8 @@ const TYPE_FICHIER = {
   CARTE_ORDRE: 'carte_ordre',
   AGREMENT: 'agrement',
   AUTORISATION: 'autorisation',
+  PIECE_IDENTITE: 'piece_identite',
+  CASIER_JUDICIAIRE: 'casier_judiciaire',
 };
 
 // Régions du Cameroun (10 régions)

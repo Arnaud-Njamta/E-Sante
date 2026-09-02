@@ -1,5 +1,6 @@
 const inscriptionService = require('../services/inscription.service');
 const documentVerificationService = require('../services/document-verification.service');
+const { SPECIALITES_BY_PROFIL, PROFESSION_LABELS } = require('../config/cameroon-specialties');
 
 const registerProfessionnel = async (req, res, next) => {
   try {
@@ -68,9 +69,15 @@ const getDocumentsRequis = async (req, res, next) => {
       success: true,
       data: {
         documents: inscriptionService.DOCUMENTS_REQUIS,
+        documents_optionnels: inscriptionService.DOCUMENTS_OPTIONNELS,
+        labels: inscriptionService.DOC_LABELS,
+        labels_by_profil: inscriptionService.DOC_LABELS_BY_PROFIL,
+        specialites: SPECIALITES_BY_PROFIL,
+        professions: PROFESSION_LABELS,
         operateurs_mobile_money: inscriptionService.OPERATEURS_MOBILE_MONEY,
         note_paiement: 'Numéro Mobile Money obligatoire pour recevoir les paiements patients (consultations, réservations pharmacie).',
-        note_documents: 'Le compte est créé immédiatement. Les documents peuvent être ajoutés ensuite pour la validation MINSANTE.',
+        notes_documents: inscriptionService.NOTES_DOCUMENTS,
+        note_documents: 'Consultez le type de compte : soignants (CNI + casier) ou structures (CNI du représentant + agréments MINSANTE).',
         sources_verification: documentVerificationService.SOURCES_OFFICIELLES,
       },
     });

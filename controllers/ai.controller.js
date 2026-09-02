@@ -3,6 +3,16 @@ const { parseJsonField } = require('../utils/helpers');
 
 const buildContextFromRequest = (req) => {
   const ctx = { role: req.user?.role };
+  const { latitude, longitude } = req.body || {};
+  if (latitude != null && longitude != null) {
+    const lat = Number(latitude);
+    const lng = Number(longitude);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      ctx.latitude = lat;
+      ctx.longitude = lng;
+      ctx.radius_km = 30;
+    }
+  }
   if (req.patient) {
     ctx.allergies = parseJsonField(req.patient.allergies, []);
     ctx.pathologies = parseJsonField(req.patient.pathologies, []);

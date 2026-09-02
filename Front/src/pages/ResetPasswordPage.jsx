@@ -9,6 +9,7 @@ import AuthShell, {
   Wordmark, SectionTitle, SectionHint, AuthForm, Field, FieldLabel,
   FieldInput, FieldError, AuthSubmit, Footnotes, Notice,
 } from '../components/auth/AuthShell';
+import AuthPasswordInput from '../components/auth/AuthPasswordInput';
 import BrandLogo from '../components/brand/BrandLogo';
 import PasswordStrengthMeter, { scorePassword } from '../components/ui/PasswordStrengthMeter';
 
@@ -65,9 +66,8 @@ export default function ResetPasswordPage() {
       <AuthForm onSubmit={handleSubmit(onSubmit)}>
         <Field>
           <FieldLabel htmlFor="password">{t('auth.new_password')}</FieldLabel>
-          <FieldInput
+          <AuthPasswordInput
             id="password"
-            type="password"
             autoComplete="new-password"
             placeholder={t('auth.password_placeholder')}
             $error={!!errors.password}
@@ -86,9 +86,8 @@ export default function ResetPasswordPage() {
 
         <Field>
           <FieldLabel htmlFor="confirmPassword">{t('auth.confirm_password')}</FieldLabel>
-          <FieldInput
+          <AuthPasswordInput
             id="confirmPassword"
-            type="password"
             autoComplete="new-password"
             $error={!!errors.confirmPassword}
             {...register('confirmPassword', {

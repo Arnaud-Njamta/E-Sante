@@ -7,7 +7,7 @@ import ErrorState from '../components/ui/ErrorState';
 import { usePharmacieDashboard, useEtabHorairesMe } from '../hooks/useDashboards';
 import { useAuth } from '../context/AuthContext';
 import { parseJsonObject } from '../utils/helpers';
-import { useUpdateEtabHoraires } from '../hooks/useProfessionnel';
+import { useUpdateEtabHoraires, useUpdateEtabGarde } from '../hooks/useProfessionnel';
 import toast from 'react-hot-toast';
 
 const JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
@@ -21,12 +21,17 @@ export default function PharmacieHorairesPage() {
   const error = isPharmacie ? pharmaQuery.error : structureQuery.error;
   const refetch = isPharmacie ? pharmaQuery.refetch : structureQuery.refetch;
   const updateHoraires = useUpdateEtabHoraires();
+  const updateGarde = useUpdateEtabGarde();
   const [horaires, setHoraires] = useState(null);
   const [editMode, setEditMode] = useState(false);
+  const [deGarde, setDeGarde] = useState(false);
 
   React.useEffect(() => {
     const raw = isPharmacie ? data?.horaires : data?.horaires;
     if (raw) setHoraires(JSON.parse(JSON.stringify(parseJsonObject(raw, {}))));
+    if (isPharmacie && data?.profil) {
+      setDeGarde(!!data.profil.de_garde);
+    }
   }, [data, isPharmacie]);
 
   if (isLoading) return <Spinner />;
@@ -36,6 +41,19 @@ export default function PharmacieHorairesPage() {
 
   const updateJour = (jour, field, value) => {
     setHoraires({ ...h, [jour]: { ...h[jour], [field]: value } });
+  };
+
+  const toggleGarde = async () => {
+    if (!isPharmacie) return;
+    try {
+      const next = !deGarde;
+      await updateGarde.mutateAsync({ de_garde: next });
+      setDeGarde(next);
+      toast.success(next ? 'Pharmacie signalée de garde' : 'Mode garde désactivé');
+      refetch();
+    } catch {
+      toast.error('Impossible de mettre à jour le statut de garde');
+    }
   };
 
   const save = async () => {
@@ -61,10 +79,27 @@ export default function PharmacieHorairesPage() {
         )}
       </div>
 
-      <Card style={{ padding: 24, maxWidth: 520 }}>
+      <Card style={{ padding: 24, maxWidth: 520, marginBottom: 16 }}>
+        {isPharmacie && (
+          <div style={{ marginBottom: 20, padding: 14, borderRadius: 10, background: deGarde ? '#FEF3C7' : '#F8FAFC', border: '1px solid #E2E8F0' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontWeight: 600 }}>
+              <input
+                type="checkbox"
+                checked={deGarde}
+                onChange={toggleGarde}
+                disabled={updateGarde.isPending}
+              />
+              Pharmacie de garde (visible en priorité dans l&apos;annuaire)
+            </label>
+            <p style={{ margin: '8px 0 0', fontSize: '0.8rem', color: '#64748B' }}>
+              Activez ce statut lorsque vous assurez la garde pharmaceutique. Les patients vous trouveront en premier via GPS.
+            </p>
+          </div>
+        )}
+
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
           <input type="checkbox" checked={!!h.h24} disabled={!editMode} onChange={(e) => setHoraires({ ...h, h24: e.target.checked })} />
-          Ouvert 24h/24 (pharmacie de garde)
+          Ouvert 24h/24
         </label>
 
         {!h.h24 && JOURS.map((jour) => (

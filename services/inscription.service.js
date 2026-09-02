@@ -8,29 +8,64 @@ const {
 } = require('../utils/constants');
 const { saveFichier, mapTypeFichier } = require('./fichier.service');
 const { validerCoordonneesPaiement, OPERATEURS_MOBILE_MONEY } = require('../config/paiement');
-const adminAudit = require('./admin-audit.service');
+const { SPECIALITES_BY_PROFIL } = require('../config/cameroon-specialties');
 const emailService = require('./email.service');
 
 const SALT_ROUNDS = 12;
 
 const DOCUMENTS_REQUIS = {
-  medecin: ['diplome', 'carte_ordre'],
-  infirmier: ['diplome', 'carte_ordre'],
-  aide_soignant: ['diplome'],
-  sage_femme: ['diplome', 'carte_ordre'],
-  kinesitherapeute: ['diplome', 'carte_ordre'],
-  pharmacie: ['agrement', 'autorisation'],
-  hopital: ['agrement', 'autorisation'],
-  clinique: ['agrement', 'autorisation'],
+  medecin: ['piece_identite', 'diplome', 'carte_ordre', 'casier_judiciaire'],
+  infirmier: ['piece_identite', 'diplome', 'carte_ordre', 'casier_judiciaire'],
+  aide_soignant: ['piece_identite', 'diplome', 'casier_judiciaire'],
+  sage_femme: ['piece_identite', 'diplome', 'carte_ordre', 'casier_judiciaire'],
+  kinesitherapeute: ['piece_identite', 'diplome', 'carte_ordre', 'casier_judiciaire'],
+  pharmacie: ['piece_identite', 'agrement', 'autorisation'],
+  hopital: ['piece_identite', 'agrement', 'autorisation'],
+  clinique: ['piece_identite', 'agrement', 'autorisation'],
+};
+
+/** Documents utiles mais non obligatoires à l'inscription */
+const DOCUMENTS_OPTIONNELS = {
+  pharmacie: ['casier_judiciaire'],
 };
 
 const DOC_LABELS = {
-  diplome: 'Diplôme / attestation',
-  carte_ordre: 'Carte d\'ordre / inscription professionnelle',
-  agrement: 'Agrément',
-  autorisation: 'Autorisation MINSANTE',
+  piece_identite: 'Pièce d\'identité (CNI, passeport ou carte de séjour)',
+  casier_judiciaire: 'Extrait de casier judiciaire (bulletin n°3) ou attestation',
+  diplome: 'Diplôme / attestation de formation',
+  carte_ordre: 'Carte d\'ordre / inscription professionnelle (ONMC, ONI…)',
+  agrement: 'Agrément officiel de la structure',
+  autorisation: 'Autorisation d\'ouverture MINSANTE',
   document: 'Document',
 };
+
+const DOC_LABELS_BY_PROFIL = {
+  pharmacie: {
+    piece_identite: 'Pièce d\'identité du responsable / pharmacien titulaire',
+    casier_judiciaire: 'Casier judiciaire du pharmacien titulaire (optionnel)',
+    agrement: 'Agrément d\'officine pharmaceutique',
+  },
+  hopital: {
+    piece_identite: 'Pièce d\'identité du représentant légal',
+    agrement: 'Agrément / autorisation de l\'établissement',
+    autorisation: 'Autorisation d\'exploitation MINSANTE',
+  },
+  clinique: {
+    piece_identite: 'Pièce d\'identité du représentant légal',
+    agrement: 'Agrément / autorisation de la clinique',
+    autorisation: 'Autorisation d\'exploitation MINSANTE',
+  },
+};
+
+const NOTES_DOCUMENTS = {
+  soignant: 'Pièce d\'identité et casier judiciaire obligatoires pour les professionnels de santé. Diplôme et carte d\'ordre complètent la validation.',
+  structure: 'Pièce d\'identité du représentant légal obligatoire. Agrément et autorisation MINSANTE requis pour valider la structure (pas de casier pour une personne morale).',
+};
+
+const getLabelsForProfil = (typeProfil) => ({
+  ...DOC_LABELS,
+  ...(DOC_LABELS_BY_PROFIL[typeProfil] || {}),
+});
 
 const ROLE_BY_TYPE = {
   medecin: USER_ROLES.MEDECIN,
@@ -124,6 +159,27 @@ const creerInscription = async (payload, files = []) => {
     throw error;
   }
 
+  if (!files.some((f) => f.fieldname === 'piece_identite')) {
+    const error = new Error(
+      isSoignant(type_profil)
+        ? 'Pièce d\'identité obligatoire à l\'inscription (CNI, passeport ou carte de séjour)'
+        : 'Pièce d\'identité du représentant légal obligatoire (CNI, passeport ou carte de séjour)',
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (isSoignant(type_profil)) {
+    const casierOk = rest.declaration_casier_vierge === true
+      || rest.declaration_casier_vierge === 'true'
+      || files.some((f) => f.fieldname === 'casier_judiciaire');
+    if (!casierOk) {
+      const error = new Error('Vous devez fournir un casier judiciaire ou certifier sur l\'honneur qu\'il est vierge (case à cocher)');
+      error.statusCode = 400;
+      throw error;
+    }
+  }
+
   const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
   let compte;
   let role;
@@ -203,6 +259,8 @@ const creerInscription = async (payload, files = []) => {
       paiement: coordonneesPaiement,
       accept_cgu: true,
       accept_cgu_at: new Date().toISOString(),
+      declaration_casier_vierge: isSoignant(type_profil)
+        && !!(rest.declaration_casier_vierge === true || rest.declaration_casier_vierge === 'true'),
       documents_manquants: manquants,
     },
     statut: manquants.length ? 'documents_manquants' : 'en_revision',
@@ -439,7 +497,11 @@ module.exports = {
   listerEnAttente,
   getStatutDemande,
   DOCUMENTS_REQUIS,
+  DOCUMENTS_OPTIONNELS,
   DOC_LABELS,
+  DOC_LABELS_BY_PROFIL,
+  NOTES_DOCUMENTS,
+  getLabelsForProfil,
   OPERATEURS_MOBILE_MONEY,
   sanitizeInscriptionForAdmin,
 };

@@ -79,6 +79,16 @@ const updateHoraires = async (req, res, next) => {
   }
 };
 
+const updateGarde = async (req, res, next) => {
+  try {
+    const etab = getEtab(req);
+    const result = await etablissementService.updateGarde(etab.id, req.body);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const updateLocalisation = async (req, res, next) => {
   try {
     const etab = getEtab(req);
@@ -112,5 +122,5 @@ const uploadPhoto = async (req, res, next) => {
 
 module.exports = {
   lister, getById, getHoraires, getPublications, getPharmacieDashboard, getStructureDashboard,
-  updateProfil, updateHoraires, updateLocalisation, uploadPhoto,
+  updateProfil, updateHoraires, updateGarde, updateLocalisation, uploadPhoto,
 };

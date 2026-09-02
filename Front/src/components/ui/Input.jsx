@@ -1,5 +1,7 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useState } from 'react';
 import styled, { css } from 'styled-components';
+import { useTranslation } from 'react-i18next';
+import { Eye, EyeOff } from 'lucide-react';
 
 const Wrapper = styled.div`
   display: flex;
@@ -23,6 +25,7 @@ const StyledInput = styled.input`
   width: 100%;
   padding: 10px 14px;
   padding-left: ${({ $hasIcon }) => ($hasIcon ? '42px' : '14px')};
+  padding-right: ${({ $hasToggle }) => ($hasToggle ? '42px' : '14px')};
   font-size: ${({ theme }) => theme.typography.sizes.base};
   color: ${({ theme }) => theme.colors.text};
   background: ${({ theme }) => theme.colors.surface};
@@ -71,18 +74,63 @@ const IconWrapper = styled.span`
   svg { width: 18px; height: 18px; }
 `;
 
+const ToggleButton = styled.button`
+  position: absolute;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: none;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.textMuted};
+  cursor: pointer;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.text};
+  }
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+`;
+
 const ErrorText = styled.span`
   font-size: ${({ theme }) => theme.typography.sizes.xs};
   color: ${({ theme }) => theme.colors.danger[500]};
 `;
 
-const Input = forwardRef(({ label, error, icon: Icon, className, ...props }, ref) => {
+const Input = forwardRef(({ label, error, icon: Icon, className, type, ...props }, ref) => {
+    const { t } = useTranslation();
+    const [showPassword, setShowPassword] = useState(false);
+    const isPassword = type === 'password';
+    const inputType = isPassword && showPassword ? 'text' : type;
+
     return (
         <Wrapper className={className}>
             {label && <Label>{label}</Label>}
             <InputContainer>
                 {Icon && <IconWrapper><Icon /></IconWrapper>}
-                <StyledInput ref={ref} $hasIcon={!!Icon} $error={!!error} {...props} />
+                <StyledInput
+                  ref={ref}
+                  $hasIcon={!!Icon}
+                  $hasToggle={isPassword}
+                  $error={!!error}
+                  type={inputType}
+                  {...props}
+                />
+                {isPassword && (
+                  <ToggleButton
+                    type="button"
+                    aria-label={showPassword ? t('auth.hide_password') : t('auth.show_password')}
+                    aria-pressed={showPassword}
+                    onClick={() => setShowPassword((v) => !v)}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff aria-hidden /> : <Eye aria-hidden />}
+                  </ToggleButton>
+                )}
             </InputContainer>
             {error && <ErrorText role="alert">{error}</ErrorText>}
         </Wrapper>

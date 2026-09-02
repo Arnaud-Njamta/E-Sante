@@ -211,6 +211,32 @@ const updateHoraires = async (etablissementId, horaires) => {
   return etab.horaires_ouverture;
 };
 
+const updateGarde = async (etablissementId, { de_garde, garde_jusqu_a }) => {
+  const etab = await Etablissement.findByPk(etablissementId);
+  if (!etab) {
+    const error = new Error('Établissement non trouvé');
+    error.statusCode = 404;
+    throw error;
+  }
+  if (etab.type !== 'pharmacie') {
+    const error = new Error('Réservé aux pharmacies');
+    error.statusCode = 400;
+    throw error;
+  }
+  etab.de_garde = !!de_garde;
+  if (garde_jusqu_a) {
+    etab.garde_jusqu_a = new Date(garde_jusqu_a);
+  } else if (etab.de_garde) {
+    const fin = new Date();
+    fin.setHours(23, 59, 59, 999);
+    etab.garde_jusqu_a = fin;
+  } else {
+    etab.garde_jusqu_a = null;
+  }
+  await etab.save();
+  return { de_garde: etab.de_garde, garde_jusqu_a: etab.garde_jusqu_a };
+};
+
 const updateLocalisation = async (etablissementId, { latitude, longitude, adresse, ville, region }) => {
   const etab = await Etablissement.findByPk(etablissementId);
   if (!etab) {
@@ -257,5 +283,5 @@ const getPublications = async (etablissementId) => {
 
 module.exports = {
   lister, getById, getHoraires, getPharmacieDashboard, getStructureDashboard,
-  updateProfil, updateHoraires, updateLocalisation, uploadPhoto, getPublications,
+  updateProfil, updateHoraires, updateGarde, updateLocalisation, uploadPhoto, getPublications,
 };

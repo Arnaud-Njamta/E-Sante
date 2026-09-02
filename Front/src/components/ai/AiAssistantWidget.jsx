@@ -6,6 +6,7 @@ import {
   Shield, Video, UserRound, Calendar, BookHeart,
 } from 'lucide-react';
 import { useAiChat, useAiBookRdv, useAiStatus } from '../../hooks/useAiAssistant';
+import useGeolocation from '../../hooks/useGeolocation';
 import { useAjouterObservationCarnet } from '../../hooks/useCarnetMedical';
 import useMediaQuery from '../../hooks/useMediaQuery';
 import { useTheme } from 'styled-components';
@@ -440,7 +441,9 @@ function MessageContent({ msg, onBookSlot, bookingKey, isPatient, onSaveToCarnet
       <RecCard key={rec.id}>
         <div className="name">{rec.nom}</div>
         <div className="spec">
-          {rec.specialite}{rec.ville ? ` · ${rec.ville}` : ''}{rec.note ? ` · ★ ${rec.note}` : ''}
+          {rec.specialite}{rec.ville ? ` · ${rec.ville}` : ''}
+          {rec.distance_km != null ? ` · ${rec.distance_km < 1 ? `${Math.round(rec.distance_km * 1000)} m` : `${rec.distance_km} km`}` : ''}
+          {rec.note ? ` · ★ ${rec.note}` : ''}
         </div>
         <div className="motif">{rec.motif}</div>
         {rec.creneaux?.length > 0 && (
@@ -511,6 +514,7 @@ export default function AiAssistantWidget() {
   const bookRdv = useAiBookRdv();
   const ajouterObservation = useAjouterObservationCarnet();
   const { data: aiStatus } = useAiStatus(open);
+  const { coords, hasLocation } = useGeolocation({ enabled: open && isPatient });
   const bottomRef = useRef(null);
 
   const handleBookSlot = async (rec, slot, key) => {
@@ -557,7 +561,10 @@ export default function AiAssistantWidget() {
     setInput('');
 
     try {
-      const data = await chat.mutateAsync({ message, history });
+      const geo = hasLocation && coords
+        ? { latitude: coords.latitude, longitude: coords.longitude }
+        : {};
+      const data = await chat.mutateAsync({ message, history, ...geo });
       setMessages((prev) => [...prev, {
         role: 'assistant',
         content: data.reply,
@@ -575,7 +582,7 @@ export default function AiAssistantWidget() {
         content: `⚠️ ${msg}\n\n${EMERGENCY_FOOTER}`,
       }]);
     }
-  }, [chat, input, messages]);
+  }, [chat, input, messages, coords, hasLocation]);
 
   useEffect(() => {
     const handler = (event) => {

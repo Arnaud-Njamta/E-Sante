@@ -13,6 +13,7 @@ router.get('/pharmacie/dashboard', authMiddleware, requireRole('pharmacie'), eta
 router.get('/structure/dashboard', authMiddleware, requireRole(...structureRoles), etablissementController.getStructureDashboard);
 router.put('/me/profil', authMiddleware, requireRole(...structureRoles), etablissementController.updateProfil);
 router.put('/me/horaires', authMiddleware, requireRole(...structureRoles), etablissementController.updateHoraires);
+router.put('/me/garde', authMiddleware, requireRole('pharmacie'), etablissementController.updateGarde);
 router.put('/me/localisation', authMiddleware, requireRole(...structureRoles), etablissementController.updateLocalisation);
 router.post('/me/photo', authMiddleware, requireRole(...structureRoles), handleUpload(uploadImage.single('photo')), etablissementController.uploadPhoto);
 

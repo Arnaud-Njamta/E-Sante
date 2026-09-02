@@ -14,14 +14,13 @@ import ENDPOINTS from '../api/endpoints';
 import {
   User, Mail, Phone, CalendarDays, Clock, Save,
   Shield, Bell, Sun, Sunset, Moon,
-  Camera, Download, Lock, Info, Trash2, MapPin, LogOut, Globe,
+  Camera, Download, Lock, Info, Trash2, MapPin, LogOut,
 } from 'lucide-react';
 import { CAMEROON_REGIONS, VILLES_PAR_REGION } from '../config/cameroonRegions';
 import { PATIENT_SIMPLIFIED_MODE } from '../config/patientSimplified';
 import PatientMobileProfileHero from '../components/patient/PatientMobileProfileHero';
 import UserAvatar from '../components/ui/UserAvatar';
 import LanguageSwitcher from '../components/ui/LanguageSwitcher';
-import { normalizeSupportedLang } from '../i18n/syncLanguage';
 import { useUploadPatientPhoto } from '../hooks/usePatientProfile';
 import { PushNotificationToggle } from '../components/patient/PushNotificationPrompt';
 import { BOTTOM_NAV_HEIGHT } from '../components/layout/PatientBottomNav';
@@ -64,40 +63,6 @@ const MobilePageHeader = styled.div`
       margin: 4px 0 0;
     }
   }
-`;
-
-const MobileProfileToolbar = styled.div`
-  display: none;
-
-  @media (max-width: ${({ theme }) => theme.breakpoints.md}) {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: ${({ theme }) => theme.spacing[4]};
-    padding: 12px 14px;
-    border-radius: ${({ theme }) => theme.radii.lg};
-    border: 1px solid ${({ theme }) => theme.colors.border};
-    background: ${({ theme }) => theme.colors.surface};
-    animation: fadeIn 0.4s ease both;
-  }
-`;
-
-const MobileToolbarLabel = styled.span`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
-
-const MobileToolbarActions = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
 `;
 
 /* Personal Info Section */
@@ -386,7 +351,7 @@ const ModalCard = styled(Card)`
 /* ─── Component ─── */
 export default function ProfilePage() {
   const { user, role, updateProfile, logout } = useAuth();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const uploadPhoto = useUploadPatientPhoto();
   const photoInputRef = React.useRef(null);
@@ -435,7 +400,6 @@ export default function ProfilePage() {
         date_naissance: formData.dateNaissance,
         region: region || null,
         ville: ville || null,
-        langue: normalizeSupportedLang(i18n.language),
       });
       toast.success(t('toasts.profile_saved'));
     } catch (err) {
@@ -533,33 +497,13 @@ export default function ProfilePage() {
         <PatientMobileProfileHero />
       )}
 
-      <MobileProfileToolbar>
-        <MobileToolbarLabel>
-          <Globe size={15} />
-          {t('common.language')}
-        </MobileToolbarLabel>
-        <MobileToolbarActions>
-          <LanguageSwitcher variant="toggle" />
-          <PushNotificationToggle />
-          <Button
-            size="sm"
-            icon={Save}
-            type="button"
-            onClick={handleSubmit(onSubmit)}
-            disabled={saving}
-          >
-            {saving ? t('profile.saving') : t('profile.save')}
-          </Button>
-        </MobileToolbarActions>
-      </MobileProfileToolbar>
-
       <PageHeader>
         <div>
           <h1>{t('profile.title')}</h1>
           <p>{t('profile.subtitle')}</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <LanguageSwitcher />
+          <LanguageSwitcher variant="toggle" />
           <PushNotificationToggle />
           <Button icon={Save} onClick={handleSubmit(onSubmit)} disabled={saving}>
           {saving ? t('profile.saving') : t('profile.save')}

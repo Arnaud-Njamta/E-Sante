@@ -3,7 +3,7 @@ import { flushSync } from 'react-dom';
 import client from '../api/client';
 import ENDPOINTS from '../api/endpoints';
 import { ROLES } from '../config/branding';
-import { applyLanguageFromProfile } from '../i18n/syncLanguage';
+import { applyLanguageFromProfile, getStoredLanguage, normalizeSupportedLang } from '../i18n/syncLanguage';
 import { prefetchPatientCore } from '../utils/routePrefetch';
 
 const AuthContext = createContext(null);
@@ -54,6 +54,13 @@ export function AuthProvider({ children }) {
             setRole(resolvedRole);
             localStorage.setItem(ROLE_KEY, resolvedRole);
             applyLanguageFromProfile(profile);
+            if (resolvedRole === ROLES.PATIENT && profile) {
+                const stored = getStoredLanguage();
+                const profileLng = normalizeSupportedLang(profile.langue);
+                if (stored && stored !== profileLng) {
+                    client.put(ENDPOINTS.patients.profile, { langue: stored }).catch(() => {});
+                }
+            }
             if (resolvedRole === ROLES.PATIENT) prefetchPatientCore();
         } catch {
             clearStoredAuth();

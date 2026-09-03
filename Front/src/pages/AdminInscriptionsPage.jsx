@@ -407,6 +407,38 @@ export default function AdminInscriptionsPage() {
                   </Meta>
                 )}
                 <Meta style={{ marginTop: 8, fontSize: '0.75rem' }}>Statut : {ins.statut}</Meta>
+                {(ins.alerte_fraude || ins.donnees?.reincription || (ins.historique_tentatives || []).length > 0) && (
+                  <div style={{
+                    marginTop: 10,
+                    padding: '10px 12px',
+                    borderRadius: 10,
+                    background: '#FFF7ED',
+                    border: '1px solid #FED7AA',
+                    color: '#9A3412',
+                    fontSize: '0.8rem',
+                    lineHeight: 1.45,
+                  }}
+                  >
+                    <strong>Surveillance fraude / réinscription</strong>
+                    <div style={{ marginTop: 4 }}>
+                      Cet email a déjà été utilisé pour une inscription ou un compte archivé
+                      {(ins.historique_tentatives || []).length
+                        ? ` (${ins.historique_tentatives.length} tentative(s) passée(s))`
+                        : ''}
+                      .
+                    </div>
+                    {(ins.historique_tentatives || []).slice(0, 3).map((h) => (
+                      <div key={h.id || `${h.statut}-${h.created_at}`} style={{ marginTop: 4, opacity: 0.9 }}>
+                        • {h.type_profil || 'pro'} — {h.statut}
+                        {h.motif_rejet ? ` — motif : ${h.motif_rejet}` : ''}
+                        {h.created_at ? ` — ${formatDate(h.created_at)}` : ''}
+                      </div>
+                    ))}
+                    <div style={{ marginTop: 6, fontSize: '0.75rem', color: '#C2410C' }}>
+                      Voir aussi le Journal de contrôle (réinscription / compte supprimé).
+                    </div>
+                  </div>
+                )}
               </div>
               <Actions>
                 <Button size="sm" variant="secondary" onClick={() => handlePreVerifier(ins.id)} disabled={preVerifier.isPending}>

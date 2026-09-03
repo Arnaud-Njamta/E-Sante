@@ -16,11 +16,32 @@ const SALT_ROUNDS = 12;
 const register = async ({
   email, password, nom, prenom, date_naissance, telephone, otp_verification_token,
 }) => {
-  const existingPatient = await Patient.findOne({ where: { email } });
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  const existingPatient = await Patient.findOne({ where: { email: normalizedEmail } });
   if (existingPatient) {
     const error = new Error('Un compte avec cet email existe déjà');
     error.statusCode = 409;
     throw error;
+  }
+
+  // Comptes pro inactifs/rejetés : ne bloquent pas un compte patient, mais on les archive pour libérer l'email unique côté pro
+  const inactiveMed = await Medecin.findAll({ where: { email: normalizedEmail } });
+  for (const m of inactiveMed) {
+    if (m.actif !== false && m.statut_validation !== STATUT_VALIDATION.REJETE && m.statut_validation !== STATUT_VALIDATION.SUSPENDU) {
+      const error = new Error('Un compte professionnel actif existe déjà avec cet email');
+      error.statusCode = 409;
+      throw error;
+    }
+    await m.update({ email: `archived+medecin.${m.id}.${Date.now()}@deleted.local`, actif: false });
+  }
+  const inactiveEtab = await Etablissement.findAll({ where: { email: normalizedEmail } });
+  for (const e of inactiveEtab) {
+    if (e.actif !== false && e.statut_validation !== STATUT_VALIDATION.REJETE && e.statut_validation !== STATUT_VALIDATION.SUSPENDU) {
+      const error = new Error('Un compte professionnel actif existe déjà avec cet email');
+      error.statusCode = 409;
+      throw error;
+    }
+    await e.update({ email: `archived+etab.${e.id}.${Date.now()}@deleted.local`, actif: false });
   }
 
   let normalizedPhone = telephone;
@@ -46,7 +67,7 @@ const register = async ({
   const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
 
   const patient = await Patient.create({
-    email,
+    email: normalizedEmail,
     password_hash,
     nom,
     prenom,
@@ -57,7 +78,7 @@ const register = async ({
 
   // Bienvenue e-mail (ne bloque pas l'inscription)
   setImmediate(() => {
-    emailService.sendWelcomeEmail({ email, prenom, nom }).catch(() => {});
+    emailService.sendWelcomeEmail({ email: normalizedEmail, prenom, nom }).catch(() => {});
   });
 
   const token = generateToken(patient.id, USER_ROLES.PATIENT, tokenPayload(patient));

@@ -98,6 +98,8 @@ const ACTION_META = {
   inscription_patient: { label: 'Nouveau patient', variant: 'info' },
   inscription_validee: { label: 'Inscription validée', variant: 'ok' },
   inscription_rejetee: { label: 'Inscription rejetée', variant: 'warn' },
+  inscription_reinscription: { label: 'Réinscription (email déjà vu)', variant: 'warn' },
+  compte_supprime: { label: 'Compte supprimé', variant: 'warn' },
   document_consulte: { label: 'Document consulté', variant: 'info' },
   connexion: { label: 'Connexion', variant: 'ok' },
 };
@@ -127,6 +129,12 @@ function formatDetails(log) {
   if (d.motif_rejet) parts.push(`Motif : ${d.motif_rejet}`);
   if (d.nom_original) parts.push(`Fichier : ${d.nom_original}`);
   if (d.type_fichier) parts.push(`Type : ${d.type_fichier}`);
+  if (d.tentatives_anterieures != null) parts.push(`Tentatives antérieures : ${d.tentatives_anterieures}`);
+  if (d.reincription) parts.push('Réinscription');
+  if (Array.isArray(d.comptes_archives) && d.comptes_archives.length) {
+    parts.push(`Comptes archivés : ${d.comptes_archives.length}`);
+  }
+  if (d.note) parts.push(d.note);
   return parts.length ? parts.join(' · ') : JSON.stringify(d);
 }
 

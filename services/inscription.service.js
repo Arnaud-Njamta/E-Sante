@@ -113,7 +113,145 @@ const sanitizeInscriptionForAdmin = async (inscription) => {
       nom_original: map[d.fichier_id]?.nom_original || null,
     }));
   }
+
+  const emailKey = String(plain.email || '').toLowerCase();
+  if (emailKey) {
+    const anterieures = await InscriptionProfessionnel.findAll({
+      where: {
+        email: emailKey,
+        id: { [Op.ne]: plain.id },
+      },
+      attributes: ['id', 'statut', 'type_profil', 'motif_rejet', 'createdAt', 'date_validation'],
+      order: [['createdAt', 'DESC']],
+      limit: 10,
+    });
+    plain.tentatives_anterieures = anterieures.length
+      + (plain.donnees?.historique_email?.inscriptions_passees?.length || 0);
+    plain.historique_tentatives = [
+      ...(plain.donnees?.historique_email?.inscriptions_passees || []),
+      ...anterieures.map((i) => ({
+        id: i.id,
+        statut: i.statut,
+        type_profil: i.type_profil,
+        motif_rejet: i.motif_rejet,
+        created_at: i.createdAt,
+        date_validation: i.date_validation,
+      })),
+    ];
+    plain.alerte_fraude = plain.tentatives_anterieures > 0
+      || !!plain.donnees?.reincription
+      || (plain.donnees?.historique_email?.comptes_archives?.length > 0);
+  }
+
   return plain;
+};
+
+const isCompteActifBloquant = (entity) => {
+  if (!entity) return false;
+  if (entity.actif === false) return false;
+  const statut = entity.statut_validation;
+  if (statut === STATUT_VALIDATION.REJETE || statut === STATUT_VALIDATION.SUSPENDU) return false;
+  return true;
+};
+
+/** Libère l'email des comptes inactifs/rejetés (garde une trace pour l'admin). */
+const archiverCompteInactif = async (entity, roleLabel) => {
+  const oldEmail = entity.email;
+  const archivedEmail = `archived+${roleLabel}.${entity.id}.${Date.now()}@deleted.local`;
+  await entity.update({
+    email: archivedEmail,
+    actif: false,
+  });
+  return {
+    role: roleLabel,
+    id: entity.id,
+    email_origine: oldEmail,
+    email_archive: archivedEmail,
+    statut_validation: entity.statut_validation,
+    nom: entity.nom || entity.prenom || null,
+  };
+};
+
+/**
+ * Vérifie si l'email bloque une nouvelle inscription.
+ * - Compte actif / en attente de validation → bloquant
+ * - Compte rejeté / inactif / archivé → non bloquant (email libéré + historique)
+ */
+const preparerEmailPourInscription = async (email) => {
+  const normalized = String(email || '').trim().toLowerCase();
+  const historique = {
+    email: normalized,
+    comptes_archives: [],
+    inscriptions_passees: [],
+  };
+
+  const existPatient = await Patient.findOne({ where: { email: normalized } });
+  if (existPatient) {
+    return {
+      blocking: true,
+      message: 'Un compte patient existe déjà avec cet email',
+      historique,
+    };
+  }
+
+  const medecins = await Medecin.findAll({ where: { email: normalized } });
+  for (const m of medecins) {
+    if (isCompteActifBloquant(m)) {
+      return {
+        blocking: true,
+        message: 'Un compte professionnel actif existe déjà avec cet email',
+        historique,
+      };
+    }
+    historique.comptes_archives.push(await archiverCompteInactif(m, 'medecin'));
+  }
+
+  const etabs = await Etablissement.findAll({ where: { email: normalized } });
+  for (const e of etabs) {
+    if (isCompteActifBloquant(e)) {
+      return {
+        blocking: true,
+        message: 'Un compte structure actif existe déjà avec cet email',
+        historique,
+      };
+    }
+    historique.comptes_archives.push(await archiverCompteInactif(e, e.type || 'etablissement'));
+  }
+
+  const pendingInscription = await InscriptionProfessionnel.findOne({
+    where: {
+      email: normalized,
+      statut: { [Op.in]: ['en_attente', 'en_revision', 'documents_manquants'] },
+    },
+  });
+  if (pendingInscription) {
+    return {
+      blocking: true,
+      message: 'Une demande d\'inscription est déjà en cours avec cet email',
+      historique,
+    };
+  }
+
+  const pastInscriptions = await InscriptionProfessionnel.findAll({
+    where: { email: normalized },
+    order: [['createdAt', 'DESC']],
+    attributes: ['id', 'statut', 'type_profil', 'motif_rejet', 'createdAt', 'date_validation'],
+  });
+  historique.inscriptions_passees = pastInscriptions.map((i) => ({
+    id: i.id,
+    statut: i.statut,
+    type_profil: i.type_profil,
+    motif_rejet: i.motif_rejet,
+    created_at: i.createdAt,
+    date_validation: i.date_validation,
+  }));
+
+  return {
+    blocking: false,
+    email: normalized,
+    historique,
+    reincription: historique.comptes_archives.length > 0 || historique.inscriptions_passees.length > 0,
+  };
 };
 
 /**
@@ -142,18 +280,13 @@ const creerInscription = async (payload, files = []) => {
     numero_marchand: rest.numero_marchand,
   });
 
-  const existPatient = await Patient.findOne({ where: { email } });
-  const existMedecin = await Medecin.findOne({ where: { email } });
-  const existEtab = await Etablissement.findOne({ where: { email } });
-  const existInscription = await InscriptionProfessionnel.findOne({
-    where: { email, statut: ['en_attente', 'en_revision', 'documents_manquants'] },
-  });
-
-  if (existPatient || existMedecin || existEtab || existInscription) {
-    const error = new Error('Un compte ou une demande existe déjà avec cet email');
+  const emailPrep = await preparerEmailPourInscription(email);
+  if (emailPrep.blocking) {
+    const error = new Error(emailPrep.message || 'Un compte ou une demande existe déjà avec cet email');
     error.statusCode = 409;
     throw error;
   }
+  const normalizedEmail = emailPrep.email;
 
   if (!ROLE_BY_TYPE[type_profil]) {
     const error = new Error('Type de profil professionnel invalide');
@@ -191,7 +324,7 @@ const creerInscription = async (payload, files = []) => {
     compte = await Medecin.create({
       nom: rest.nom,
       prenom: rest.prenom,
-      email,
+      email: normalizedEmail,
       telephone: rest.telephone,
       specialite: rest.specialite || PROFESSION_SANTE_LABELS[type_profil] || type_profil,
       profession: type_profil,
@@ -211,7 +344,7 @@ const creerInscription = async (payload, files = []) => {
     compte = await Etablissement.create({
       type: typeMap[type_profil],
       nom: rest.nom_structure || rest.nom,
-      email,
+      email: normalizedEmail,
       telephone: rest.telephone,
       ville: rest.ville,
       region: rest.region,
@@ -253,7 +386,7 @@ const creerInscription = async (payload, files = []) => {
   try {
     inscription = await InscriptionProfessionnel.create({
       type_profil,
-      email,
+      email: normalizedEmail,
       nom: rest.nom,
       prenom: rest.prenom,
       nom_structure: rest.nom_structure,
@@ -273,6 +406,8 @@ const creerInscription = async (payload, files = []) => {
           && !!(rest.declaration_casier_vierge === true || rest.declaration_casier_vierge === 'true'),
         documents_manquants: manquants,
         upload_errors: uploadErrors.length ? uploadErrors : undefined,
+        historique_email: emailPrep.historique,
+        reincription: !!emailPrep.reincription,
       },
       statut: manquants.length ? 'documents_manquants' : 'en_revision',
       documents: docs,
@@ -288,18 +423,24 @@ const creerInscription = async (payload, files = []) => {
 
   await adminAudit.log({
     categorie: adminAudit.CATEGORIES.INSCRIPTION,
-    action: adminAudit.ACTIONS.INSCRIPTION_SOUMISE,
+    action: emailPrep.reincription
+      ? adminAudit.ACTIONS.INSCRIPTION_REINSCRIPTION
+      : adminAudit.ACTIONS.INSCRIPTION_SOUMISE,
     cible_type: 'inscription',
     cible_id: inscription.id,
     details: {
       type_profil,
-      email,
+      email: normalizedEmail,
       compte_id: compte.id,
       statut: inscription.statut,
       documents_fournis: fournis,
       documents_manquants: manquants,
       compte_cree_immediatement: true,
       upload_errors: uploadErrors.length ? uploadErrors : undefined,
+      reincription: !!emailPrep.reincription,
+      tentatives_anterieures: emailPrep.historique?.inscriptions_passees?.length || 0,
+      comptes_archives: emailPrep.historique?.comptes_archives || [],
+      inscriptions_passees: emailPrep.historique?.inscriptions_passees || [],
     },
   }).catch((err) => {
     console.warn('Audit inscription ignoré:', err.message);
@@ -311,7 +452,7 @@ const creerInscription = async (payload, files = []) => {
 
   setImmediate(() => {
     emailService.sendInscriptionProRecueEmail({
-      email,
+      email: normalizedEmail,
       prenom: rest.prenom,
       nom: rest.nom,
       nom_structure: rest.nom_structure,

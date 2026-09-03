@@ -5,6 +5,8 @@ const ACTIONS = {
   INSCRIPTION_PATIENT: 'inscription_patient',
   INSCRIPTION_VALIDEE: 'inscription_validee',
   INSCRIPTION_REJETEE: 'inscription_rejetee',
+  INSCRIPTION_REINSCRIPTION: 'inscription_reinscription',
+  COMPTE_SUPPRIME: 'compte_supprime',
   DOCUMENT_CONSULTE: 'document_consulte',
   CONNEXION: 'connexion',
 };

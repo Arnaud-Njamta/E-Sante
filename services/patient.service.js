@@ -195,7 +195,33 @@ const deletePatientAccount = async (patientId, { password, confirmation }) => {
       await Conversation.destroy({ where: { id: convIds }, transaction: t });
     }
 
+    const snapshot = {
+      email: patient.email,
+      nom: patient.nom,
+      prenom: patient.prenom,
+      telephone: patient.telephone,
+      patient_id: patient.id,
+    };
+
     await patient.destroy({ transaction: t });
+
+    setImmediate(() => {
+      try {
+        const adminAudit = require('./admin-audit.service');
+        adminAudit.log({
+          categorie: adminAudit.CATEGORIES.AUTH,
+          action: adminAudit.ACTIONS.COMPTE_SUPPRIME,
+          cible_type: 'patient',
+          cible_id: patientId,
+          details: {
+            ...snapshot,
+            note: 'Compte patient supprimé — l\'email peut être réutilisé pour une nouvelle inscription. Conservé pour surveillance fraude.',
+          },
+        }).catch(() => {});
+      } catch {
+        // ignore
+      }
+    });
   });
 
   return { message: 'Compte et données associées supprimés définitivement.' };

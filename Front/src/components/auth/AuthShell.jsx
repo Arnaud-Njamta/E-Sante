@@ -222,34 +222,65 @@ export const SelectWrap = styled.div`
   &::after {
     content: '';
     position: absolute;
-    right: 2px;
-    bottom: 18px;
-    width: 8px;
-    height: 8px;
-    border-right: 2px solid ${INK};
-    border-bottom: 2px solid ${INK};
+    top: 50%;
+    right: 14px;
+    width: 7px;
+    height: 7px;
+    margin-top: -5px;
+    border-right: 1.75px solid ${MUTED};
+    border-bottom: 1.75px solid ${MUTED};
     transform: rotate(45deg);
     pointer-events: none;
-    opacity: 0.7;
+    transition: border-color 0.15s ease;
+  }
+
+  &:focus-within::after {
+    border-color: ${DEEP};
   }
 `;
 
 export const FieldSelect = styled.select`
   width: 100%;
-  padding: 14px 28px 12px 0;
+  height: 48px;
+  padding: 0 40px 0 14px;
   font-family: ${SANS};
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 500;
+  letter-spacing: -0.01em;
   color: ${INK};
-  background: transparent;
-  border: none;
-  border-bottom: 1.5px solid ${LINE};
-  border-radius: 0;
+  background: #FAFAF9;
+  border: 1px solid ${LINE};
+  border-radius: 10px;
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
+  -moz-appearance: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 
-  &:focus { outline: none; border-bottom-color: ${DEEP}; }
+  &:hover {
+    background: #F5F5F4;
+    border-color: #D6D3D1;
+  }
+
+  &:focus {
+    outline: none;
+    background: #fff;
+    border-color: ${DEEP};
+    box-shadow: 0 0 0 3px rgba(11, 61, 48, 0.12);
+  }
+
+  option {
+    font-weight: 500;
+    color: ${INK};
+    background: #fff;
+    padding: 10px;
+  }
+
+  option:disabled,
+  option[value=''] {
+    color: #A8A29E;
+  }
 `;
 
 export const OperateurGrid = styled.div`

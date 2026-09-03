@@ -48,7 +48,7 @@ const PhoneRow = styled.div`
 
   .prefix {
     flex: 0 0 auto;
-    min-width: 72px;
+    min-width: 78px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -59,9 +59,31 @@ const PhoneRow = styled.div`
     color: #44403C;
     font-weight: 700;
     font-size: 0.9rem;
+    letter-spacing: -0.01em;
   }
 
-  input { flex: 1; }
+  input {
+    flex: 1;
+    height: 48px;
+    padding: 0 14px;
+    border: 1px solid #E7E5E4;
+    border-radius: 10px;
+    background: #FAFAF9;
+    border-bottom: 1px solid #E7E5E4;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+
+    &:hover {
+      background: #F5F5F4;
+      border-color: #D6D3D1;
+    }
+
+    &:focus {
+      outline: none;
+      background: #fff;
+      border-color: #0B3D30;
+      box-shadow: 0 0 0 3px rgba(11, 61, 48, 0.12);
+    }
+  }
 `;
 
 const TYPES = [

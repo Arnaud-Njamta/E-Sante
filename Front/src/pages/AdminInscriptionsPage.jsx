@@ -113,6 +113,179 @@ const ACTION_LABELS = {
   document_consulte: 'Document consulté',
 };
 
+const VERDICT_STYLES = {
+  favorable: { bg: '#ECFDF5', border: '#A7F3D0', color: '#047857', label: 'Favorable' },
+  acceptable: { bg: '#ECFDF5', border: '#A7F3D0', color: '#047857', label: 'Acceptable' },
+  douteux: { bg: '#FFFBEB', border: '#FDE68A', color: '#B45309', label: 'Douteux' },
+  insuffisant: { bg: '#FFF7ED', border: '#FED7AA', color: '#C2410C', label: 'Insuffisant' },
+  rejete: { bg: '#FEF2F2', border: '#FECACA', color: '#B91C1C', label: 'Rejeté' },
+};
+
+const AiReportCard = styled.div`
+  margin-top: 14px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid ${({ $border }) => $border || '#E2E8F0'};
+  background: ${({ $bg }) => $bg || '#F8FAFC'};
+`;
+
+const AiReportHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+`;
+
+const AiVerdict = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: ${({ $color }) => $color};
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid ${({ $border }) => $border};
+`;
+
+const AiMessage = styled.p`
+  margin: 0 0 12px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: ${({ theme }) => theme.colors.text};
+`;
+
+const AiSectionTitle = styled.h4`
+  margin: 14px 0 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.colors.textMuted};
+`;
+
+const AiSourceList = styled.ul`
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const AiSourceItem = styled.li`
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid ${({ theme }) => theme.colors.border};
+
+  a {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: ${({ theme }) => theme.colors.deep};
+    text-decoration: none;
+    &:hover { text-decoration: underline; }
+  }
+
+  p {
+    margin: 4px 0 0;
+    font-size: 0.78rem;
+    color: ${({ theme }) => theme.colors.textSecondary};
+    line-height: 1.4;
+  }
+`;
+
+const AiAnalysisList = styled.ul`
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  li {
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid ${({ theme }) => theme.colors.border};
+    font-size: 0.82rem;
+    color: ${({ theme }) => theme.colors.text};
+    line-height: 1.45;
+  }
+`;
+
+function AiVerificationReport({ report }) {
+  if (!report) return null;
+  const style = VERDICT_STYLES[report.verdict_global] || {
+    bg: '#F8FAFC', border: '#E2E8F0', color: '#475569', label: report.verdict_global || 'Indéterminé',
+  };
+  const analyses = Array.isArray(report.analyses) ? report.analyses : [];
+  const sources = Array.isArray(report.sources_officielles) ? report.sources_officielles : [];
+
+  return (
+    <AiReportCard $bg={style.bg} $border={style.border}>
+      <AiReportHeader>
+        <strong style={{ fontSize: '0.88rem' }}>Rapport IA (indicatif)</strong>
+        <AiVerdict $color={style.color} $border={style.border}>
+          <Sparkles size={12} /> {style.label}
+        </AiVerdict>
+      </AiReportHeader>
+
+      {report.message && <AiMessage>{report.message}</AiMessage>}
+
+      {analyses.length > 0 ? (
+        <>
+          <AiSectionTitle>Analyses documents</AiSectionTitle>
+          <AiAnalysisList>
+            {analyses.map((a, idx) => (
+              <li key={a.document || a.type || idx}>
+                <strong>{a.document || a.type || `Document ${idx + 1}`}</strong>
+                {a.verdict && <> — {a.verdict}</>}
+                {a.message && <div style={{ marginTop: 4, opacity: 0.85 }}>{a.message}</div>}
+                {a.score_confiance != null && (
+                  <div style={{ marginTop: 4, fontSize: '0.75rem', color: '#64748B' }}>
+                    Confiance : {a.score_confiance}%
+                  </div>
+                )}
+              </li>
+            ))}
+          </AiAnalysisList>
+        </>
+      ) : (
+        <>
+          <AiSectionTitle>Analyses documents</AiSectionTitle>
+          <AiMessage style={{ marginBottom: 0, color: '#64748B' }}>
+            Aucune pièce jointe à analyser pour ce dossier.
+          </AiMessage>
+        </>
+      )}
+
+      {sources.length > 0 && (
+        <>
+          <AiSectionTitle>Sources officielles à consulter</AiSectionTitle>
+          <AiSourceList>
+            {sources.map((s) => (
+              <AiSourceItem key={s.nom || s.url}>
+                {s.url ? (
+                  <a href={s.url} target="_blank" rel="noopener noreferrer">{s.nom}</a>
+                ) : (
+                  <strong style={{ fontSize: '0.84rem' }}>{s.nom}</strong>
+                )}
+                {s.usage && <p>{s.usage}</p>}
+              </AiSourceItem>
+            ))}
+          </AiSourceList>
+        </>
+      )}
+    </AiReportCard>
+  );
+}
+
 function formatDate(iso) {
   if (!iso) return '—';
   return new Date(iso).toLocaleString('fr-FR', {
@@ -248,6 +421,10 @@ export default function AdminInscriptionsPage() {
               </Actions>
             </div>
 
+            {(aiReports[ins.id] || ins.donnees?.ai_verification) && (
+              <AiVerificationReport report={aiReports[ins.id] || ins.donnees?.ai_verification} />
+            )}
+
             <ExpandBtn type="button" onClick={() => setExpanded(isOpen ? null : ins.id)}>
               {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               {isOpen ? 'Masquer le dossier' : `Voir le dossier (${ins.documents?.length || 0} document${(ins.documents?.length || 0) > 1 ? 's' : ''})`}
@@ -256,14 +433,6 @@ export default function AdminInscriptionsPage() {
             {isOpen && (
               <>
                 <AdminDocumentPanel documents={ins.documents} />
-                {(aiReports[ins.id] || ins.donnees?.ai_verification) && (
-                  <div style={{ marginTop: 12, padding: 12, background: '#F8FAFC', borderRadius: 8, fontSize: '0.82rem' }}>
-                    <strong>Rapport IA (indicatif)</strong>
-                    <pre style={{ whiteSpace: 'pre-wrap', margin: '8px 0 0', fontSize: '0.75rem' }}>
-                      {JSON.stringify(aiReports[ins.id] || ins.donnees?.ai_verification, null, 2)}
-                    </pre>
-                  </div>
-                )}
                 <InscriptionAuditTimeline inscriptionId={ins.id} />
               </>
             )}

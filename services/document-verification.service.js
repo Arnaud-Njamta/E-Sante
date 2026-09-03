@@ -1,6 +1,7 @@
 const fs = require('fs');
 const { Fichier, InscriptionProfessionnel } = require('../models');
-const { DOCUMENT_VERIFICATION_PROMPT } = require('../config/ai-prompts');
+const { buildDocumentVerificationPrompt } = require('../config/ai-prompts');
+const { getPays } = require('../config/registration-countries');
 const { callGemini } = require('../utils/gemini-client');
 const { DOC_LABELS } = require('./inscription.service');
 const { getFichierAbsolutePath } = require('./fichier.service');
@@ -12,32 +13,16 @@ const mimeToGemini = (mime) => {
   return 'image/jpeg';
 };
 
-const SOURCES_OFFICIELLES = [
-  {
-    nom: 'ONMC — Ordre National des Médecins du Cameroun',
-    usage: 'Inscription au tableau, carte professionnelle, attestation',
-    url: 'https://onmc.cm/',
-  },
-  {
-    nom: 'MINSANTE — vérification diplômes (QR / code)',
-    usage: 'Authentifier diplômes émis via scolarité MINSANTE',
-    url: 'https://scolarite.minsante.cm/verify',
-  },
-  {
-    nom: 'MINESUP — équivalence diplômes étrangers',
-    usage: 'Diplômes hors Cameroun / hors CAMES',
-    url: 'https://equivalence.cm',
-  },
-  {
-    nom: 'Loi exercice médecine (Cameroun)',
-    usage: 'Nul ne peut exercer sans inscription à l\'Ordre',
-    url: 'https://www.medcamer.org/',
-  },
-];
+const SOURCES_OFFICIELLES = getPays('CM').sources_verification || [];
+
+const sourcesPourPays = (paysCode) => {
+  const pays = getPays(paysCode);
+  return pays.sources_verification || SOURCES_OFFICIELLES;
+};
 
 /**
  * Première passe IA sur les documents d'une inscription.
- * Ne remplace JAMAIS la vérification humaine (ONMC / MINSANTE / équivalence.cm).
+ * Ne remplace JAMAIS la vérification humaine (ONMC / CNOM / ANS / MINSANTE…).
  */
 const preVerifierInscription = async (inscriptionId) => {
   const inscription = await InscriptionProfessionnel.findByPk(inscriptionId);
@@ -47,13 +32,23 @@ const preVerifierInscription = async (inscriptionId) => {
     throw error;
   }
 
+  const paysCode = inscription.pays
+    || inscription.donnees?.pays
+    || 'CM';
+  const paysCfg = getPays(paysCode);
+  const sources = sourcesPourPays(paysCode);
+  const ordreCfg = paysCfg.ordre?.[inscription.type_profil];
+  const sourcesHint = sources.map((s) => s.nom).join(' · ');
+  const prompt = buildDocumentVerificationPrompt(paysCfg.label, sourcesHint);
+
   const docs = inscription.documents || [];
   if (!docs.length) {
     return {
       verdict_global: 'insuffisant',
       message: 'Aucun document à analyser — demandez au professionnel de compléter son dossier.',
       analyses: [],
-      sources_officielles: SOURCES_OFFICIELLES,
+      pays: paysCode,
+      sources_officielles: sources,
     };
   }
 
@@ -65,11 +60,21 @@ const preVerifierInscription = async (inscriptionId) => {
   }
 
   const dossierCtx = {
+    pays: paysCode,
+    pays_label: paysCfg.label,
     type_profil: inscription.type_profil,
     nom: inscription.nom,
     prenom: inscription.prenom,
     nom_structure: inscription.nom_structure,
     numero_ordre: inscription.numero_ordre,
+    numero_ordre_attendu: ordreCfg
+      ? {
+        label: ordreCfg.label,
+        hint: ordreCfg.hint,
+        example: ordreCfg.example || null,
+        format: ordreCfg.pattern ? String(ordreCfg.pattern) : null,
+      }
+      : null,
     numero_agrement: inscription.numero_agrement,
     specialite: inscription.specialite,
     email: inscription.email,
@@ -108,7 +113,7 @@ const preVerifierInscription = async (inscriptionId) => {
       role: 'user',
       parts: [
         {
-          text: `${DOCUMENT_VERIFICATION_PROMPT}\n\nDossier déclaré :\n${JSON.stringify(dossierCtx, null, 2)}\n\nType de document attendu : ${doc.type} (${DOC_LABELS[doc.type] || doc.type})`,
+          text: `${prompt}\n\nDossier déclaré :\n${JSON.stringify(dossierCtx, null, 2)}\n\nType de document attendu : ${doc.type} (${DOC_LABELS[doc.type] || doc.type})`,
         },
         { inline_data: { mime_type: mime, data: b64 } },
       ],
@@ -155,14 +160,18 @@ const preVerifierInscription = async (inscriptionId) => {
     verdict_global = 'insuffisant';
   }
 
+  const avertissement = paysCode === 'FR'
+    ? 'Pré-analyse IA uniquement. Authentification légale = CNOM, Annuaire Santé (RPPS), ANS, ou contact direct avec l\'autorité émettrice.'
+    : 'Pré-analyse IA uniquement. Authentification légale = ONMC, MINSANTE (QR scolarite.minsante.cm), '
+      + 'équivalence MINESUP (equivalence.cm), ou contact direct avec l\'autorité émettrice.';
+
   const rapport = {
     verdict_global,
+    pays: paysCode,
     analyse_at: new Date().toISOString(),
     analyses,
-    sources_officielles: SOURCES_OFFICIELLES,
-    avertissement:
-      'Pré-analyse IA uniquement. Authentification légale = ONMC, MINSANTE (QR scolarite.minsante.cm), '
-      + 'équivalence MINESUP (equivalence.cm), ou contact direct avec l\'autorité émettrice.',
+    sources_officielles: sources,
+    avertissement,
   };
 
   inscription.donnees = {
@@ -177,4 +186,5 @@ const preVerifierInscription = async (inscriptionId) => {
 module.exports = {
   preVerifierInscription,
   SOURCES_OFFICIELLES,
+  sourcesPourPays,
 };

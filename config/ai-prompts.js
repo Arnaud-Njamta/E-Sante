@@ -95,15 +95,15 @@ Comment puis-je vous assister ?`;
 const DOCTOR_KNOWLEDGE_ACK = `✅ **Connaissance intégrée** — merci Docteur. Elle servira à enrichir les **synthèses d'orientation** (pas à délivrer des traitements aux patients).`;
 
 /** Prompt pour pré-analyse documentaire (admin) — jamais décision finale */
-const DOCUMENT_VERIFICATION_PROMPT = `Tu es un assistant de **pré-contrôle documentaire** pour DjamSanté (Cameroun).
-Tu n'as PAS autorité légale : tu prépares un rapport pour un administrateur humain (MINSANTE / équipe DjamSanté).
+const buildDocumentVerificationPrompt = (paysLabel = 'Cameroun', sourcesHint = '') => `Tu es un assistant de **pré-contrôle documentaire** pour DjamSanté (${paysLabel}).
+Tu n'as PAS autorité légale : tu prépares un rapport pour un administrateur humain (équipe DjamSanté / autorités compétentes).
 
-Analyse le ou les documents fournis (diplôme, carte d'ordre, agrément, autorisation).
+Analyse le ou les documents fournis (diplôme, carte d'ordre / RPPS, agrément, autorisation, pièce d'identité).
 
 Retourne UNIQUEMENT un JSON valide :
 {
   "score_confiance": 0-100,
-  "type_detecte": "diplome|carte_ordre|agrement|autorisation|autre|illisible",
+  "type_detecte": "diplome|carte_ordre|agrement|autorisation|piece_identite|autre|illisible",
   "champs_extraits": {
     "nom": null,
     "prenom": null,
@@ -112,16 +112,24 @@ Retourne UNIQUEMENT un JSON valide :
     "date": null,
     "specialite": null
   },
+  "coherence_numero_ordre": "ok|partielle|incoherente|indetermine",
   "cohérence_avec_dossier": "ok|partielle|incohérente|indetermine",
   "alertes": ["…"],
-  "recommandations_admin": ["vérifier sur ONMC / MINSANTE / scolarite.minsante.cm / equivalence.cm", "…"],
+  "recommandations_admin": ["…"],
   "verdict_ia": "suspect|acceptable_pour_revue_humaine|insuffisant"
 }
 
 Règles :
+- Compare le numéro d'ordre / RPPS déclaré dans le dossier avec celui lisible sur le document.
 - Signale flous, coupures, polices incohérentes, noms qui ne matchent pas le dossier.
 - Ne dis jamais que le document est « authentifié officiellement ».
-- Si image illisible : verdict insuffisant.`;
+- Si image illisible : verdict insuffisant.
+${sourcesHint ? `- Sources de vérification humaine à rappeler : ${sourcesHint}` : ''}`;
+
+const DOCUMENT_VERIFICATION_PROMPT = buildDocumentVerificationPrompt(
+  'Cameroun',
+  'ONMC, MINSANTE (scolarite.minsante.cm), equivalence.cm',
+);
 
 const ORDONNANCE_VERIFICATION_PROMPT = `Tu es un assistant de pré-contrôle d'ordonnances médicales pour une pharmacie au Cameroun.
 Analyse l'image d'ordonnance fournie. Tu ne délivres PAS de médicaments — tu aides seulement à structurer et signaler les anomalies.
@@ -153,5 +161,6 @@ module.exports = {
   WELCOME_MEDECIN,
   DOCTOR_KNOWLEDGE_ACK,
   DOCUMENT_VERIFICATION_PROMPT,
+  buildDocumentVerificationPrompt,
   ORDONNANCE_VERIFICATION_PROMPT,
 };

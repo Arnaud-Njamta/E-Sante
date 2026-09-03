@@ -459,6 +459,17 @@ const runPendingMigrations = async () => {
   await addColumnIfMissing('reservations_dispensaire', 'ordonnance_papier_id', '`ordonnance_papier_id` CHAR(36) NULL AFTER `ordonnance_electronique_id`');
   await addColumnIfMissing('ordonnances_electroniques', 'fichier_signature_id', '`fichier_signature_id` CHAR(36) NULL');
 
+  await addColumnIfMissing(
+    'inscriptions_professionnels',
+    'pays',
+    "`pays` VARCHAR(2) NOT NULL DEFAULT 'CM' AFTER `region`",
+  );
+  await addColumnIfMissing(
+    'medecins',
+    'pays',
+    "`pays` VARCHAR(2) NOT NULL DEFAULT 'CM' AFTER `telephone`",
+  );
+
   try {
     await sequelize.query(
       "ALTER TABLE `fichiers` MODIFY COLUMN `type_fichier` "

@@ -13,6 +13,7 @@ import AuthShell, {
 import AuthPasswordInput from '../components/auth/AuthPasswordInput';
 import BrandLogo from '../components/brand/BrandLogo';
 import { SPECIALITES_BY_PROFIL } from '../config/cameroonSpecialties';
+import { listPays, getPays, applyIndicatif } from '../config/registrationCountries';
 import PasswordStrengthMeter, { scorePassword } from '../components/ui/PasswordStrengthMeter';
 
 const SuccessWrap = styled.div`
@@ -40,34 +41,55 @@ const SuccessWrap = styled.div`
   }
 `;
 
+const PhoneRow = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+
+  .prefix {
+    flex: 0 0 auto;
+    min-width: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 12px;
+    border-radius: 10px;
+    border: 1px solid #E7E5E4;
+    background: #FAFAF9;
+    color: #44403C;
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+
+  input { flex: 1; }
+`;
+
 const TYPES = [
   { id: 'medecin', label: 'Médecin', icon: Stethoscope, desc: 'Ordre des médecins', soignant: true },
   { id: 'infirmier', label: 'Infirmier(ère)', icon: HeartPulse, desc: 'Diplôme + inscription', soignant: true },
   { id: 'aide_soignant', label: 'Aide-soignant(e)', icon: UserRound, desc: 'Attestation / diplôme', soignant: true },
   { id: 'sage_femme', label: 'Sage-femme', icon: Baby, desc: 'Ordre des sages-femmes', soignant: true },
   { id: 'kinesitherapeute', label: 'Kinésithérapeute', icon: Activity, desc: 'Diplôme + ordre', soignant: true },
-  { id: 'pharmacie', label: 'Pharmacie', icon: Pill, desc: 'Agrément officine', soignant: false },
-  { id: 'clinique', label: 'Clinique', icon: Building2, desc: 'Structure privée', soignant: false },
-  { id: 'hopital', label: 'Hôpital', icon: Hospital, desc: 'Autorisation MINSANTE', soignant: false },
+  { id: 'pharmacie', label: 'Pharmacie', icon: Pill, desc: 'Agrément officine', soignant: false, countries: ['CM'] },
+  { id: 'clinique', label: 'Clinique', icon: Building2, desc: 'Structure privée', soignant: false, countries: ['CM'] },
+  { id: 'hopital', label: 'Hôpital', icon: Hospital, desc: 'Autorisation MINSANTE', soignant: false, countries: ['CM'] },
 ];
 
 const isSoignantType = (t) => TYPES.find((x) => x.id === t)?.soignant;
-
-const REGIONS = [
-  'Centre', 'Littoral', 'Ouest', 'Nord', 'Extrême-Nord', 'Adamaoua',
-  'Est', 'Sud', 'Sud-Ouest', 'Nord-Ouest',
-];
+const PAYS_OPTIONS = listPays();
 
 export default function RegisterProfessionnelPage() {
   const navigate = useNavigate();
   const mutation = useInscriptionProfessionnel();
   const branding = getBranding('medecin');
   const [type, setType] = useState('medecin');
+  const [pays, setPays] = useState('CM');
   const [docsRequis, setDocsRequis] = useState({ documents: {}, operateurs_mobile_money: [], note_paiement: '' });
   const [files, setFiles] = useState({});
+  const paysCfg = getPays(pays);
   const [form, setForm] = useState({
     email: '', password: '', nom: '', prenom: '', nom_structure: '',
-    telephone: '', ville: 'Yaoundé', region: 'Centre', numero_ordre: '', numero_agrement: '', specialite: '',
+    telephone: '+237 ', ville: 'Yaoundé', region: 'Centre', numero_ordre: '', numero_agrement: '', specialite: '',
     operateur_mobile: 'orange_money', numero_mobile_money: '', titulaire_compte: '', numero_marchand: '',
   });
   const [success, setSuccess] = useState(null);
@@ -83,7 +105,35 @@ export default function RegisterProfessionnelPage() {
     setDeclarationCasierVierge(false);
   }, [type]);
 
+  useEffect(() => {
+    const cfg = getPays(pays);
+    setForm((f) => {
+      const national = String(f.telephone || '').replace(/^\+\d+\s*/, '').replace(/\D/g, '');
+      return {
+        ...f,
+        ville: cfg.defaultVille,
+        region: cfg.defaultRegion,
+        telephone: applyIndicatif(national, pays),
+        numero_mobile_money: cfg.mobileMoneyRequired && !String(f.numero_mobile_money || '').startsWith('+237')
+          ? ''
+          : f.numero_mobile_money,
+      };
+    });
+    if (!isSoignantType(type) && pays === 'FR') {
+      setType('medecin');
+    }
+  }, [pays]);
+
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
+  const setTelephone = (e) => setForm({ ...form, telephone: applyIndicatif(e.target.value, pays) });
+
+  const visibleTypes = TYPES.filter((t) => !t.countries || t.countries.includes(pays));
+  const ordreCfg = paysCfg.ordre?.[type] || {};
+  const mmRequired = !!paysCfg.mobileMoneyRequired;
+  const sourcesVerif = docsRequis.sources_verification_by_pays?.[pays]
+    || docsRequis.sources_verification
+    || paysCfg.sources_verification
+    || [];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -96,7 +146,7 @@ export default function RegisterProfessionnelPage() {
       toast.error('Mot de passe trop faible — renforcez-le avant de continuer');
       return;
     }
-    if (!form.numero_mobile_money?.trim() || !form.titulaire_compte?.trim()) {
+    if (mmRequired && (!form.numero_mobile_money?.trim() || !form.titulaire_compte?.trim())) {
       toast.error('Renseignez le numéro Mobile Money et le titulaire du compte');
       return;
     }
@@ -116,20 +166,28 @@ export default function RegisterProfessionnelPage() {
       toast.error('Sélectionnez votre spécialité ou domaine d\'exercice');
       return;
     }
+    if (isSoignantType(type) && ordreCfg.required && !form.numero_ordre?.trim()) {
+      toast.error(`${ordreCfg.label || 'N° Ordre'} obligatoire`);
+      return;
+    }
     try {
       const { operateur_mobile, numero_mobile_money, titulaire_compte, numero_marchand, ...rest } = form;
+      const hasPaiement = !!(numero_mobile_money?.trim() && titulaire_compte?.trim());
       const result = await mutation.mutateAsync({
         payload: {
           ...rest,
+          pays,
           type_profil: type,
           accept_cgu: true,
           declaration_casier_vierge: isSoignantType(type) ? declarationCasierVierge : false,
-          paiement: {
-            operateur: operateur_mobile,
-            numero: numero_mobile_money,
-            titulaire: titulaire_compte,
-            numero_marchand: numero_marchand || undefined,
-          },
+          paiement: (mmRequired || hasPaiement)
+            ? {
+              operateur: operateur_mobile,
+              numero: numero_mobile_money,
+              titulaire: titulaire_compte || `${form.prenom} ${form.nom}`.trim(),
+              numero_marchand: numero_marchand || undefined,
+            }
+            : undefined,
         },
         files,
       });
@@ -199,12 +257,25 @@ export default function RegisterProfessionnelPage() {
       </SectionHint>
 
       <Notice>
-        <strong>Contexte Cameroun :</strong> traçabilité MINSANTE, données hébergées localement,
-        conformité DPN en cours de déploiement.
+        <strong>Pays d&apos;exercice :</strong> Cameroun (MINSANTE / ONMC) et France (CNOM / RPPS).
+        Le numéro d&apos;ordre est contrôlé selon le pays sélectionné.
       </Notice>
 
+      <FormGrid style={{ marginBottom: 20 }}>
+        <Field>
+          <FieldLabel>Pays d&apos;exercice</FieldLabel>
+          <SelectWrap>
+            <FieldSelect value={pays} onChange={(e) => setPays(e.target.value)}>
+              {PAYS_OPTIONS.map((p) => (
+                <option key={p.code} value={p.code}>{p.flag} {p.label}</option>
+              ))}
+            </FieldSelect>
+          </SelectWrap>
+        </Field>
+      </FormGrid>
+
       <TypeGrid>
-        {TYPES.map((t) => (
+        {visibleTypes.map((t) => (
           <TypeCard key={t.id} type="button" $active={type === t.id} onClick={() => setType(t.id)}>
             <t.icon size={20} strokeWidth={1.75} />
             <h3>{t.label}</h3>
@@ -238,14 +309,18 @@ export default function RegisterProfessionnelPage() {
                 </SelectWrap>
               </Field>
               <Field>
-                <FieldLabel>
-                  {type === 'aide_soignant' ? 'N° attestation (si disponible)' : 'N° Ordre / inscription'}
-                </FieldLabel>
+                <FieldLabel>{ordreCfg.label || 'N° Ordre / inscription'}</FieldLabel>
                 <FieldInput
                   value={form.numero_ordre}
                   onChange={set('numero_ordre')}
-                  required={type !== 'aide_soignant'}
+                  placeholder={ordreCfg.example || ''}
+                  required={!!ordreCfg.required}
                 />
+                {ordreCfg.hint && (
+                  <span style={{ fontSize: '0.75rem', color: '#78716C', marginTop: 4, display: 'block' }}>
+                    {ordreCfg.hint}
+                  </span>
+                )}
               </Field>
             </>
           ) : (
@@ -276,29 +351,39 @@ export default function RegisterProfessionnelPage() {
           </Field>
           <Field>
             <FieldLabel>Téléphone</FieldLabel>
-            <FieldInput value={form.telephone} onChange={set('telephone')} placeholder="+237 6XX XX XX XX" />
+            <PhoneRow>
+              <span className="prefix">{paysCfg.indicatif}</span>
+              <FieldInput
+                value={form.telephone}
+                onChange={setTelephone}
+                placeholder={paysCfg.phonePlaceholder}
+                required
+              />
+            </PhoneRow>
           </Field>
           <Field>
             <FieldLabel>Ville</FieldLabel>
             <FieldInput value={form.ville} onChange={set('ville')} />
           </Field>
           <Field>
-            <FieldLabel>Région</FieldLabel>
+            <FieldLabel>{pays === 'FR' ? 'Région' : 'Région'}</FieldLabel>
             <SelectWrap>
               <FieldSelect value={form.region} onChange={set('region')}>
-                {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
+                {(paysCfg.regions || []).map((r) => <option key={r} value={r}>{r}</option>)}
               </FieldSelect>
             </SelectWrap>
           </Field>
         </FormGrid>
 
-        <SubSection>Paiement Mobile Money</SubSection>
+        <SubSection>Paiement{mmRequired ? ' Mobile Money' : ' (optionnel)'}</SubSection>
         <Notice style={{ marginBottom: 16 }}>
-          {docsRequis.note_paiement || 'Obligatoire pour recevoir les paiements patients sur DjamSanté.'}
+          {mmRequired
+            ? (docsRequis.note_paiement || 'Obligatoire pour recevoir les paiements patients sur DjamSanté.')
+            : 'Mobile Money Cameroun optionnel pour les professionnels en France — vous pourrez le configurer plus tard si besoin.'}
         </Notice>
         <FormGrid>
           <Field className="full">
-            <FieldLabel>Opérateur Mobile Money</FieldLabel>
+            <FieldLabel>Opérateur Mobile Money{!mmRequired && ' (optionnel)'}</FieldLabel>
             <OperateurGrid>
               {operateurs.map((o) => (
                 <OperateurOption
@@ -313,21 +398,21 @@ export default function RegisterProfessionnelPage() {
             </OperateurGrid>
           </Field>
           <Field>
-            <FieldLabel>Numéro Mobile Money</FieldLabel>
+            <FieldLabel>Numéro Mobile Money{!mmRequired && ' (optionnel)'}</FieldLabel>
             <FieldInput
               value={form.numero_mobile_money}
               onChange={set('numero_mobile_money')}
               placeholder="+237 6XX XX XX XX"
-              required
+              required={mmRequired}
             />
           </Field>
           <Field className={isSoignantType(type) ? '' : 'full'}>
-            <FieldLabel>Titulaire du compte</FieldLabel>
+            <FieldLabel>Titulaire du compte{!mmRequired && ' (optionnel)'}</FieldLabel>
             <FieldInput
               value={form.titulaire_compte}
               onChange={set('titulaire_compte')}
               placeholder={isSoignantType(type) ? 'Prénom Nom' : 'Nom de la structure'}
-              required
+              required={mmRequired}
             />
           </Field>
           {!isSoignantType(type) && (
@@ -396,10 +481,10 @@ export default function RegisterProfessionnelPage() {
         </Field>
         )}
 
-        {docsRequis.sources_verification?.length > 0 && (
+        {sourcesVerif.length > 0 && (
           <Notice style={{ marginTop: 12, fontSize: '0.78rem' }}>
-            <strong>Vérification officielle :</strong>{' '}
-            {docsRequis.sources_verification.map((s) => s.nom).join(' · ')}
+            <strong>Vérification officielle ({paysCfg.label}) :</strong>{' '}
+            {sourcesVerif.map((s) => s.nom).join(' · ')}
           </Notice>
         )}
 

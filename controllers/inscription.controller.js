@@ -1,6 +1,7 @@
 const inscriptionService = require('../services/inscription.service');
 const documentVerificationService = require('../services/document-verification.service');
 const { SPECIALITES_BY_PROFIL, PROFESSION_LABELS } = require('../config/cameroon-specialties');
+const { listPays, getPays, PAYS_INSCRIPTION } = require('../config/registration-countries');
 
 const registerProfessionnel = async (req, res, next) => {
   try {
@@ -65,6 +66,11 @@ const rejeter = async (req, res, next) => {
 
 const getDocumentsRequis = async (req, res, next) => {
   try {
+    const sources_verification_by_pays = {};
+    Object.keys(PAYS_INSCRIPTION).forEach((code) => {
+      sources_verification_by_pays[code] = getPays(code).sources_verification || [];
+    });
+
     res.json({
       success: true,
       data: {
@@ -75,10 +81,12 @@ const getDocumentsRequis = async (req, res, next) => {
         specialites: SPECIALITES_BY_PROFIL,
         professions: PROFESSION_LABELS,
         operateurs_mobile_money: inscriptionService.OPERATEURS_MOBILE_MONEY,
-        note_paiement: 'Numéro Mobile Money obligatoire pour recevoir les paiements patients (consultations, réservations pharmacie).',
+        note_paiement: 'Numéro Mobile Money obligatoire au Cameroun pour recevoir les paiements patients. Optionnel pour les professionnels en France.',
         notes_documents: inscriptionService.NOTES_DOCUMENTS,
         note_documents: 'Consultez le type de compte : soignants (CNI + casier) ou structures (CNI du représentant + agréments MINSANTE).',
         sources_verification: documentVerificationService.SOURCES_OFFICIELLES,
+        sources_verification_by_pays,
+        pays: listPays(),
       },
     });
   } catch (error) {

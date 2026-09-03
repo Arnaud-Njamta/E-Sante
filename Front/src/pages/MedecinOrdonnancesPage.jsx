@@ -36,7 +36,7 @@ export default function MedecinOrdonnancesPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
           <h1 style={{ margin: 0 }}><FileText size={24} style={{ verticalAlign: 'middle' }} /> Ordonnances électroniques</h1>
-          <p style={{ color: '#64748B', margin: '4px 0 0' }}>Ordonnances traçables — le patient retrouve ses rappels de prise sur son accueil DjamSanté</p>
+          <p style={{ color: '#64748B', margin: '4px 0 0' }}>Créez et signez vos ordonnances électroniques</p>
         </div>
         <Button onClick={() => setShowForm(!showForm)}><Plus size={16} /> Nouvelle ordonnance</Button>
       </div>

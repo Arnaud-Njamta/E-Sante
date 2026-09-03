@@ -394,7 +394,7 @@ export default function AdminInscriptionsPage() {
                   {ins.prenom ? `${ins.prenom} ${ins.nom}` : ins.nom_structure || ins.nom}
                 </h3>
                 <Meta>
-                  {ins.email} — {ins.ville}{ins.region ? `, ${ins.region}` : ''}
+                  {ins.email} — {ins.pays || 'CM'} — {ins.ville}{ins.region ? `, ${ins.region}` : ''}
                 </Meta>
                 {ins.numero_ordre && <Meta style={{ marginTop: 4 }}>N° ordre : {ins.numero_ordre}</Meta>}
                 {ins.numero_agrement && <Meta style={{ marginTop: 4 }}>Agrément : {ins.numero_agrement}</Meta>}

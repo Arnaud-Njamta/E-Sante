@@ -10,6 +10,9 @@ const {
 const { saveFichier, mapTypeFichier } = require('./fichier.service');
 const { validerCoordonneesPaiement, OPERATEURS_MOBILE_MONEY } = require('../config/paiement');
 const { SPECIALITES_BY_PROFIL } = require('../config/cameroon-specialties');
+const {
+  getPays, validerTelephonePays, validerNumeroOrdre,
+} = require('../config/registration-countries');
 const emailService = require('./email.service');
 const adminAudit = require('./admin-audit.service');
 
@@ -260,6 +263,8 @@ const preparerEmailPourInscription = async (email) => {
  */
 const creerInscription = async (payload, files = []) => {
   const { type_profil, email, password, paiement, accept_cgu, ...rest } = payload;
+  const paysCode = String(rest.pays || 'CM').toUpperCase();
+  const paysCfg = getPays(paysCode);
 
   if (!accept_cgu && accept_cgu !== true && accept_cgu !== 'true') {
     const error = new Error('Vous devez accepter les Conditions Générales d\'Utilisation');
@@ -273,12 +278,37 @@ const creerInscription = async (payload, files = []) => {
     throw error;
   }
 
-  const coordonneesPaiement = validerCoordonneesPaiement(paiement || {
-    operateur: rest.operateur_mobile,
-    numero: rest.numero_mobile_money,
-    titulaire: rest.titulaire_compte,
-    numero_marchand: rest.numero_marchand,
-  });
+  if (!ROLE_BY_TYPE[type_profil]) {
+    const error = new Error('Type de profil professionnel invalide');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  // Structures (pharmacie / clinique / hôpital) : Cameroun uniquement pour l'instant
+  if (!isSoignant(type_profil) && paysCode !== 'CM') {
+    const error = new Error('Les structures (pharmacie, clinique, hôpital) ne sont ouvertes qu\'au Cameroun pour le moment');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const telephone = rest.telephone
+    ? validerTelephonePays(rest.telephone, paysCode)
+    : null;
+
+  let numeroOrdre = null;
+  if (isSoignant(type_profil)) {
+    numeroOrdre = validerNumeroOrdre(rest.numero_ordre, type_profil, paysCode);
+  }
+
+  const coordonneesPaiement = validerCoordonneesPaiement(
+    paiement || {
+      operateur: rest.operateur_mobile,
+      numero: rest.numero_mobile_money,
+      titulaire: rest.titulaire_compte,
+      numero_marchand: rest.numero_marchand,
+    },
+    { required: !!paysCfg.mobileMoneyRequired },
+  );
 
   const emailPrep = await preparerEmailPourInscription(email);
   if (emailPrep.blocking) {
@@ -287,12 +317,6 @@ const creerInscription = async (payload, files = []) => {
     throw error;
   }
   const normalizedEmail = emailPrep.email;
-
-  if (!ROLE_BY_TYPE[type_profil]) {
-    const error = new Error('Type de profil professionnel invalide');
-    error.statusCode = 400;
-    throw error;
-  }
 
   if (!files.some((f) => f.fieldname === 'piece_identite')) {
     const error = new Error(
@@ -325,10 +349,11 @@ const creerInscription = async (payload, files = []) => {
       nom: rest.nom,
       prenom: rest.prenom,
       email: normalizedEmail,
-      telephone: rest.telephone,
+      telephone,
+      pays: paysCode,
       specialite: rest.specialite || PROFESSION_SANTE_LABELS[type_profil] || type_profil,
       profession: type_profil,
-      numero_ordre: rest.numero_ordre,
+      numero_ordre: numeroOrdre,
       password_hash,
       coordonnees_paiement: coordonneesPaiement,
       statut_validation: STATUT_VALIDATION.EN_ATTENTE,
@@ -345,7 +370,7 @@ const creerInscription = async (payload, files = []) => {
       type: typeMap[type_profil],
       nom: rest.nom_structure || rest.nom,
       email: normalizedEmail,
-      telephone: rest.telephone,
+      telephone,
       ville: rest.ville,
       region: rest.region,
       numero_agrement: rest.numero_agrement,
@@ -390,15 +415,17 @@ const creerInscription = async (payload, files = []) => {
       nom: rest.nom,
       prenom: rest.prenom,
       nom_structure: rest.nom_structure,
-      telephone: rest.telephone,
+      telephone,
       ville: rest.ville,
       region: rest.region,
-      numero_ordre: rest.numero_ordre,
+      pays: paysCode,
+      numero_ordre: numeroOrdre,
       numero_agrement: rest.numero_agrement,
       specialite: rest.specialite,
       compte_cree_id: compte.id,
       donnees: {
         ...rest,
+        pays: paysCode,
         paiement: coordonneesPaiement,
         accept_cgu: true,
         accept_cgu_at: new Date().toISOString(),
@@ -430,6 +457,7 @@ const creerInscription = async (payload, files = []) => {
     cible_id: inscription.id,
     details: {
       type_profil,
+      pays: paysCode,
       email: normalizedEmail,
       compte_id: compte.id,
       statut: inscription.statut,
@@ -525,6 +553,7 @@ const validerInscription = async (inscriptionId, { valide_par = 'admin', admin =
         prenom: inscription.prenom,
         email: inscription.email,
         telephone: inscription.telephone,
+        pays: inscription.pays || inscription.donnees?.pays || 'CM',
         specialite: inscription.specialite,
         profession: inscription.type_profil,
         numero_ordre: inscription.numero_ordre,

@@ -39,6 +39,11 @@ const InscriptionProfessionnel = sequelize.define('InscriptionProfessionnel', {
     type: DataTypes.STRING(100),
     allowNull: true,
   },
+  pays: {
+    type: DataTypes.STRING(2),
+    allowNull: false,
+    defaultValue: 'CM',
+  },
   numero_ordre: {
     type: DataTypes.STRING(50),
     allowNull: true,

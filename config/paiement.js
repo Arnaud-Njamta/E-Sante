@@ -14,10 +14,25 @@ const normalizeNumeroCm = (raw) => {
   return String(raw || '').trim();
 };
 
-const validerCoordonneesPaiement = (paiement = {}) => {
+/**
+ * @param {object} paiement
+ * @param {{ required?: boolean }} options — required=false pour FR (Mobile Money optionnel)
+ */
+const validerCoordonneesPaiement = (paiement = {}, { required = true } = {}) => {
   const operateur = paiement.operateur || paiement.operateur_mobile;
-  const numero = normalizeNumeroCm(paiement.numero || paiement.numero_mobile_money);
+  const numeroRaw = paiement.numero || paiement.numero_mobile_money;
+  const numero = normalizeNumeroCm(numeroRaw);
   const titulaire = (paiement.titulaire || paiement.titulaire_compte || '').trim();
+  const hasAny = !!(operateur || String(numeroRaw || '').trim() || titulaire);
+
+  // Sans numéro / titulaire : pas de coordonnées (ignore un opérateur seul)
+  if (!required && (!String(numeroRaw || '').trim() || !titulaire)) {
+    return null;
+  }
+
+  if (!required && !hasAny) {
+    return null;
+  }
 
   if (!operateur) {
     const error = new Error('Sélectionnez un opérateur Mobile Money');

@@ -10,6 +10,7 @@ const { saveFichier, mapTypeFichier } = require('./fichier.service');
 const { validerCoordonneesPaiement, OPERATEURS_MOBILE_MONEY } = require('../config/paiement');
 const { SPECIALITES_BY_PROFIL } = require('../config/cameroon-specialties');
 const emailService = require('./email.service');
+const adminAudit = require('./admin-audit.service');
 
 const SALT_ROUNDS = 12;
 
@@ -281,6 +282,8 @@ const creerInscription = async (payload, files = []) => {
       documents_manquants: manquants,
       compte_cree_immediatement: true,
     },
+  }).catch((err) => {
+    console.warn('Audit inscription ignoré:', err.message);
   });
 
   const profile = compte.toJSON();

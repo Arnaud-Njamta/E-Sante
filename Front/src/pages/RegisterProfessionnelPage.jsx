@@ -136,7 +136,11 @@ export default function RegisterProfessionnelPage() {
       setSuccess(result.data);
       toast.success(result.data.message);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Erreur lors de l\'inscription');
+      const details = err.response?.data?.errors;
+      const message = Array.isArray(details) && details.length
+        ? details.join(' · ')
+        : (err.response?.data?.message || err.message || 'Erreur lors de l\'inscription');
+      toast.error(message);
     }
   };
 
@@ -352,7 +356,10 @@ export default function RegisterProfessionnelPage() {
             <input
               type="file"
               accept="image/*,.pdf"
-              required={doc === 'piece_identite' || (isSoignantType(type) && doc === 'casier_judiciaire')}
+              required={
+                doc === 'piece_identite'
+                || (isSoignantType(type) && doc === 'casier_judiciaire' && !declarationCasierVierge)
+              }
               onChange={(e) => setFiles({ ...files, [doc]: e.target.files[0] })}
             />
           </DocZone>

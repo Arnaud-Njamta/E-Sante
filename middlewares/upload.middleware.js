@@ -52,9 +52,9 @@ const isAllowedType = (file, allowedTypes) => {
 
 const memoryStorage = multer.memoryStorage();
 
-const createUpload = (allowedTypes, maxSize = MAX_FILE_SIZE) => multer({
+const createUpload = (allowedTypes, maxSize = MAX_FILE_SIZE, maxFiles = 10) => multer({
   storage: memoryStorage,
-  limits: { fileSize: maxSize, files: 1 },
+  limits: { fileSize: maxSize, files: maxFiles },
   fileFilter: (req, file, cb) => {
     if (isAllowedType(file, allowedTypes)) {
       cb(null, true);
@@ -68,9 +68,9 @@ const createUpload = (allowedTypes, maxSize = MAX_FILE_SIZE) => multer({
   },
 });
 
-const uploadImage = createUpload(ALLOWED_IMAGE_TYPES);
-const uploadDocument = createUpload(ALLOWED_DOC_TYPES);
-const uploadAny = createUpload(ALLOWED_DOC_TYPES, MAX_FILE_SIZE);
+const uploadImage = createUpload(ALLOWED_IMAGE_TYPES, MAX_FILE_SIZE, 1);
+const uploadDocument = createUpload(ALLOWED_DOC_TYPES, MAX_FILE_SIZE, 10);
+const uploadAny = createUpload(ALLOWED_DOC_TYPES, MAX_FILE_SIZE, 10);
 
 /** Enveloppe multer pour transmettre les erreurs au middleware global. */
 const handleUpload = (middleware) => (req, res, next) => {

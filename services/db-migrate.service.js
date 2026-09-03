@@ -463,11 +463,22 @@ const runPendingMigrations = async () => {
     await sequelize.query(
       "ALTER TABLE `fichiers` MODIFY COLUMN `type_fichier` "
       + "ENUM('photo_profil','cachet','signature','document','produit','ordonnance_pdf',"
-      + "'diplome','carte_ordre','agrement','autorisation') NOT NULL",
+      + "'diplome','carte_ordre','agrement','autorisation',"
+      + "'piece_identite','casier_judiciaire') NOT NULL",
     );
-    console.log('Migration: fichiers.type_fichier inclut signature.');
+    console.log('Migration: fichiers.type_fichier inclut piece_identite et casier_judiciaire.');
   } catch (err) {
-    console.warn('Migration fichiers.type_fichier signature:', err.message);
+    console.warn('Migration fichiers.type_fichier:', err.message);
+  }
+
+  try {
+    await sequelize.query(
+      "ALTER TABLE `fichiers` MODIFY COLUMN `proprietaire_type` "
+      + "ENUM('patient','medecin','etablissement','produit','inscription','ordonnance') NOT NULL",
+    );
+    console.log('Migration: fichiers.proprietaire_type inclut inscription.');
+  } catch (err) {
+    console.warn('Migration fichiers.proprietaire_type:', err.message);
   }
 
   const [consentTables] = await sequelize.query(

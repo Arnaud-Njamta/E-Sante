@@ -15,6 +15,10 @@ import toast from 'react-hot-toast';
 
 const TYPE_LABELS = {
   medecin: 'Médecin',
+  infirmier: 'Infirmier(ère)',
+  aide_soignant: 'Aide-soignant(e)',
+  sage_femme: 'Sage-femme',
+  kinesitherapeute: 'Kinésithérapeute',
   pharmacie: 'Pharmacie',
   hopital: 'Hôpital',
   clinique: 'Clinique',

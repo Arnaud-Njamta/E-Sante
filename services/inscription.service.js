@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { Op } = require('sequelize');
 const {
   InscriptionProfessionnel, Medecin, Etablissement, Patient, Fichier,
 } = require('../models');
@@ -225,48 +226,65 @@ const creerInscription = async (payload, files = []) => {
   }
 
   const docs = [];
+  const uploadErrors = [];
   for (const file of files) {
     const fieldName = file.fieldname;
-    const meta = await saveFichier({
-      buffer: file.buffer,
-      originalname: file.originalname,
-      mimetype: file.mimetype,
-      proprietaire_type: 'inscription',
-      proprietaire_id: compte.id,
-      type_fichier: mapTypeFichier(fieldName),
-    });
-    docs.push({ type: fieldName, fichier_id: meta.id, url: meta.url });
+    try {
+      const meta = await saveFichier({
+        buffer: file.buffer,
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        proprietaire_type: 'inscription',
+        proprietaire_id: compte.id,
+        type_fichier: mapTypeFichier(fieldName),
+      });
+      docs.push({ type: fieldName, fichier_id: meta.id, url: meta.url });
+    } catch (err) {
+      uploadErrors.push(`${fieldName}: ${err.message}`);
+      console.warn(`[inscription] Upload ${fieldName} échoué:`, err.message);
+    }
   }
 
   const requis = DOCUMENTS_REQUIS[type_profil] || [];
   const fournis = docs.map((d) => d.type);
   const manquants = requis.filter((r) => !fournis.includes(r));
 
-  const inscription = await InscriptionProfessionnel.create({
-    type_profil,
-    email,
-    nom: rest.nom,
-    prenom: rest.prenom,
-    nom_structure: rest.nom_structure,
-    telephone: rest.telephone,
-    ville: rest.ville,
-    region: rest.region,
-    numero_ordre: rest.numero_ordre,
-    numero_agrement: rest.numero_agrement,
-    specialite: rest.specialite,
-    compte_cree_id: compte.id,
-    donnees: {
-      ...rest,
-      paiement: coordonneesPaiement,
-      accept_cgu: true,
-      accept_cgu_at: new Date().toISOString(),
-      declaration_casier_vierge: isSoignant(type_profil)
-        && !!(rest.declaration_casier_vierge === true || rest.declaration_casier_vierge === 'true'),
-      documents_manquants: manquants,
-    },
-    statut: manquants.length ? 'documents_manquants' : 'en_revision',
-    documents: docs,
-  });
+  let inscription;
+  try {
+    inscription = await InscriptionProfessionnel.create({
+      type_profil,
+      email,
+      nom: rest.nom,
+      prenom: rest.prenom,
+      nom_structure: rest.nom_structure,
+      telephone: rest.telephone,
+      ville: rest.ville,
+      region: rest.region,
+      numero_ordre: rest.numero_ordre,
+      numero_agrement: rest.numero_agrement,
+      specialite: rest.specialite,
+      compte_cree_id: compte.id,
+      donnees: {
+        ...rest,
+        paiement: coordonneesPaiement,
+        accept_cgu: true,
+        accept_cgu_at: new Date().toISOString(),
+        declaration_casier_vierge: isSoignant(type_profil)
+          && !!(rest.declaration_casier_vierge === true || rest.declaration_casier_vierge === 'true'),
+        documents_manquants: manquants,
+        upload_errors: uploadErrors.length ? uploadErrors : undefined,
+      },
+      statut: manquants.length ? 'documents_manquants' : 'en_revision',
+      documents: docs,
+    });
+  } catch (err) {
+    console.error('[inscription] Échec création dossier admin:', err.message);
+    const error = new Error(
+      'Compte créé, mais le dossier de validation n\'a pas pu être enregistré. Contactez le support avec votre email.',
+    );
+    error.statusCode = 500;
+    throw error;
+  }
 
   await adminAudit.log({
     categorie: adminAudit.CATEGORIES.INSCRIPTION,
@@ -281,6 +299,7 @@ const creerInscription = async (payload, files = []) => {
       documents_fournis: fournis,
       documents_manquants: manquants,
       compte_cree_immediatement: true,
+      upload_errors: uploadErrors.length ? uploadErrors : undefined,
     },
   }).catch((err) => {
     console.warn('Audit inscription ignoré:', err.message);
@@ -462,9 +481,111 @@ const rejeterInscription = async (inscriptionId, motif_rejet, { admin = null, ip
   return inscription;
 };
 
+const reparerComptesSansInscription = async () => {
+  const linked = await InscriptionProfessionnel.findAll({
+    attributes: ['id', 'email', 'compte_cree_id'],
+    where: {
+      [Op.or]: [
+        { compte_cree_id: { [Op.ne]: null } },
+        { statut: { [Op.in]: ['en_attente', 'en_revision', 'documents_manquants', 'valide', 'rejete'] } },
+      ],
+    },
+  });
+  const linkedCompteIds = new Set(linked.map((i) => i.compte_cree_id).filter(Boolean));
+  const linkedEmails = new Set(linked.map((i) => String(i.email || '').toLowerCase()));
+
+  const medecins = await Medecin.findAll({
+    where: { statut_validation: STATUT_VALIDATION.EN_ATTENTE },
+  });
+
+  for (const m of medecins) {
+    if (linkedCompteIds.has(m.id)) continue;
+    const emailKey = String(m.email || '').toLowerCase();
+    if (emailKey && linkedEmails.has(emailKey)) {
+      const exist = linked.find((i) => String(i.email || '').toLowerCase() === emailKey);
+      if (exist && !exist.compte_cree_id) {
+        await InscriptionProfessionnel.update(
+          { compte_cree_id: m.id },
+          { where: { id: exist.id } },
+        );
+      }
+      continue;
+    }
+    const typeProfil = SOIGNANT_TYPES.includes(m.profession) ? m.profession : 'medecin';
+    const requis = DOCUMENTS_REQUIS[typeProfil] || DOCUMENTS_REQUIS.medecin;
+    await InscriptionProfessionnel.create({
+      type_profil: typeProfil,
+      email: m.email,
+      nom: m.nom,
+      prenom: m.prenom,
+      telephone: m.telephone,
+      specialite: m.specialite,
+      numero_ordre: m.numero_ordre,
+      compte_cree_id: m.id,
+      statut: 'documents_manquants',
+      documents: [],
+      donnees: {
+        documents_manquants: requis,
+        orphelin_recupere: true,
+      },
+    });
+    if (emailKey) linkedEmails.add(emailKey);
+    linkedCompteIds.add(m.id);
+  }
+
+  const typeByEtab = {
+    [TYPE_ETABLISSEMENT.PHARMACIE]: 'pharmacie',
+    [TYPE_ETABLISSEMENT.HOPITAL]: 'hopital',
+    [TYPE_ETABLISSEMENT.CLINIQUE]: 'clinique',
+  };
+
+  const etabs = await Etablissement.findAll({
+    where: { statut_validation: STATUT_VALIDATION.EN_ATTENTE },
+  });
+
+  for (const e of etabs) {
+    if (linkedCompteIds.has(e.id)) continue;
+    const emailKey = String(e.email || '').toLowerCase();
+    if (emailKey && linkedEmails.has(emailKey)) {
+      const exist = linked.find((i) => String(i.email || '').toLowerCase() === emailKey);
+      if (exist && !exist.compte_cree_id) {
+        await InscriptionProfessionnel.update(
+          { compte_cree_id: e.id },
+          { where: { id: exist.id } },
+        );
+      }
+      continue;
+    }
+    const typeProfil = typeByEtab[e.type] || 'pharmacie';
+    const requis = DOCUMENTS_REQUIS[typeProfil] || [];
+    await InscriptionProfessionnel.create({
+      type_profil: typeProfil,
+      email: e.email,
+      nom_structure: e.nom,
+      nom: e.nom,
+      telephone: e.telephone,
+      ville: e.ville,
+      region: e.region,
+      numero_agrement: e.numero_agrement,
+      compte_cree_id: e.id,
+      statut: 'documents_manquants',
+      documents: [],
+      donnees: {
+        documents_manquants: requis,
+        orphelin_recupere: true,
+      },
+    });
+    if (emailKey) linkedEmails.add(emailKey);
+    linkedCompteIds.add(e.id);
+  }
+};
+
 const listerEnAttente = async () => {
+  await reparerComptesSansInscription();
   const inscriptions = await InscriptionProfessionnel.findAll({
-    where: { statut: ['en_attente', 'en_revision', 'documents_manquants'] },
+    where: {
+      statut: { [Op.in]: ['en_attente', 'en_revision', 'documents_manquants'] },
+    },
     order: [['createdAt', 'ASC']],
   });
   return Promise.all(inscriptions.map(sanitizeInscriptionForAdmin));
@@ -498,6 +619,7 @@ module.exports = {
   validerInscription,
   rejeterInscription,
   listerEnAttente,
+  reparerComptesSansInscription,
   getStatutDemande,
   DOCUMENTS_REQUIS,
   DOCUMENTS_OPTIONNELS,

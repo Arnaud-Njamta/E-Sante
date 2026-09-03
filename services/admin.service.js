@@ -177,6 +177,12 @@ const getOverview = async () => {
   if (overviewCache.data && overviewCache.expires > now) {
     return { ...overviewCache.data, fetched_at: new Date().toISOString(), cached: true };
   }
+  try {
+    const { reparerComptesSansInscription } = require('./inscription.service');
+    await reparerComptesSansInscription();
+  } catch (err) {
+    console.warn('[admin/overview] réparation dossiers:', err.message);
+  }
   const data = await buildOverview();
   overviewCache = { data, expires: now + OVERVIEW_CACHE_TTL };
   return data;

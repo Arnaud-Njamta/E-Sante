@@ -450,6 +450,156 @@ const sendOrdonnancePatientEmail = async ({
   });
 };
 
+const escapeHtml = (value = '') => String(value)
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;');
+
+const TYPE_PRO_LABELS = {
+  medecin: 'Médecin',
+  infirmier: 'Infirmier / Infirmière',
+  aide_soignant: 'Aide-soignant(e)',
+  sage_femme: 'Sage-femme',
+  kinesitherapeute: 'Kinésithérapeute',
+  pharmacie: 'Pharmacie',
+  hopital: 'Hôpital',
+  clinique: 'Clinique',
+};
+
+const formatProDisplayName = ({ prenom, nom, nom_structure, type_profil }) => {
+  if (prenom || nom) return [prenom, nom].filter(Boolean).join(' ');
+  if (nom_structure) return nom_structure;
+  return TYPE_PRO_LABELS[type_profil] || 'professionnel';
+};
+
+/** Accusé de réception après inscription professionnelle */
+const sendInscriptionProRecueEmail = async ({
+  email, prenom, nom, nom_structure, type_profil, documents_manquants = [],
+}) => {
+  const frontUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const typeLabel = TYPE_PRO_LABELS[type_profil] || type_profil || 'professionnel';
+  const displayName = formatProDisplayName({ prenom, nom, nom_structure, type_profil });
+  const manquantsHtml = documents_manquants.length
+    ? `<div style="background:#FFFBEB;border-left:4px solid #F59E0B;padding:14px;border-radius:6px;margin:18px 0;">
+        <p style="margin:0 0 8px;color:#92400E;font-size:14px;"><strong>Documents encore attendus :</strong></p>
+        <ul style="margin:0;padding-left:18px;color:#92400E;font-size:14px;line-height:1.6;">
+          ${documents_manquants.map((d) => `<li>${escapeHtml(d)}</li>`).join('')}
+        </ul>
+      </div>`
+    : `<p style="color:#047857;font-size:14px;">Votre dossier documentaire a bien été reçu et est en cours de vérification.</p>`;
+
+  const html = brandWrap(
+    'Demande d\'inscription reçue',
+    `
+      <p style="color:#555;font-size:15px;line-height:1.6;">Bonjour <strong>${escapeHtml(displayName)}</strong>,</p>
+      <p style="color:#555;font-size:15px;line-height:1.6;">
+        Nous avons bien reçu votre demande d'inscription en tant que
+        <strong>${escapeHtml(typeLabel)}</strong> sur DjamSanté Pro.
+      </p>
+      <p style="color:#555;font-size:15px;line-height:1.6;">
+        Votre compte est déjà créé. Vous pouvez vous connecter pendant que notre équipe
+        (validation type MINSANTE) examine votre dossier.
+      </p>
+      ${manquantsHtml}
+      <div style="text-align:center;margin:28px 0;">
+        <a href="${frontUrl}/login" style="display:inline-block;background:#0B3D30;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;">
+          Se connecter
+        </a>
+      </div>
+      <p style="color:#888;font-size:13px;">Compte : ${escapeHtml(email)}</p>
+    `,
+  );
+  return sendMailSafe({
+    to: email,
+    subject: `Inscription ${typeLabel} reçue — DjamSanté`,
+    html,
+    mockLabel: `Inscription pro reçue → ${email}`,
+  });
+};
+
+/** Validation / confirmation d'un compte professionnel */
+const sendInscriptionProValideeEmail = async ({
+  email, prenom, nom, nom_structure, type_profil,
+}) => {
+  const frontUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const typeLabel = TYPE_PRO_LABELS[type_profil] || type_profil || 'professionnel';
+  const displayName = formatProDisplayName({ prenom, nom, nom_structure, type_profil });
+  const isStructure = ['pharmacie', 'hopital', 'clinique'].includes(type_profil);
+
+  const html = brandWrap(
+    'Inscription validée ✓',
+    `
+      <p style="color:#555;font-size:15px;line-height:1.6;">Bonjour <strong>${escapeHtml(displayName)}</strong>,</p>
+      <p style="color:#555;font-size:15px;line-height:1.6;">
+        Bonne nouvelle : votre dossier <strong>${escapeHtml(typeLabel)}</strong> a été
+        <strong style="color:#047857;">validé</strong> sur DjamSanté.
+      </p>
+      <p style="color:#555;font-size:15px;line-height:1.6;">
+        ${isStructure
+    ? 'Votre structure est désormais visible dans l\'annuaire et peut recevoir des demandes patients.'
+    : 'Votre profil est désormais visible dans l\'annuaire et vous pouvez recevoir des rendez-vous patients.'}
+      </p>
+      <div style="text-align:center;margin:28px 0;">
+        <a href="${frontUrl}/login" style="display:inline-block;background:#0B3D30;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;">
+          Accéder à mon espace
+        </a>
+      </div>
+      <p style="color:#888;font-size:13px;">Compte : ${escapeHtml(email)}</p>
+    `,
+  );
+  return sendMailSafe({
+    to: email,
+    subject: `Compte ${typeLabel} validé — DjamSanté`,
+    html,
+    mockLabel: `Inscription pro validée → ${email}`,
+  });
+};
+
+/** Rejet d'inscription professionnelle avec motif personnalisé */
+const sendInscriptionProRejeteeEmail = async ({
+  email, prenom, nom, nom_structure, type_profil, motif_rejet,
+}) => {
+  const frontUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const typeLabel = TYPE_PRO_LABELS[type_profil] || type_profil || 'professionnel';
+  const displayName = formatProDisplayName({ prenom, nom, nom_structure, type_profil });
+  const motif = String(motif_rejet || '').trim() || 'Motif non précisé — contactez le support.';
+
+  const html = brandWrap(
+    'Inscription non validée',
+    `
+      <p style="color:#555;font-size:15px;line-height:1.6;">Bonjour <strong>${escapeHtml(displayName)}</strong>,</p>
+      <p style="color:#555;font-size:15px;line-height:1.6;">
+        Après examen, votre demande d'inscription en tant que
+        <strong>${escapeHtml(typeLabel)}</strong> n'a pas pu être validée pour le moment.
+      </p>
+      <div style="background:#FEF2F2;border-left:4px solid #DC2626;padding:14px;border-radius:6px;margin:18px 0;">
+        <p style="margin:0 0 6px;color:#991B1B;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;">
+          Motif du refus
+        </p>
+        <p style="margin:0;color:#7F1D1D;font-size:15px;line-height:1.55;">
+          ${escapeHtml(motif)}
+        </p>
+      </div>
+      <p style="color:#555;font-size:15px;line-height:1.6;">
+        Vous pouvez corriger votre dossier et soumettre une nouvelle demande, ou nous contacter pour plus d'informations.
+      </p>
+      <div style="text-align:center;margin:28px 0;">
+        <a href="${frontUrl}/register/professionnel" style="display:inline-block;background:#0B3D30;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;">
+          Nouvelle demande
+        </a>
+      </div>
+      <p style="color:#888;font-size:13px;">Compte concerné : ${escapeHtml(email)}</p>
+    `,
+  );
+  return sendMailSafe({
+    to: email,
+    subject: `Inscription ${typeLabel} non validée — DjamSanté`,
+    html,
+    mockLabel: `Inscription pro rejetée → ${email}`,
+  });
+};
+
 module.exports = {
   sendResetPasswordEmail,
   sendAffiliationInviteEmail,
@@ -463,4 +613,7 @@ module.exports = {
   sendRdvContrePropositionEmail,
   sendRdvTermineEmail,
   sendOrdonnancePatientEmail,
+  sendInscriptionProRecueEmail,
+  sendInscriptionProValideeEmail,
+  sendInscriptionProRejeteeEmail,
 };

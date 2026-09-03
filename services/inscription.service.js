@@ -310,10 +310,13 @@ const creerInscription = async (payload, files = []) => {
   profile.role = role;
 
   setImmediate(() => {
-    emailService.sendWelcomeEmail({
+    emailService.sendInscriptionProRecueEmail({
       email,
-      prenom: rest.prenom || rest.nom_structure || '',
-      nom: rest.nom || '',
+      prenom: rest.prenom,
+      nom: rest.nom,
+      nom_structure: rest.nom_structure,
+      type_profil,
+      documents_manquants: manquants.map((d) => DOC_LABELS[d] || d),
     }).catch(() => {});
   });
 
@@ -436,6 +439,16 @@ const validerInscription = async (inscriptionId, { valide_par = 'admin', admin =
     },
   });
 
+  setImmediate(() => {
+    emailService.sendInscriptionProValideeEmail({
+      email: inscription.email,
+      prenom: inscription.prenom,
+      nom: inscription.nom,
+      nom_structure: inscription.nom_structure,
+      type_profil: inscription.type_profil,
+    }).catch(() => {});
+  });
+
   return { compte_id: compteId, type: inscription.type_profil };
 };
 
@@ -476,6 +489,17 @@ const rejeterInscription = async (inscriptionId, motif_rejet, { admin = null, ip
       email: inscription.email,
       motif_rejet,
     },
+  });
+
+  setImmediate(() => {
+    emailService.sendInscriptionProRejeteeEmail({
+      email: inscription.email,
+      prenom: inscription.prenom,
+      nom: inscription.nom,
+      nom_structure: inscription.nom_structure,
+      type_profil: inscription.type_profil,
+      motif_rejet,
+    }).catch(() => {});
   });
 
   return inscription;

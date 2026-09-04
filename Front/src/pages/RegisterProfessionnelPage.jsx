@@ -15,6 +15,7 @@ import BrandLogo from '../components/brand/BrandLogo';
 import { SPECIALITES_BY_PROFIL } from '../config/cameroonSpecialties';
 import { listPays, getPays, applyIndicatif, nationalPart, isPhoneComplete } from '../config/registrationCountries';
 import PasswordStrengthMeter, { scorePassword } from '../components/ui/PasswordStrengthMeter';
+import { prepareMobileUploadFile, MOBILE_FILE_ACCEPT } from '../utils/prepareMobileUploadFile';
 
 const SuccessWrap = styled.div`
   text-align: center;
@@ -108,6 +109,7 @@ export default function RegisterProfessionnelPage() {
   const [pays, setPays] = useState('CM');
   const [docsRequis, setDocsRequis] = useState({ documents: {}, operateurs_mobile_money: [], note_paiement: '' });
   const [files, setFiles] = useState({});
+  const [fileBusy, setFileBusy] = useState(false);
   const paysCfg = getPays(pays);
   const [form, setForm] = useState({
     email: '', password: '', nom: '', prenom: '', nom_structure: '',
@@ -145,6 +147,34 @@ export default function RegisterProfessionnelPage() {
   const setTelephone = (e) => {
     const national = e.target.value.replace(/[^\d\s]/g, '');
     setForm({ ...form, telephone: applyIndicatif(national, pays) });
+  };
+
+  const onPickFile = async (docKey, inputEl) => {
+    const raw = inputEl?.files?.[0];
+    if (!raw) {
+      setFiles((prev) => {
+        const next = { ...prev };
+        delete next[docKey];
+        return next;
+      });
+      return;
+    }
+    setFileBusy(true);
+    try {
+      const prepared = await prepareMobileUploadFile(raw);
+      setFiles((prev) => ({ ...prev, [docKey]: prepared }));
+      toast.success(`${prepared.name} prêt`);
+    } catch (err) {
+      if (inputEl) inputEl.value = '';
+      setFiles((prev) => {
+        const next = { ...prev };
+        delete next[docKey];
+        return next;
+      });
+      toast.error(err.message || 'Fichier non accepté');
+    } finally {
+      setFileBusy(false);
+    }
   };
 
   const visibleTypes = TYPES.filter((t) => !t.countries || t.countries.includes(pays));
@@ -468,6 +498,7 @@ export default function RegisterProfessionnelPage() {
         <SubSection>Documents justificatifs</SubSection>
         <Notice style={{ marginBottom: 16 }}>
           {documentsNotice}
+          {' '}Sur mobile : photo JPG recommandée (l&apos;app compresse automatiquement). Les HEIC iPhone sont acceptés.
         </Notice>
         {requiredDocs.map((doc) => (
           <DocZone key={doc}>
@@ -478,13 +509,16 @@ export default function RegisterProfessionnelPage() {
             </label>
             <input
               type="file"
-              accept="image/*,.pdf"
+              accept={MOBILE_FILE_ACCEPT}
               required={
                 doc === 'piece_identite'
                 || (isSoignantType(type) && doc === 'casier_judiciaire' && !declarationCasierVierge)
               }
-              onChange={(e) => setFiles({ ...files, [doc]: e.target.files[0] })}
+              onChange={(e) => onPickFile(doc, e.target)}
             />
+            {files[doc] && (
+              <div className="file-ok">✓ {files[doc].name} ({Math.round(files[doc].size / 1024)} Ko)</div>
+            )}
           </DocZone>
         ))}
 
@@ -496,9 +530,12 @@ export default function RegisterProfessionnelPage() {
             </label>
             <input
               type="file"
-              accept="image/*,.pdf"
-              onChange={(e) => setFiles({ ...files, [doc]: e.target.files[0] })}
+              accept={MOBILE_FILE_ACCEPT}
+              onChange={(e) => onPickFile(doc, e.target)}
             />
+            {files[doc] && (
+              <div className="file-ok">✓ {files[doc].name} ({Math.round(files[doc].size / 1024)} Ko)</div>
+            )}
           </DocZone>
         ))}
 
@@ -543,12 +580,14 @@ export default function RegisterProfessionnelPage() {
           </label>
         </Field>
 
-        <AuthSubmit type="submit" disabled={mutation.isPending || !acceptCgu}>
+        <AuthSubmit type="submit" disabled={mutation.isPending || fileBusy || !acceptCgu}>
           {mutation.isPending
             ? 'Création du compte…'
-            : acceptCgu
-              ? 'Créer mon compte'
-              : 'Acceptez d’abord les CGU'}
+            : fileBusy
+              ? 'Préparation du document…'
+              : acceptCgu
+                ? 'Créer mon compte'
+                : 'Acceptez d’abord les CGU'}
         </AuthSubmit>
       </AuthForm>
 

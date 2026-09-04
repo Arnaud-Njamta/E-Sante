@@ -201,7 +201,7 @@ export const FieldInput = styled.input`
   width: 100%;
   padding: 14px 0 12px;
   font-family: ${SANS};
-  font-size: 1rem;
+  font-size: 16px;
   font-weight: 500;
   color: ${INK};
   background: transparent;
@@ -244,7 +244,7 @@ export const FieldSelect = styled.select`
   height: 48px;
   padding: 0 40px 0 14px;
   font-family: ${SANS};
-  font-size: 0.95rem;
+  font-size: 16px;
   font-weight: 500;
   letter-spacing: -0.01em;
   color: ${INK};
@@ -473,9 +473,20 @@ export const DocZone = styled.div`
   }
 
   input[type="file"] {
+    display: block;
+    width: 100%;
+    max-width: 100%;
     font-family: ${SANS};
-    font-size: 0.82rem;
+    font-size: 16px;
     color: ${MUTED};
+    padding: 10px 0;
+  }
+
+  .file-ok {
+    margin-top: 6px;
+    font-size: 0.78rem;
+    color: ${DEEP};
+    word-break: break-all;
   }
 `;
 

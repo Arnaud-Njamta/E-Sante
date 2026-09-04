@@ -31,6 +31,8 @@ const MIME_EXT = {
   'image/png': '.png',
   'image/x-png': '.png',
   'image/webp': '.webp',
+  'image/heic': '.heic',
+  'image/heif': '.heif',
   'application/pdf': '.pdf',
 };
 

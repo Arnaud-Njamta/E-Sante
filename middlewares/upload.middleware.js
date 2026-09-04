@@ -3,7 +3,14 @@ const multer = require('multer');
 
 const MAX_FILE_SIZE = parseInt(process.env.MAX_FILE_SIZE, 10) || 10 * 1024 * 1024;
 
-const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+const ALLOWED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/jpg',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+];
 const ALLOWED_DOC_TYPES = [...ALLOWED_IMAGE_TYPES, 'application/pdf'];
 
 const MIME_ALIASES = {
@@ -11,6 +18,8 @@ const MIME_ALIASES = {
   'image/pjpeg': 'image/jpeg',
   'image/x-citrix-png': 'image/png',
   'image/x-citrix-jpeg': 'image/jpeg',
+  'image/heic-sequence': 'image/heic',
+  'image/heif-sequence': 'image/heif',
 };
 
 const EXT_TO_MIME = {
@@ -18,6 +27,8 @@ const EXT_TO_MIME = {
   '.jpeg': 'image/jpeg',
   '.png': 'image/png',
   '.webp': 'image/webp',
+  '.heic': 'image/heic',
+  '.heif': 'image/heif',
   '.pdf': 'application/pdf',
 };
 
@@ -63,7 +74,7 @@ const createUpload = (allowedTypes, maxSize = MAX_FILE_SIZE, maxFiles = 10) => m
     const ext = path.extname(file.originalname || '').toLowerCase() || '(inconnu)';
     cb(new Error(
       `Format non supporté (${file.mimetype || 'type inconnu'}, extension ${ext}). `
-      + 'Utilisez JPG, PNG, WEBP ou PDF.',
+      + 'Utilisez JPG, PNG, WEBP, HEIC ou PDF.',
     ));
   },
 });

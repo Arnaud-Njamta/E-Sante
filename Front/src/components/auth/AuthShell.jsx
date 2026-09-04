@@ -348,8 +348,9 @@ export const AuthSubmit = styled.button`
   width: 100%;
   padding: 15px 20px;
   font-family: ${SANS};
-  font-size: 0.95rem;
+  font-size: 16px;
   font-weight: 600;
+  min-height: 48px;
   color: #fff;
   background: ${INK};
   border: none;

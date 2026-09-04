@@ -13,7 +13,7 @@ import AuthShell, {
 import AuthPasswordInput from '../components/auth/AuthPasswordInput';
 import BrandLogo from '../components/brand/BrandLogo';
 import { SPECIALITES_BY_PROFIL } from '../config/cameroonSpecialties';
-import { listPays, getPays, applyIndicatif } from '../config/registrationCountries';
+import { listPays, getPays, applyIndicatif, nationalPart, isPhoneComplete } from '../config/registrationCountries';
 import PasswordStrengthMeter, { scorePassword } from '../components/ui/PasswordStrengthMeter';
 
 const SuccessWrap = styled.div`
@@ -111,7 +111,7 @@ export default function RegisterProfessionnelPage() {
   const paysCfg = getPays(pays);
   const [form, setForm] = useState({
     email: '', password: '', nom: '', prenom: '', nom_structure: '',
-    telephone: '+237 ', ville: 'Yaoundé', region: 'Centre', numero_ordre: '', numero_agrement: '', specialite: '',
+    telephone: '', ville: 'Yaoundé', region: 'Centre', numero_ordre: '', numero_agrement: '', specialite: '',
     operateur_mobile: 'orange_money', numero_mobile_money: '', titulaire_compte: '', numero_marchand: '',
   });
   const [success, setSuccess] = useState(null);
@@ -129,25 +129,23 @@ export default function RegisterProfessionnelPage() {
 
   useEffect(() => {
     const cfg = getPays(pays);
-    setForm((f) => {
-      const national = String(f.telephone || '').replace(/^\+\d+\s*/, '').replace(/\D/g, '');
-      return {
-        ...f,
-        ville: cfg.defaultVille,
-        region: cfg.defaultRegion,
-        telephone: applyIndicatif(national, pays),
-        numero_mobile_money: cfg.mobileMoneyRequired && !String(f.numero_mobile_money || '').startsWith('+237')
-          ? ''
-          : f.numero_mobile_money,
-      };
-    });
+    setForm((f) => ({
+      ...f,
+      ville: cfg.defaultVille,
+      region: cfg.defaultRegion,
+      telephone: '',
+      numero_mobile_money: cfg.mobileMoneyRequired ? '' : f.numero_mobile_money,
+    }));
     if (!isSoignantType(type) && pays === 'FR') {
       setType('medecin');
     }
   }, [pays]);
 
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
-  const setTelephone = (e) => setForm({ ...form, telephone: applyIndicatif(e.target.value, pays) });
+  const setTelephone = (e) => {
+    const national = e.target.value.replace(/[^\d\s]/g, '');
+    setForm({ ...form, telephone: applyIndicatif(national, pays) });
+  };
 
   const visibleTypes = TYPES.filter((t) => !t.countries || t.countries.includes(pays));
   const ordreCfg = paysCfg.ordre?.[type] || {};
@@ -192,12 +190,21 @@ export default function RegisterProfessionnelPage() {
       toast.error(`${ordreCfg.label || 'N° Ordre'} obligatoire`);
       return;
     }
+    if (pays === 'FR' && type === 'medecin' && !/^\d{11}$/.test(String(form.numero_ordre || '').replace(/\s/g, ''))) {
+      toast.error('N° RPPS invalide — 11 chiffres attendus (ex. 10003123456)');
+      return;
+    }
+    if (!isPhoneComplete(form.telephone, pays)) {
+      toast.error(`Téléphone incomplet — indiquez le numéro sans l'indicatif (${paysCfg.indicatif})`);
+      return;
+    }
     try {
       const { operateur_mobile, numero_mobile_money, titulaire_compte, numero_marchand, ...rest } = form;
       const hasPaiement = !!(numero_mobile_money?.trim() && titulaire_compte?.trim());
       const result = await mutation.mutateAsync({
         payload: {
           ...rest,
+          telephone: applyIndicatif(form.telephone, pays),
           pays,
           type_profil: type,
           accept_cgu: true,
@@ -217,9 +224,16 @@ export default function RegisterProfessionnelPage() {
       toast.success(result.data.message);
     } catch (err) {
       const details = err.response?.data?.errors;
-      const message = Array.isArray(details) && details.length
+      let message = Array.isArray(details) && details.length
         ? details.join(' · ')
-        : (err.response?.data?.message || err.message || 'Erreur lors de l\'inscription');
+        : (err.response?.data?.message || null);
+      if (!message) {
+        if (!err.response) {
+          message = 'Impossible de joindre le serveur — vérifiez votre connexion puis réessayez';
+        } else {
+          message = err.message || 'Erreur lors de l\'inscription';
+        }
+      }
       toast.error(message);
     }
   };
@@ -376,9 +390,11 @@ export default function RegisterProfessionnelPage() {
             <PhoneRow>
               <span className="prefix">{paysCfg.indicatif}</span>
               <FieldInput
-                value={form.telephone}
+                value={nationalPart(form.telephone, pays)}
                 onChange={setTelephone}
                 placeholder={paysCfg.phonePlaceholder}
+                inputMode="tel"
+                autoComplete="tel-national"
                 required
               />
             </PhoneRow>

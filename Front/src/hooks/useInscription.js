@@ -14,8 +14,31 @@ export function useInscriptionProfessionnel() {
             Object.entries(files || {}).forEach(([key, file]) => {
                 if (file) formData.append(key, file);
             });
-            const { data } = await axios.post(`${API_BASE}${ENDPOINTS.inscriptions.professionnel}`, formData);
-            return data;
+            try {
+                const { data } = await axios.post(
+                    `${API_BASE}${ENDPOINTS.inscriptions.professionnel}`,
+                    formData,
+                    { timeout: 120000 },
+                );
+                return data;
+            } catch (err) {
+                if (!err.response) {
+                    const networkErr = new Error(
+                        'Impossible de joindre le serveur (réseau ou API). Vérifiez votre connexion.',
+                    );
+                    networkErr.cause = err;
+                    throw networkErr;
+                }
+                const apiMessage = err.response.data?.message
+                    || (Array.isArray(err.response.data?.errors) ? err.response.data.errors.join(' · ') : null);
+                if (apiMessage) {
+                    const apiErr = new Error(apiMessage);
+                    apiErr.response = err.response;
+                    apiErr.statusCode = err.response.status;
+                    throw apiErr;
+                }
+                throw err;
+            }
         },
     });
 }

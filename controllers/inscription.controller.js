@@ -5,7 +5,17 @@ const { listPays, getPays, PAYS_INSCRIPTION } = require('../config/registration-
 
 const registerProfessionnel = async (req, res, next) => {
   try {
-    const payload = typeof req.body.data === 'string' ? JSON.parse(req.body.data) : req.body;
+    let payload = req.body;
+    if (typeof req.body?.data === 'string') {
+      try {
+        const raw = req.body.data.replace(/^\uFEFF/, '').trim();
+        payload = JSON.parse(raw);
+      } catch (parseErr) {
+        const error = new Error('Données d\'inscription invalides — réessayez depuis le formulaire');
+        error.statusCode = 400;
+        throw error;
+      }
+    }
     const files = [];
     if (req.files) {
       Object.entries(req.files).forEach(([fieldname, arr]) => {

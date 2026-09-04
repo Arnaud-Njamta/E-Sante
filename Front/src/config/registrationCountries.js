@@ -9,7 +9,8 @@ export const PAYS_INSCRIPTION = {
     label: 'Cameroun',
     flag: '🇨🇲',
     indicatif: '+237',
-    phonePlaceholder: '+237 6XX XX XX XX',
+    phonePlaceholder: '6XX XX XX XX',
+    phoneDigitsNational: 9,
     regions: [
       'Adamaoua', 'Centre', 'Est', 'Extrême-Nord', 'Littoral',
       'Nord', 'Nord-Ouest', 'Ouest', 'Sud', 'Sud-Ouest',
@@ -35,7 +36,8 @@ export const PAYS_INSCRIPTION = {
     label: 'France',
     flag: '🇫🇷',
     indicatif: '+33',
-    phonePlaceholder: '+33 6 XX XX XX XX',
+    phonePlaceholder: '6 XX XX XX XX',
+    phoneDigitsNational: 9,
     regions: [
       'Auvergne-Rhône-Alpes', 'Bourgogne-Franche-Comté', 'Bretagne', 'Centre-Val de Loire',
       'Corse', 'Grand Est', 'Hauts-de-France', 'Île-de-France', 'Normandie',
@@ -64,17 +66,50 @@ export const listPays = () => Object.values(PAYS_INSCRIPTION);
 
 export const getPays = (code) => PAYS_INSCRIPTION[String(code || 'CM').toUpperCase()] || PAYS_INSCRIPTION.CM;
 
+/** Partie nationale seule (sans indicatif), pour l'affichage du champ téléphone */
+export function nationalPart(raw, paysCode = 'CM') {
+  const pays = getPays(paysCode);
+  const cc = pays.indicatif.replace('+', '');
+  let digits = String(raw || '').replace(/\D/g, '');
+  if (digits.startsWith(cc)) digits = digits.slice(cc.length);
+  // France : retirer le 0 initial si encore présent
+  if (pays.code === 'FR' && digits.startsWith('0')) digits = digits.slice(1);
+  return digits;
+}
+
+/**
+ * Normalise vers E.164 (+237… / +33…).
+ * Accepte national, 0-leading (FR), ou déjà international.
+ */
 export function applyIndicatif(raw, paysCode = 'CM') {
   const pays = getPays(paysCode);
   const trimmed = String(raw || '').trim();
-  if (!trimmed) return `${pays.indicatif} `;
-  if (trimmed.startsWith('+')) return trimmed;
-  if (pays.code === 'FR' && trimmed.startsWith('0')) {
-    return `+33${trimmed.slice(1).replace(/\D/g, '')}`;
+  if (!trimmed) return '';
+
+  const cc = pays.indicatif.replace('+', '');
+  let digits = trimmed.replace(/\D/g, '');
+
+  // Coller plusieurs fois l'indicatif : +2372376… → 2376…
+  while (digits.startsWith(cc + cc)) {
+    digits = digits.slice(cc.length);
   }
-  const digits = trimmed.replace(/\D/g, '');
-  if (digits.startsWith(pays.indicatif.replace('+', ''))) {
+  if (digits.startsWith(cc)) {
     return `+${digits}`;
   }
+  if (pays.code === 'FR' && digits.startsWith('0')) {
+    digits = digits.slice(1);
+  }
   return `${pays.indicatif}${digits}`;
+}
+
+export function isPhoneComplete(raw, paysCode = 'CM') {
+  const pays = getPays(paysCode);
+  const full = applyIndicatif(raw, paysCode);
+  if (!full) return false;
+  const digits = full.replace(/\D/g, '');
+  const cc = pays.indicatif.replace('+', '');
+  if (!digits.startsWith(cc)) return false;
+  const national = digits.slice(cc.length);
+  return national.length >= pays.phoneDigitsNational - 1
+    && national.length <= pays.phoneDigitsNational + 1;
 }

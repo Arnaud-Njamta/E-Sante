@@ -189,9 +189,16 @@ const normalizeTelephonePays = (raw, paysCode = 'CM') => {
 
 const validerTelephonePays = (raw, paysCode = 'CM') => {
   const pays = getPays(paysCode);
+  const digitsOnly = String(raw || '').replace(/\D/g, '');
+  const cc = pays.indicatif.replace('+', '');
+
+  // Indicatif seul ou vide → pas de numéro
+  if (!digitsOnly || digitsOnly === cc) {
+    return null;
+  }
+
   const normalized = normalizeTelephonePays(raw, paysCode);
   const digits = normalized.replace(/\D/g, '');
-  const cc = pays.indicatif.replace('+', '');
 
   if (!digits.startsWith(cc)) {
     const error = new Error(`Numéro invalide pour ${pays.label} (indicatif ${pays.indicatif})`);
